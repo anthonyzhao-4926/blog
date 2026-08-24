@@ -70,23 +70,25 @@ Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五�
 ```ts
 import { Context, Service } from 'cordis'
 
+// 把计数能力做成服务：构造时 provide 到 Context，名字叫 counter
 class Counter extends Service {
   value = 0
   constructor(ctx: Context) {
-    super(ctx, 'counter')
+    super(ctx, 'counter') // 第二个参数是服务名，之后用 ctx.counter 访问
   }
   increase() {
     this.value += 1
   }
 }
 
-const root = new Context()
+const root = new Context() // 根上下文；同时创建 uid 为 0 的 root Fiber
 
-await root.plugin(Counter)
+await root.plugin(Counter) // 加载插件：new Counter(ctx)，服务就绪
 
+// 声明依赖 counter：没就绪时这段回调不会跑
 await root.inject(['counter'], (ctx) => {
   ctx.counter.increase()
-  ctx.logger.info('value = %d', ctx.counter.value)
+  ctx.logger.info('value = %d', ctx.counter.value) // %d 表示整数
 })
 ```
 
@@ -98,15 +100,15 @@ await root.inject(['counter'], (ctx) => {
 
 ```ts
 import {
-  Context,
-  Service,
-  Inject,
-  Fiber,
-  FiberState,
-  Logger,
-  LoggerLevel,
-  CordisError,
-  ValidationError,
+  Context,        // 运行时入口 / 工作环境
+  Service,        // 可注入服务的基类
+  Inject,         // 依赖声明，也可当装饰器 @Inject()
+  Fiber,          // 一次插件运行的生命周期
+  FiberState,     // Fiber 状态枚举：PENDING / LOADING / ACTIVE 等
+  Logger,         // 单条日志通道（info / warn / error / debug）
+  LoggerLevel,    // 日志级别数字：ERROR=0 … DEBUG=3
+  CordisError,    // 框架错误，如在已停用 Context 上使逻辑生效
+  ValidationError, // 插件 Config 校验失败
 } from 'cordis'
 ```
 
@@ -121,6 +123,7 @@ import {
 
 ```ts
 const ctx = new Context()
+// 创建根 Context + root Fiber，并挂上 events / logger / reflect / registry
 ```
 
 构造时会创建 **root Fiber**（根纤程，`uid` 为 `0`，一开始就是激活态），并挂上四个内置服务：`events`、`logger`、`reflect`、`registry`。
@@ -163,6 +166,7 @@ const ctx = new Context()
 以当前 Context 为原型创建一个**影子 Context**：外表像新对象，读不到的属性会落到原来的 Context 上。可把 `meta` 里的自有属性贴上去。isolate / intercept 都用它实现「同一棵树上分出不同视角」。
 
 ```ts
+// 派生影子 Context：读不到的属性回落到 ctx，自有属性 foo 只挂在 child 上
 const child = ctx.extend({ foo: 1 })
 ```
 
@@ -175,10 +179,10 @@ const child = ctx.extend({ foo: 1 })
 
 ```ts
 const ctx1 = root.isolate('foo')
-const ctx2 = root.isolate('foo')          // 与 ctx1 不同域
-const shared = Symbol('shared')
+const ctx2 = root.isolate('foo')          // 未传 label，每次都是新域，与 ctx1 看不到彼此的 foo
+const shared = Symbol('shared')           // 同一个 symbol 当作隔离标签
 const a = root.isolate('foo', shared)
-const b = root.isolate('foo', shared)    // a / b 同域
+const b = root.isolate('foo', shared)    // 传入同一 label，a / b 共享 foo
 ```
 
 #### `ctx.intercept(name, config)`
@@ -186,7 +190,9 @@ const b = root.isolate('foo', shared)    // a / b 同域
 向下游叠加一层名为 `name` 的拦截配置。下游服务可通过 `Service[Service.resolveConfig]()` 把祖先到当前的配置合并起来。
 
 ```ts
+// 向下游叠一层 logger 配置：改日志名，并把级别提到 DEBUG(3)
 const child = ctx.intercept('logger', { name: 'my-plugin', level: 3 })
+// 这条 debug 在默认 INFO 级别下本来打不出来，拦截后才能看到
 child.logger.debug('only visible under this intercept')
 ```
 
@@ -198,11 +204,11 @@ child.logger.debug('only visible under this intercept')
 
 ```ts
 interface Plugin.Base<T> {
-  name?: string
-  Config?: StandardSchemaV1<any, T>   // 见下方「配置校验」
-  inject?: Inject
-  provide?: string | string[]
-  intercept?: Dict<boolean>
+  name?: string                       // 展示名；缺省用函数名，apply 则忽略
+  Config?: StandardSchemaV1<any, T>   // 配置 schema，加载前同步校验
+  inject?: Inject                     // 依赖的服务；未就绪则 Fiber 停在 PENDING
+  provide?: string | string[]         // 文档/元数据用，声明本插件会提供哪些服务
+  intercept?: Dict<boolean>           // 文档/元数据用，声明会拦截哪些服务配置
 }
 ```
 
@@ -212,13 +218,13 @@ interface Plugin.Base<T> {
 
 ```ts
 function foo(ctx: Context, config: { bar?: string }) {
-  ctx.on('ready', () => {})
+  ctx.on('ready', () => {}) // 监听事件；卸载时随 Fiber 自动摘掉
   return () => {
-    // 返回值是 disposer：Fiber 卸载时调用
+    // 返回值是 disposer：Fiber 卸载时调用，用来收尾
   }
 }
 
-await ctx.plugin(foo, { bar: 'baz' })
+await ctx.plugin(foo, { bar: 'baz' }) // 第二个参数传入配置，函数插件体里就是 config
 ```
 
 #### 2. 对象插件
@@ -227,14 +233,14 @@ await ctx.plugin(foo, { bar: 'baz' })
 
 ```ts
 const plugin = {
-  name: 'foo',
-  inject: ['timer'],
+  name: 'foo',           // Fiber / 日志里显示的名字
+  inject: ['timer'],     // 等 ctx.timer 就绪后才执行 apply
   apply(ctx: Context, config: any) {
-    ctx.timer.timeout(() => {}, 1000)
+    ctx.timer.timeout(() => {}, 1000) // 1 秒后执行；Fiber 卸载则定时器一并清掉
   },
 }
 
-await ctx.plugin(plugin)
+await ctx.plugin(plugin) // 对象插件：实际跑的是 apply
 ```
 
 #### 3. 类插件
@@ -243,13 +249,13 @@ await ctx.plugin(plugin)
 
 ```ts
 class Foo {
-  static inject = ['logger']
+  static inject = ['logger'] // 类上的静态元数据：依赖 logger
   constructor(ctx: Context, config: { n: number }) {
     ctx.logger.info('n = %d', config.n)
   }
 }
 
-await ctx.plugin(Foo, { n: 1 })
+await ctx.plugin(Foo, { n: 1 }) // 用 new Foo(ctx, { n: 1 }) 构造
 ```
 
 #### 配置校验
@@ -262,9 +268,9 @@ await ctx.plugin(Foo, { n: 1 })
 `ctx.plugin()` 的返回值是 **thenable Fiber**。**thenable** 指实现了 `.then()`、因而可以被 `await` 的对象。这里 `await fiber` 会等到 Fiber 进入 `ACTIVE`（已激活）；失败则抛出插件体里的错误。
 
 ```ts
-const fiber = ctx.plugin(Foo, config)
-await fiber          // 等到 ACTIVE，失败则抛出
-await fiber.dispose()
+const fiber = ctx.plugin(Foo, config) // 立刻返回 thenable Fiber，插件可能仍在 LOADING
+await fiber          // 等到 ACTIVE；插件体抛错则这里也会抛
+await fiber.dispose() // 卸载：逆序回收使生效的逻辑，uid 置为 null
 ```
 
 无效插件（不是函数，也没有 `apply` 方法）会抛：
@@ -294,18 +300,18 @@ invalid plugin, expect function or object with an "apply" method
 | `counter` | 递增分配 Fiber 的 **uid**（实例编号）。 |
 
 ```ts
-ctx.registry.get(Foo)      // Plugin.Runtime | undefined
-ctx.registry.delete(Foo)   // 卸载该插件的所有实例
+ctx.registry.get(Foo)      // 按插件函数取出 Runtime；从未加载过则 undefined
+ctx.registry.delete(Foo)   // 注销 Runtime，并 dispose 它下面的全部 Fiber
 ```
 
 `Plugin.Runtime`：
 
 ```ts
 interface Plugin.Runtime {
-  name?: string
-  fibers: DisposableList<Fiber>   // 可按插入序遍历、按值删除的列表
+  name?: string                   // 展示名
+  fibers: DisposableList<Fiber>   // 该插件当前所有实例；可按插入序遍历、按值删除
   callback: Function              // 真正执行的函数（函数插件本身或 apply）
-  Config?: StandardSchemaV1
+  Config?: StandardSchemaV1       // 与 Plugin.Base.Config 相同，用于校验
 }
 ```
 
@@ -318,8 +324,9 @@ interface Plugin.Runtime {
 **依赖注入**：插件不自己 `new` 依赖，而是声明「我需要 `foo`」，由运行时在 `foo` 就绪后再启动它。
 
 ```ts
+// T 是 intercept 配置的类型；没配置可写成 never
 abstract class Service<T = never> {
-  constructor(ctx: Context, name: string)
+  constructor(ctx: Context, name: string) // 内部会 ctx.reflect.provide(name, this)
 }
 ```
 
@@ -339,18 +346,19 @@ abstract class Service<T = never> {
 
 ```ts
 class Http extends Service<{ timeout?: number }> {
-  static inject = ['timer']
+  static inject = ['timer'] // 依赖 timer；未就绪则本服务所在 Fiber 等待
 
   constructor(ctx: Context) {
-    super(ctx, 'http')
+    super(ctx, 'http') // 服务名 http，之后可 ctx.http
   }
 
+  // 构造完成后作为 Effect 执行；可返回 disposer / 异步 disposer
   async [Service.init]() {
-    // 可返回 disposer
-    return () => {}
+    return () => {} // Fiber 卸载时调用
   }
 
   get timeout() {
+    // 从祖先到当前收集 intercept['http']，合并后读 timeout
     return this[Service.resolveConfig]().timeout ?? 3000
   }
 }
@@ -361,23 +369,23 @@ class Http extends Service<{ timeout?: number }> {
 ```ts
 type Inject = string[] | Record<string, any>
 
-// 1. 数组：只声明依赖名
-ctx.inject(['foo', 'bar'], (ctx) => { ... })
+// 1. 数组：只声明依赖名；foo、bar 都就绪后才跑回调
+ctx.inject(['foo', 'bar'], (ctx) => { /* 这里可以安全读 ctx.foo / ctx.bar */ })
 
-// 2. 对象：依赖名 + 对该服务的 intercept 配置
-ctx.inject({ logger: { name: 'worker' } }, (ctx) => { ... })
+// 2. 对象：依赖 logger，并给它叠一层 intercept（改日志名）
+ctx.inject({ logger: { name: 'worker' } }, (ctx) => { /* ... */ })
 
-// 3. 装饰器：编译期标在 class 或方法上的语法（TypeScript 5+）
+// 3. 装饰器（TypeScript 5+）：标在 class 上 = 整个服务依赖 foo
 @Inject('foo')
 class Bar extends Service {
   constructor(ctx: Context) {
     super(ctx, 'bar')
   }
 
+  // 标在方法上：foo 就绪后才调用；返回值当作使生效的 disposer
   @Inject('foo')
   onFooReady() {
-    // foo 就绪后执行；返回值作为 effect disposer
-    return () => {}
+    return () => {} // foo 消失或本 Fiber 卸载时执行
   }
 }
 ```
@@ -397,9 +405,9 @@ class Bar extends Service {
 在当前 Fiber 上**注册服务**（把一个值放到名为 `name` 的槽里）。同一隔离域里同名服务不可重复注册。返回 disposer，调用后撤销该服务。
 
 ```ts
-const dispose = ctx.provide('foo', { bar: 1 })
-ctx.foo.bar  // 1
-dispose()
+const dispose = ctx.provide('foo', { bar: 1 }) // 在当前 Fiber 的隔离域里注册 foo
+ctx.foo.bar  // 1；依赖方 inject(['foo']) 后才能这样读
+dispose()    // 撤销服务；依赖 foo 的 Fiber 会回到 PENDING
 ```
 
 可选 `check()`：返回 `false` 时，依赖该服务的 Fiber 会视为依赖未满足。
@@ -425,8 +433,9 @@ cannot set property "foo" without provide
 把某个对象或服务上的方法提升到 Context。框架启动时就用它把 `plugin`、`on`、`effect` 摊平到 `ctx`。
 
 ```ts
+// 把 ctx.timer 上的三个方法提升到 ctx 上（同名）
 ctx.mixin('timer', ['timeout', 'interval', 'debounce'])
-// 之后可直接 ctx.timeout(...)
+ctx.timeout(() => {}, 1000) // 等价于 ctx.timer.timeout(...)
 ```
 
 `mixins` 可以是字符串数组（同名提升），或 `{ 源键: 目标键 }` 映射（改名提升）。
@@ -448,9 +457,9 @@ ctx.mixin('timer', ['timeout', 'interval', 'debounce'])
 ```ts
 declare module 'cordis' {
   interface Events {
-    'app/ready'(): void
-    'message'(text: string): void
-    'check'(value: number): boolean | void
+    'app/ready'(): void                      // 无参数
+    'message'(text: string): void            // 一个字符串参数
+    'check'(value: number): boolean | void   // 可返回 boolean，供 bail / serial 短路
   }
 }
 ```
@@ -460,24 +469,27 @@ declare module 'cordis' {
 ```ts
 const dispose = ctx.on('message', (text) => {
   ctx.logger.info(text)
-})
+}) // 返回 disposer；调用后不再收到 message
 
 ctx.once('app/ready', () => {})  // 只触发一次，然后自动摘掉
-dispose()
+dispose()                         // 手动取消 message 监听
 ```
 
 `options`：
 
 ```ts
 interface EventOptions {
-  prepend?: boolean   // 插到监听队列头部，先于已有监听执行；也可把整个 options 直接传 true
-  global?: boolean    // 忽略 Context.filter，所有监听都收到
+  prepend?: boolean   // true：插到队列头，先于已有监听执行
+  global?: boolean    // true：忽略 Context.filter，所有监听都收到
 }
 ```
 
 ```ts
-ctx.on('message', handler, true)                 // prepend
-ctx.on('internal/update', handler, { global: true, prepend: true })
+ctx.on('message', handler, true) // 第三个参数传 true = { prepend: true }
+ctx.on('internal/update', handler, {
+  global: true,   // 不受 filter 过滤
+  prepend: true,  // 插到队头，先于默认的 update 处理
+})
 ```
 
 #### 派发模式
@@ -497,16 +509,16 @@ ctx.on('internal/update', handler, { global: true, prepend: true })
 **`thisArg`**：派发时可选的第一个对象参数，会作为监听函数的 `this`，并参与 `Context.filter` 过滤（例如「只有同一隔离域的监听能收到」）。
 
 ```ts
-ctx.emit(session, 'message', text)
-ctx.parallel(session, 'message', text)
+ctx.emit(session, 'message', text)      // session 作为 thisArg，并参与 filter
+ctx.parallel(session, 'message', text)  // 异步并行派发，同样带 thisArg
 ```
 
 waterfall 示例：两个监听都做 `value + next()`，内层返回 `2`，外层再加，得到 `1+1+2 = 4`。
 
 ```ts
-ctx.on('transform', (value, next) => value + next())
-ctx.on('transform', (value, next) => value + next())
-ctx.waterfall('transform', 1, () => 2)  // 4
+ctx.on('transform', (value, next) => value + next()) // 外层：1 + 内层结果
+ctx.on('transform', (value, next) => value + next()) // 内层：1 + inner()
+ctx.waterfall('transform', 1, () => 2)  // 1 + (1 + 2) = 4；最后的 () => 2 是 inner
 ```
 
 ---
@@ -552,28 +564,28 @@ enum FiberState {
 #### Effect
 
 ```ts
-type Disposable<T = any> = () => T
+type Disposable<T = any> = () => T // 释放函数；调用后撤销已使生效的逻辑
 
 type Effect =
-  | Disposable
-  | Iterable<Disposable>          // 例如 function* 生成器，可 yield 多个 disposer
-  | Promise<Disposable>
-  | AsyncIterable<Disposable>     // 异步生成器
+  | Disposable                    // 同步 disposer
+  | Iterable<Disposable>          // 例如 function*，可 yield 多个 disposer
+  | Promise<Disposable>           // 异步拿到一个 disposer
+  | AsyncIterable<Disposable>     // 异步生成器，按序产出 disposer
 ```
 
 ```ts
 const dispose = ctx.effect(() => {
   const server = listen()
-  return () => server.close()
-}, 'listen()')
+  return () => server.close() // Fiber 卸载或手动 dispose() 时关端口
+}, 'listen()')                // label 只用于 getEffects() / 调试展示
 
-// 生成器：多个 disposer，卸载时逆序执行
+// 生成器：登记多个 disposer，卸载时按 step2 → step1 逆序执行
 ctx.effect(function* () {
   yield () => step1()
   yield () => step2()
 })
 
-// 异步
+// 异步：等 open() 完成后再登记关闭逻辑
 await ctx.effect(async () => {
   const res = await open()
   return () => res.close()
@@ -585,6 +597,7 @@ await ctx.effect(async () => {
 `fiber.update()` 会触发：
 
 ```ts
+// fiber 是 thisArg；next 是洋葱模型的下一环（默认会写 config 并 restart）
 ctx.waterfall(fiber, 'internal/update', config, noSave, next)
 ```
 
@@ -599,8 +612,8 @@ ctx.waterfall(fiber, 'internal/update', config, noSave, next)
 服务在存储里的真正键不是字符串 `'db'`，而是 `ctx[Context.isolate]['db']` 这个 symbol。不同隔离域拿到不同 symbol，因此同名服务互不可见。
 
 ```ts
-const isolated = root.isolate('db')
-isolated.provide('db', localDb)   // 不影响 root.db
+const isolated = root.isolate('db')      // 切出一套独立的 db 存储
+isolated.provide('db', localDb)         // 只填 isolated 的槽，root.db 仍是原来的值
 ```
 
 Service 默认带 filter：只有 isolate 标签相同的 Context，才能收到「以该服务为 `thisArg`」发出的事件。
@@ -613,7 +626,7 @@ Loader 自身也声明了 intercept：
 
 ```ts
 interface Loader.Intercept {
-  await?: boolean   // 为 true 时：只要还有插件没加载完，Loader 的 check 就失败，依赖它的 Fiber 继续等
+  await?: boolean // true：树上还有加载任务时，Loader 的 check 失败，依赖它的 Fiber 继续等
 }
 ```
 
@@ -624,26 +637,27 @@ interface Loader.Intercept {
 `ctx.logger` 是**可调用服务**（因为实现了 `Service.invoke`）：直接 `.info()` 用当前 Fiber 的默认名字；`ctx.logger('http')` 则得到一个名为 `http` 的 Logger。
 
 ```ts
-ctx.logger.info('hello %s', 'world')
-ctx.logger('http').error(err)
+ctx.logger.info('hello %s', 'world')  // 用当前 Fiber 名；%s 替换成 world
+ctx.logger('http').error(err)         // 另开名为 http 的通道，适合按模块过滤
 ctx.logger.warn('deprecated')
-ctx.logger.debug('verbose')
+ctx.logger.debug('verbose')           // 默认 INFO 级别下不会输出
 ```
 
 级别数字越大越啰嗦：
 
 ```ts
 enum LoggerLevel {
-  ERROR = 0,
+  ERROR = 0, // 只看错误
   WARN = 1,
-  INFO = 2,
-  DEBUG = 3,
+  INFO = 2,  // 默认
+  DEBUG = 3, // 最啰嗦
 }
 ```
 
 默认级别为 `INFO`。可用 intercept 覆盖。未指定 `name` 时，用当前 Fiber 名称做 **hyphenate**（把 `CamelCase` / 空格变成 `camel-case` 这种短横线形式）。
 
 ```ts
+// 下游默认日志名改成 worker，并放开 DEBUG
 ctx.intercept('logger', { name: 'worker', level: LoggerLevel.DEBUG })
 ```
 
@@ -653,20 +667,19 @@ ctx.intercept('logger', { name: 'worker', level: LoggerLevel.DEBUG })
 
 ```ts
 interface Exporter {
-  colors?: number | false
-  maxLength?: number
-  levels?: Record<string, number>   // 可含 default，按 logger 名覆盖级别
-  formatters?: Record<string, Formatter>  // %x 占位符怎么把值收成字符串
-  export(message: Message): void
+  colors?: number | false                 // 终端颜色等级；false 关闭
+  maxLength?: number                      // 单行截断长度，默认 10240
+  levels?: Record<string, number>         // 可含 default，按 logger 名覆盖级别
+  formatters?: Record<string, Formatter>  // 自定义 %x 占位符怎么把值收成字符串
+  export(message: Message): void          // 真正处理一条日志
 }
 
 const dispose = ctx.logger.exporter({
-  levels: { default: LoggerLevel.DEBUG },
+  levels: { default: LoggerLevel.DEBUG }, // 未单独配置的 logger 都用 DEBUG
   export(message) {
-    // message: { sn, ts, name, type, level, args, fiber? }
-    // sn = 序号, ts = 时间戳
+    // message.sn 序号、ts 时间戳、name 通道名、type 级别、args 参数、fiber 弱引用
   },
-})
+}) // 返回 disposer，调用后这个出口不再收日志
 ```
 
 内置一个 **ring buffer（环形缓冲区）**：只保留最近 `bufferSize`（默认 1000）条，超出就丢掉最旧的。默认格式化占位符：`%s` 字符串、`%d` / `%i` 整数、`%f` 数字、`%o` / `%O` JSON、`%c` 空、`%C` 带颜色的名字。
@@ -702,8 +715,9 @@ const dispose = ctx.logger.exporter({
 import Loader from '@cordisjs/plugin-loader'
 
 const ctx = new Context()
+// 相对路径 import 的起点；末尾斜杠表示「目录」
 ctx.baseUrl = pathToFileURL(process.cwd()).href + '/'
-await ctx.plugin(Loader, { baseUrl?: string })
+await ctx.plugin(Loader, { baseUrl: ctx.baseUrl }) // 可选；传入则写入 ctx.baseUrl
 ```
 
 挂载后 Context 上出现 `ctx.loader`。
@@ -732,14 +746,14 @@ await ctx.plugin(Loader, { baseUrl?: string })
 
 ```ts
 interface EntryOptions {
-  id: string
-  name: string
-  config?: any
-  group?: boolean | null
-  disabled?: boolean | null
-  inject?: Inject | null
-  intercept?: Dict | null
-  isolate?: Dict<true | string> | null
+  id: string                              // 配置内唯一；没有则 Loader 生成 8 位 hex
+  name: string                            // 模块说明符：包名、相对路径或 cordis:xxx
+  config?: any                            // 传给插件的配置；分组节点则是子清单
+  group?: boolean | null                  // true：本节点是分组，config 为 EntryOptions[]
+  disabled?: boolean | null               // true：不加载；分组自身不停，但会传给子孙
+  inject?: Inject | null                  // 额外注入，合并进插件自带的 inject
+  intercept?: Dict | null                 // 叠给该 Entry 的服务配置
+  isolate?: Dict<true | string> | null    // true=本地域，字符串=命名全局域
 }
 ```
 
@@ -766,12 +780,12 @@ interface EntryOptions {
 
 ```ts
 const id = await ctx.loader.create({
-  name: '@cordisjs/plugin-timer',
+  name: '@cordisjs/plugin-timer', // 插入根组；会自动补 id 并 write()
 })
 
-await ctx.loader.update(id, { disabled: true })
-ctx.loader.remove(id)
-await ctx.loader.await()
+await ctx.loader.update(id, { disabled: true }) // 关掉这条，配置写回
+ctx.loader.remove(id)                           // 从树上删掉并 write()
+await ctx.loader.await()                        // 等到所有 init / inertia 结束
 ```
 
 ### Entry / EntryGroup
@@ -796,11 +810,15 @@ await ctx.loader.await()
 
 ```ts
 interface Events {
-  'exit'(signal: NodeJS.Signals): Promise<void>
-  'loader/config-update'(): void
-  'loader/entry-init'(entry: Entry): void
-  'loader/partial-dispose'(entry: Entry, legacy: Partial<EntryOptions>, active: boolean): void
-  'loader/patch-context'(entry: Entry, next: () => void): void
+  'exit'(signal: NodeJS.Signals): Promise<void> // 进程信号；可供宿主做优雅退出
+  'loader/config-update'(): void                 // 配置即将写回文件
+  'loader/entry-init'(entry: Entry): void        // 刚 new 出 Entry，模块尚未 import
+  'loader/partial-dispose'(
+    entry: Entry,
+    legacy: Partial<EntryOptions>, // 变化前的旧字段
+    active: boolean,               // true：仍留在树上，只是字段变了
+  ): void
+  'loader/patch-context'(entry: Entry, next: () => void): void // waterfall：next 里才 fiber.update
 }
 ```
 
@@ -821,11 +839,11 @@ interface Events {
 配置里可以嵌一段要在 Context 上执行的 JavaScript，而不是写死字面量。
 
 ```ts
-interface JsExpr { __jsExpr: string }
+interface JsExpr { __jsExpr: string } // YAML !!js 反序列化后的形态
 
-evaluate(ctx, expr)      // 等价于 with (ctx) eval(expr)
+evaluate(ctx, expr)      // 等价于 with (ctx) eval(expr)，能读到 ctx 上的服务
 interpolate(ctx, value)  // 递归走对象 / 数组，遇到 JsExpr 就 evaluate
-isJsExpr(value)
+isJsExpr(value)          // 判断是不是 { __jsExpr }
 ```
 
 YAML 用自定义标签 `!!js` 表示这种表达式，加载时在该 Entry 的 Context 上求值。`eval` 能读到 `ctx` 上的服务，因此配置可以引用运行时状态。
@@ -840,10 +858,10 @@ YAML 用自定义标签 `!!js` 表示这种表达式，加载时在该 Entry 的
 await ctx.loader.create({
   name: '@cordisjs/plugin-include',
   config: {
-    path: './cordis.yml',
-    initial?: any[],
-    patches?: PatchOptions[],
-    enableLogs?: boolean,
+    path: './cordis.yml',     // 相对 ctx.baseUrl；支持 .yml / .yaml / .json
+    initial: [],              // 文件不存在时先写出这份清单再读
+    patches: [],              // 运行时补丁，不改源文件
+    enableLogs: true,         // 打印 apply / reload / unload
   },
 })
 ```
@@ -860,9 +878,9 @@ await ctx.loader.create({
 
 ```ts
 interface PatchOptions {
-  id?: string
-  insert?: EntryOptions[]
-  name?: string          // 校验目标 name，不匹配则跳过（防止补错条目）
+  id?: string                 // 目标条目；insert 且无 id 时表示往根清单插
+  insert?: EntryOptions[]     // 有此字段：插入，而不是覆盖
+  name?: string               // 校验目标 name，不匹配则跳过，防止补错条目
   config?: any
   group?: boolean | null
   disabled?: boolean | null
@@ -886,20 +904,20 @@ interface PatchOptions {
 配置树里的分组节点。包本身只是把 loader 里的 `Group` 再导出一次，方便在 `name` 字段里写 `@cordisjs/plugin-group`。
 
 ```ts
-import Group from '@cordisjs/plugin-group'
+import Group from '@cordisjs/plugin-group' // 与 loader 内部的 Group 是同一个类
 ```
 
 配置里通常这样写：
 
 ```yaml
 - id: main
-  name: '@cordisjs/plugin-group'
+  name: '@cordisjs/plugin-group'   # 分组节点，config 是子清单
   config:
     - id: timer
       name: '@cordisjs/plugin-timer'
     - id: app
       name: ./plugins/app.ts
-      disabled: true
+      disabled: true              # 这条不加载；main 分组本身仍是开着的
 ```
 
 `Group` 在 `[Service.init]` 里用这份 `config` 调用 `update`，并监听 `internal/update`，以便热更新配置时同步子树。
@@ -911,7 +929,7 @@ import Group from '@cordisjs/plugin-group'
 ```ts
 import TimerService from '@cordisjs/plugin-timer'
 
-await ctx.plugin(TimerService)
+await ctx.plugin(TimerService) // 之后可用 ctx.timer，以及 mixin 上来的 ctx.timeout 等
 ```
 
 mixin 到 Context 的方法：`timeout`、`interval`、`throttle`、`debounce`。另有已废弃的别名 `setTimeout` / `setInterval`（旧名字，请改用前者）。
@@ -928,18 +946,18 @@ mixin 到 Context 的方法：`timeout`、`interval`、`throttle`、`debounce`�
 | `ctx.debounce(fn, ms)` | 返回带 `dispose` 的包装函数 | **防抖**：连续触发时只在停下来 `ms` 之后执行最后一次。 |
 
 ```ts
-const stop = ctx.timeout(() => {}, 1000)
-stop()
+const stop = ctx.timeout(() => {}, 1000) // 1 秒后执行；返回 disposer
+stop()                                  // 提前取消，回调不会跑
 
-await ctx.timeout(500)
+await ctx.timeout(500)                  // 睡 500ms；Fiber 卸载则 Promise reject
 
-for await (const _ of ctx.interval(1000)) {
-  break
+for await (const _ of ctx.interval(1000)) { // 每秒来一拍
+  break                                     // 用 return() 结束迭代并清掉 interval
 }
 
-const onResize = ctx.debounce(() => {}, 200)
+const onResize = ctx.debounce(() => {}, 200) // 停触发 200ms 后才真正执行
 onResize()
-onResize.dispose()
+onResize.dispose()                           // 取消防抖包装，进行中的等待也会清掉
 ```
 
 ---
@@ -952,11 +970,11 @@ onResize.dispose()
 import Hmr from '@cordisjs/plugin-hmr'
 
 await ctx.plugin(Hmr, {
-  base?: string
-  root: string[]          // 监视目录，默认 ['.']
-  ignored: string[]       // 忽略规则，默认 node_modules、点文件、cache、data
-  debounce: number        // 合并短时间内的多次变更，默认 100ms
-  // 其余字段传给 chokidar
+  base: '.',              // 监视根目录；相对 ctx.baseUrl
+  root: ['.'],            // 要听的子路径，默认当前目录
+  ignored: ['**/node_modules', '**/.*', 'cache', 'data'],
+  debounce: 100,          // 100ms 内的多次改动合并成一次重载
+  // 其余字段（如 awaitWriteFinish）原样传给 chokidar
 })
 ```
 
@@ -976,8 +994,11 @@ await ctx.plugin(Hmr, {
 
 ```ts
 interface Events {
-  'hmr/change'(url: string): void
-  'hmr/reload'(reloads: Map<Plugin, { filename: string; runtime?: Plugin.Runtime }>): void
+  'hmr/change'(url: string): void // 改动既不是插件模块也不是配置文件
+  'hmr/reload'(reloads: Map<Plugin, {
+    filename: string              // 被重载的插件入口文件
+    runtime?: Plugin.Runtime      // 重载前的 Runtime，用来复用旧 Fiber 的 config
+  }>): void
 }
 ```
 
@@ -994,12 +1015,12 @@ interface Events {
 import ConsoleExporter from '@cordisjs/plugin-logger-console'
 
 await ctx.plugin(ConsoleExporter, {
-  colors?: false | 0 | 1 | 2 | 3   // 颜色等级；false / 0 为关闭
-  maxLength?: number
-  levels?: Record<string, number>
-  showDiff?: boolean          // 是否在行尾显示与上一条的时间差，默认 false
-  showTime?: string           // 时间模板，默认 'yyyy-MM-dd hh:mm:ss '
-  label?: { width?: number; margin?: number; align?: 'left' | 'right' }
+  colors: 3,                  // 颜色等级 0–3；false / 0 关闭。Node 下默认跟终端走
+  maxLength: 10240,           // 单行超出则截断并加 ...
+  levels: { default: 2 },     // 按 logger 名覆盖级别
+  showDiff: false,            // true：行尾显示与上一条的时间差
+  showTime: 'yyyy-MM-dd hh:mm:ss ',
+  label: { width: 10, margin: 1, align: 'left' }, // 通道名列宽、间距、对齐
 })
 ```
 
@@ -1014,11 +1035,11 @@ await ctx.plugin(ConsoleExporter, {
 ```ts
 import { List } from '@cordisjs/utils'
 
-const list = new List<Handler>(ctx, 'handlers')
-list.push(handler)     // 登记为 effect，Fiber 卸载时自动删除
-list.length
+const list = new List<Handler>(ctx, 'handlers') // 第二个参数是 effect 的 trace 标签
+list.push(handler)     // 登记为使生效；当前 Fiber 卸载时这条会自动删掉
+list.length            // 当前条数
 for (const item of list) {}
-for (const item of list.filter(x => x.enabled)) {}
+for (const item of list.filter(x => x.enabled)) {} // 惰性过滤，不生成中间数组
 ```
 
 和核心里的 `DisposableList` 不同：`List.push` 绑在当前 Fiber 的 effect 上，生命周期跟插件走；`DisposableList` 只是通用列表，不自动绑定 Fiber。
@@ -1031,7 +1052,7 @@ for (const item of list.filter(x => x.enabled)) {}
 
 ```bash
 npm create cordis@latest my-app
-# 或
+# 等价于 npx，并指定模板包
 npx create-cordis my-app -t @cordisjs/boilerplate
 ```
 
@@ -1052,15 +1073,15 @@ npx create-cordis my-app -t @cordisjs/boilerplate
 import scaffold, { stageYarnBin } from 'create-cordis'
 
 await scaffold({
-  name: 'cordis',
-  version: '0.3.0',
-  template: '@cordisjs/boilerplate',
+  name: 'cordis',                      // CLI 标题里的产品名
+  version: '0.3.0',                    // 打印用
+  template: '@cordisjs/boilerplate',   // 从 npm 拉的模板包
 })
 
 await stageYarnBin({
-  rootDir,
-  registry,
-  agent: { name: 'yarn', version: '1.22.22' },
+  rootDir,                             // 新项目目录
+  registry,                            // npm registry，如 https://registry.npmjs.org
+  agent: { name: 'yarn', version: '1.22.22' }, // 调用方的包管理器
 })
 ```
 
@@ -1074,17 +1095,19 @@ await stageYarnBin({
 
 ```ts
 const ctx = new Context()
-ctx.baseUrl = pathToFileURL(process.cwd()).href + '/'
+ctx.baseUrl = pathToFileURL(process.cwd()).href + '/' // 当前工作目录
 await ctx.plugin(Loader)
 await ctx.loader.create({
   name: '@cordisjs/plugin-include',
-  config: { path: './cordis.yml' },
+  config: { path: './cordis.yml' }, // 相对 baseUrl 读配置树
 })
 ```
 
 即：把当前工作目录当作 `baseUrl`，读取 `./cordis.yml` 作为插件树。需要 HMR 时建议：
 
 ```bash
+# --expose-internals：HMR 需要访问 Node 内部 ModuleLoader
+# --import tsx：启动前加载 tsx，才能直接跑 TypeScript
 node --expose-internals --import tsx ./node_modules/cordis/bin.js
 ```
 
@@ -1100,6 +1123,7 @@ node --expose-internals --import tsx ./node_modules/cordis/bin.js
 ```ts
 import { Context, Service } from 'cordis'
 
+// 接口同名即合并：使用方写 ctx.foo、ctx.on('foo/ready') 才有类型
 declare module 'cordis' {
   interface Context {
     foo: Foo
@@ -1112,7 +1136,7 @@ declare module 'cordis' {
 
 class Foo extends Service {
   constructor(ctx: Context) {
-    super(ctx, 'foo')
+    super(ctx, 'foo') // 服务名必须和 Context 上扩充的字段一致
   }
 }
 
@@ -1122,9 +1146,9 @@ export default Foo
 使用方：
 
 ```ts
-await ctx.plugin(Foo)
-ctx.foo
-ctx.on('foo/ready', () => {})
+await ctx.plugin(Foo)           // 加载后 ctx.foo 才存在
+ctx.foo                         // 类型来自上面的 declare module
+ctx.on('foo/ready', () => {})   // 事件名同样来自模块扩充
 ```
 
 **`InjectKey`**：可以从 `Context` 上选出「实现了 `[Service.config]`」的服务名。因此只有声明了配置类型的服务，才能出现在 `@Inject('xxx', config)` 的类型检查里；随便写一个字符串会报类型错误。
@@ -1161,18 +1185,18 @@ import { pathToFileURL } from 'node:url'
 const ctx = new Context()
 ctx.baseUrl = pathToFileURL(process.cwd()).href + '/'
 
-await ctx.plugin(LoggerConsole)
+await ctx.plugin(LoggerConsole) // 先挂控制台导出器，后面的加载日志才看得见
 await ctx.plugin(Loader)
 
 await ctx.loader.create({
   name: '@cordisjs/plugin-include',
   config: {
     path: './cordis.yml',
-    enableLogs: true,
+    enableLogs: true, // 打印 apply / reload / unload
   },
 })
 
-await ctx.loader.await()
+await ctx.loader.await() // 等到配置树里的插件都加载完（或失败）
 ```
 
 `cordis.yml` 示例：
@@ -1181,20 +1205,20 @@ await ctx.loader.await()
 - id: logger
   name: '@cordisjs/plugin-logger-console'
   config:
-    showTime: 'hh:mm:ss '
+    showTime: 'hh:mm:ss '   # 只显示时分秒
 
 - id: timer
   name: '@cordisjs/plugin-timer'
 
 - id: app
-  name: ./src/index.ts
+  name: ./src/index.ts      # 相对 Include 文件所在目录
   inject:
-    - timer
+    - timer                 # 等 timer 就绪再加载 app
   isolate:
-    db: true
+    db: true                # app 自己的 db，和其他插件互不可见
   intercept:
     logger:
-      name: app
+      name: app             # 这条插件打出来的日志通道名
 ```
 
 这份配置的含义：先开控制台日志和定时器，再加载本地 `./src/index.ts`；它声明依赖 `timer`，把 `db` 服务隔到自己的本地域，并把日志名改成 `app`。
