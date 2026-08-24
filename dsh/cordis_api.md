@@ -14,7 +14,7 @@ tags: [dsh, cordis]
 **Cordis** 是一套面向「时空可组合性」的**元框架**。
 
 - **元框架**：本身不规定「怎么写 HTTP、怎么连数据库」，而是提供一套把功能拼起来的运行时。应用、机器人、工具链都可以建在它上面。
-- **时空可组合性**：插件既能按依赖关系在「空间」上组合（谁依赖谁、谁和谁隔离），也能按生命周期在「时间」上组合（何时加载、何时卸载、副作用如何回收）。
+- **时空可组合性**：插件既能按依赖关系在「空间」上组合（谁依赖谁、谁和谁隔离），也能按生命周期在「时间」上组合（何时加载、何时卸载、使生效的逻辑如何回收）。
 
 Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五个概念。首次出现时的含义：
 
@@ -27,6 +27,7 @@ Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五�
 | **Event（事件）** | 插件之间的消息通道。用 `on` 监听、用 `emit` 等派发。 |
 
 本文档按公开 npm 包梳理**可编程 API**（给 TypeScript / JavaScript 调用的接口），不是 HTTP REST 文档。
+
 
 ---
 
@@ -54,8 +55,8 @@ Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五�
 
 | 词汇 | 解释 |
 | --- | --- |
-| **Effect（副作用）** | 插件运行时登记的「用完要收」的动作，例如监听事件、开端口、设定时器。Fiber 卸载时按相反顺序 **dispose（释放）**。 |
-| **dispose / disposer** | 释放函数。调用后撤销对应副作用（取消监听、关定时器等）。 |
+| **Effect（使生效）** | 动词：使一段逻辑在 Fiber 生命期内生效，例如监听事件、开端口、设定时器。Fiber 卸载时按相反顺序 **dispose（释放）**。不是纯函数语境里的「副作用」。 |
+| **dispose / disposer** | 释放函数。调用后撤销已使生效的逻辑（取消监听、关定时器等）。 |
 | **Inject（注入）** | 声明「我依赖哪些服务」。依赖还没就绪时，这条 Fiber 停在 `PENDING`（等待），不会执行插件体。 |
 | **Isolate（隔离）** | 把某个服务名切到独立命名空间。两个隔离域里可以各有一个叫 `db` 的服务，互不可见。 |
 | **Intercept（拦截配置）** | 向下游 Context 叠一层服务配置，不改插件代码也能改行为（例如换日志名、调日志级别）。 |
@@ -111,7 +112,7 @@ import {
 
 - **`FiberState`**：Fiber 的状态枚举（等待、加载中、已激活等），见 [Fiber 与 Effect](#fiber-与-effect)。
 - **`Logger` / `LoggerLevel`**：日志对象和级别（error / warn / info / debug）。
-- **`CordisError`**：框架自己的错误类型，目前主要用于「在已停用的 Context 上创建副作用」。
+- **`CordisError`**：框架自己的错误类型，目前主要用于「在已停用的 Context 上使新逻辑生效」。
 - **`ValidationError`**：插件配置没通过 schema 校验时抛出的错误。**schema** 是「配置长什么样」的描述。
 
 ---
@@ -133,7 +134,7 @@ const ctx = new Context()
 | 成员 | 说明 |
 | --- | --- |
 | `Context.is(value)` | 判断值是不是 Context。 |
-| `Context.effect` | 给 disposer 挂「副作用元数据」（标签、子节点）用的 symbol。 |
+| `Context.effect` | 给 disposer 挂「使生效」元数据（标签、子节点）用的 symbol。 |
 | `Context.filter` | 事件过滤 symbol。带这个方法的 `thisArg` 可以决定哪些监听能收到事件。 |
 | `Context.isolate` | 隔离表 symbol，存「服务名 → 隔离域」。 |
 | `Context.intercept` | 拦截配置表 symbol，存「服务名 → 叠加配置」。 |
@@ -153,7 +154,7 @@ const ctx = new Context()
 下列方法通过 mixin 直接挂在 Context 上，写起来和访问对应服务等价：
 
 - 来自 `registry`：`plugin`（加载插件）、`inject`（按依赖加载一段回调）
-- 来自 `fiber`：`effect`（登记副作用）
+- 来自 `fiber`：`effect`（使一段逻辑生效）
 - 来自 `events`：`on`、`once`、`emit`、`parallel`、`serial`、`bail`、`waterfall`（见 [事件](#事件-events)）
 - 来自 `reflect`：`get`、`set`、`provide`、`accessor`、`mixin`
 
@@ -272,7 +273,7 @@ await fiber.dispose()
 invalid plugin, expect function or object with an "apply" method
 ```
 
-**停用的 Context**：所属 Fiber 已经 dispose，不能再登记新副作用。此时再调用 `plugin` / `effect` / `on` 会抛 `CordisError('INACTIVE_EFFECT')`。
+**停用的 Context**：所属 Fiber 已经 dispose，不能再使新逻辑生效。此时再调用 `plugin` / `effect` / `on` 会抛 `CordisError('INACTIVE_EFFECT')`。
 
 ---
 
@@ -514,6 +515,8 @@ ctx.waterfall('transform', 1, () => 2)  // 4
 
 `Fiber` 是一次插件运行。root Context 自带 `uid === 0` 且状态为 `ACTIVE` 的 Fiber。
 
+**Effect** 在本文译为动词**使生效**：调用 `ctx.effect()` 即使一段逻辑随 Fiber 生效，并在卸载时回收。这和「副作用 / side effect」（函数是否改了外部状态）不是一回事。`ctx.effect()`、插件返回值、`Service.init` 的返回值，都会被收进当前 Fiber 的使生效表。
+
 #### 状态
 
 ```ts
@@ -541,7 +544,7 @@ enum FiberState {
 | `await()` | 等到 **`inertia`（惯性异步）** 结束。inertia 是加载 / 卸载尚未收尾时挂着的那条 Promise；若失败则抛出。 |
 | `restart()` | 先卸再装。 |
 | `update(config, noSave?)` | 校验配置后走 `internal/update` waterfall，再 restart。`noSave` 为 true 时，Loader 不会把配置写回文件。 |
-| `effect(fn, label?)` | 登记副作用。`label` 只用于调试时展示。 |
+| `effect(fn, label?)` | 使一段逻辑生效。`label` 只用于调试时展示。 |
 | `getEffects()` | 当前 effect 的元数据树（标签 + 子节点）。 |
 | `name` | 运行时名称；没有则沿父链回退，直到 `'root'`。 |
 | `assertActive()` | 已 dispose 则抛 `CordisError`。 |
