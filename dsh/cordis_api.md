@@ -67,17 +67,17 @@ flowchart TB
 
 **包**：独立发布的 npm 模块，可单独安装。本仓库是 monorepo（一个 git 仓库里放多个包）。
 
-| 包名 | 是什么 | 使用之后 |
-| --- | --- | --- |
-| `cordis` | 核心运行时：Context、插件、服务、事件、Fiber、日志。 | 进程里出现可组合的运行时。业务以插件为单位加载、卸载，依赖自动排队。 |
-| `@cordisjs/plugin-loader` | **Loader（加载器）**：按配置树（一份嵌套的插件清单）加载插件，管理 **Entry（配置条目）** 和 **Group（分组）**。 | 插件不再手写一长串 `ctx.plugin`。改配置就能增删插件；运行时关掉自己会被记回配置。出现 `ctx.loader`。 |
-| `@cordisjs/plugin-include` | 从 YAML / JSON 配置文件读出插件树并挂到 Loader 上。YAML / JSON 是两种常见的文本配置格式。 | 磁盘上的 `cordis.yml` 变成真正跑着的插件树。改文件（或 HMR 刷新）会增删、重载对应插件；`fiber.update` 默认可写回文件。 |
-| `@cordisjs/plugin-group` | 配置树里的分组插件，用来把多条 Entry 收成一组。实现上是对 loader 里 `Group` 的再导出。 | 一组插件能一起移动、一起关。关分组不等于立刻拆掉节点，但 `disabled` 会传给子孙，子孙停跑。 |
-| `@cordisjs/plugin-timer` | 定时器服务。提供延时、间隔，以及**节流**（限制执行频率）和**防抖**（停止触发后再执行）。定时器随 Fiber 卸载自动清掉。 | 出现 `ctx.timer` / `ctx.timeout` 等。插件卸掉后定时器不会继续响，避免「插件没了回调还在跑」。 |
-| `@cordisjs/plugin-hmr` | **HMR（Hot Module Replacement，热更新）**：文件改了只重载受影响的插件，尽量不重启整个进程。依赖 Node 内部的模块加载器。 | 改业务插件源码后，旧实例卸掉、新代码按原配置再挂上，进程和无关插件保持活着。改框架自身文件则走 `loader.exit()`（通常整进程重启）。 |
-| `@cordisjs/plugin-logger-console` | **Exporter（导出器）** 的一种：把框架里的日志记录打印到终端 / 浏览器控制台。 | 终端开始出现带时间、级别、通道名的日志。不装它时，日志只进内存环形缓冲，屏幕上看不到。 |
-| `@cordisjs/utils` | 未对外发布的私有工具包，目前提供随 Context 回收的 `List`。 | `list.push` 的元素会随当前 Fiber 消失，不必在 disposer 里手写删除。 |
-| `create-cordis` | **脚手架 CLI**：命令行工具，用来从模板生成新项目。CLI 即 Command Line Interface（命令行界面）。 | 磁盘上多出一个可 `install` / `start` 的项目目录，而不是空文件夹。 |
+| 包名                                | 是什么                                                                           | 使用之后                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `cordis`                          | 核心运行时：Context、插件、服务、事件、Fiber、日志。                                              | 进程里出现可组合的运行时。业务以插件为单位加载、卸载，依赖自动排队。                                           |
+| `@cordisjs/plugin-loader`         | **Loader（加载器）**：按配置树（一份嵌套的插件清单）加载插件，管理 **Entry（配置条目）** 和 **Group（分组）**。       | 插件不再手写一长串 `ctx.plugin`。改配置就能增删插件；运行时关掉自己会被记回配置。出现 `ctx.loader`。              |
+| `@cordisjs/plugin-include`        | 从 YAML / JSON 配置文件读出插件树并挂到 Loader 上。YAML / JSON 是两种常见的文本配置格式。                 | 磁盘上的 `cordis.yml` 变成真正跑着的插件树。改文件（或 HMR 刷新）会增删、重载对应插件；`fiber.update` 默认可写回文件。 |
+| `@cordisjs/plugin-group`          | 配置树里的分组插件，用来把多条 Entry 收成一组。实现上是对 loader 里 `Group` 的再导出。                       | 一组插件能一起移动、一起关。关分组不等于立刻拆掉节点，但 `disabled` 会传给子孙，子孙停跑。                          |
+| `@cordisjs/plugin-timer`          | 定时器服务。提供延时、间隔，以及**节流**（限制执行频率）和**防抖**（停止触发后再执行）。定时器随 Fiber 卸载自动清掉。            | 出现 `ctx.timer` / `ctx.timeout` 等。插件卸掉后定时器不会继续响，避免「插件没了回调还在跑」。                |
+| `@cordisjs/plugin-hmr`            | **HMR（Hot Module Replacement，热更新）**：文件改了只重载受影响的插件，尽量不重启整个进程。依赖 Node 内部的模块加载器。 | 改业务插件源码后，旧实例卸掉、新代码按原配置再挂上，进程和无关插件保持活着。改框架自身文件则走 `loader.exit()`（通常整进程重启）。    |
+| `@cordisjs/plugin-logger-console` | **Exporter（导出器）** 的一种：把框架里的日志记录打印到终端 / 浏览器控制台。                                | 终端开始出现带时间、级别、通道名的日志。不装它时，日志只进内存环形缓冲，屏幕上看不到。                                  |
+| `@cordisjs/utils`                 | 未对外发布的私有工具包，目前提供随 Context 回收的 `List`。                                         | `list.push` 的元素会随当前 Fiber 消失，不必在 disposer 里手写删除。                             |
+| `create-cordis`                   | **脚手架 CLI**：命令行工具，用来从模板生成新项目。CLI 即 Command Line Interface（命令行界面）。             | 磁盘上多出一个可 `install` / `start` 的项目目录，而不是空文件夹。                                  |
 
 ---
 
