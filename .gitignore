@@ -1,0 +1,10 @@
+# macOS 本地状态文件
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Obsidian 本地状态（窗口布局随设备环境变化，不共享）
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
