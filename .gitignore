@@ -4,7 +4,5 @@
 .Spotlight-V100
 .Trashes
 
-# Obsidian 本地状态（窗口布局随设备环境变化，不共享）
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
-.obsidian/cache/
+# Obsidian 配置（各设备独立维护，不共享）
+.obsidian/
