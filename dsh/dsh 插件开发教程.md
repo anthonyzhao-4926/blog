@@ -5,13 +5,13 @@ tags:
   - dsh
 date: 2026-08-25
 ---
-## dsh 插件设计思想
+## 几个核心概念
 
 DeepSeek Harness 官网最醒目的就是 “一切皆插件” 。DeepSeek Harness 你可以理解为就是一个空壳，所有够能都是靠着可插拔的插件实现的。
 
-在进入插件开发教程前，我们先来了解下插件时如何协同工作的。
+![](assets/Pasted%20image%2020260825214411.png)
 
-![](Pasted%20image%2020260825205645.png)
+在进入插件开发教程前，我们先来了解下插件时如何协同工作的。
 
 OK， 现在我们来理解几个词的含义。
 
@@ -30,8 +30,9 @@ dsh plugin --profile <档案名> add <插件来源>
 我在我的 husband_profile 下安装 A， E， F插件，在我的 husband_profile 工作。
 现在是不是就好理解了，其实 profile 就是一个环境的隔离。
 
-现在我们看下 DSH 官网给的快速启动命令 `dsh web` 和 插件
+DSH 默认的 profile 名字叫做web, 所以你会看到很多插件的安装命令都是用web `dsh plugin --profile web add dsh-better-sidebar`
+DSH 快速启动执行的命令也是 `dsh web`。 所以，可以理解了 这里的 web 原来是指定 profile 启动呀。
 
-![412](Pasted%20image%2020260825212101.png)![514](Pasted%20image%2020260825211428.png)
+
 
 
