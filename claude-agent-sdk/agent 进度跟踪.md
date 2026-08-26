@@ -1,7 +1,9 @@
 ---
 title: Agent 进度跟踪
 date: 2026-08-19
-tags: [ai, claude]
+tags:
+  - ai
+  - claude
 column: claude-agent-sdk
 order: 5
 viewable: true
@@ -9,9 +11,9 @@ viewable: true
 
 > 需求：subagent 作为一个 可以独立执行任务的工具，其执行过程我们也是很关心的。
 
-#  Agent 调用
+##  Agent 调用
 
-## 效果
+### 效果
 
 ![20260817090717_rec_](assets/20260817090717_rec_.gif)
 
@@ -21,7 +23,7 @@ viewable: true
 
 ![image-20260817164723388](assets/image-20260817164723388.png)
 
-## subagent 消息归属
+### subagent 消息归属
 
 主agent 可以输出一条消息，subagent 也可以输出一条消息。那么如何知道一条消息是属于谁的呢？
 
@@ -86,7 +88,11 @@ Subagent 输出消息时会携带这个id, 字段是 `parent_tool_use_id`
 }
 ```
 
-# Agent 进度摘要
+## 转发Subagent消息
+
+默认情况下，
+
+## Subagent 进度摘要
 
 Subagent 在执行过程中，有时很长一段时间都不调用工具，在前端的表现就像是静默了一样。
 
@@ -96,7 +102,7 @@ Subagent 在执行过程中，有时很长一段时间都不调用工具，在�
 
 ![Clipboard_Screenshot_1787099351](assets/Clipboard_Screenshot_1787099351.png)
 
-## 消息
+### 消息
 
 打开 `agentProgressSummaries: true` 后，SDK 并不会单独再开一条「摘要流」。子代理进度统一走 `system` / `task_progress`。同一条 `task_id` 上会交错出现两类帧，消费时必须先拆开。
 
@@ -118,7 +124,7 @@ Subagent 在执行过程中，有时很长一段时间都不调用工具，在�
 
 Agent / Task 本身不走这条。 子代理内部的工具调用也不会发这种心跳。子代理进度只看 `task_progress`。
 
-## 如何处理消息
+### 如何处理消息
 
 后端不要把两类帧揉成同一个字段。有 `summary` 标 `source: 'summary'`，否则标 `source: 'activity'`，并带上 `usage.duration_ms` / `tool_uses`。
 
@@ -157,7 +163,7 @@ UI 上可以拆开：活动脉冲做「当前活动 · Bash」，AI 摘要做卡
 
 一句话：活动脉冲跟着工具走，AI 摘要才是 30 秒 fork 出来的那句现在进行时。前端要把两种帧都接到同一块进度上，用户才能看到更新。
 
-## 主 Agent 心跳
+### 主 Agent 心跳
 
 主Agent中某个工具跑太久时，大约每 30 秒发一条：
 

@@ -7,9 +7,9 @@ order: 9
 viewable: true
 ---
 
-# Hook Matcher 和 If 字段详解
+## Hook Matcher 和 If 字段详解
 
-## 核心区别
+### 核心区别
 
 **Matcher** 和 **If** 构成了两层过滤机制：
 
@@ -18,9 +18,9 @@ viewable: true
 
 ---
 
-## Matcher 详解
+### Matcher 详解
 
-### 评估规则
+#### 评估规则
 
 Matcher 的解析取决于其内容：
 
@@ -30,7 +30,7 @@ Matcher 的解析取决于其内容：
 | 仅含字母、数字、`_`、`-` | 精确字符串或列表 | `"Bash"` 、`"Edit\|Write"` |
 | 包含其他字符 | JavaScript 正则表达式 | `"^mcp__.*"` |
 
-### 按事件类型的 Matcher 目标
+#### 按事件类型的 Matcher 目标
 
 ```javascript
 // 工具事件（PreToolUse、PostToolUse）
@@ -49,15 +49,15 @@ Matcher 的解析取决于其内容：
 
 ---
 
-## If 详解
+### If 详解
 
-### 用途和约束
+#### 用途和约束
 
 - **只用于工具事件**：`PreToolUse`、`PostToolUse`、`PostToolUseFailure`、`PermissionRequest` 等
 - **其他事件忽略 If**：在非工具事件上配置 `if` 的 hook 永不运行
 - **权限规则语法**：格式为 `"工具名(模式)"`，如 `"Bash(rm *)"` 或 `"Edit(*.ts)"`
 
-### 实际例子：防止删除操作
+#### 实际例子：防止删除操作
 
 ```json
 {
@@ -84,7 +84,7 @@ Matcher 的解析取决于其内容：
 3. **If 检查**：`"Bash(rm *)"` ✓ 匹配 `rm -rf` 
 4. **Hook 执行**：运行 `block-rm.sh`
 
-### Bash 模式匹配规则
+#### Bash 模式匹配规则
 
 | If 模式 | 命令 | 结果 | 原因 |
 |--------|------|------|------|
@@ -95,7 +95,7 @@ Matcher 的解析取决于其内容：
 
 ---
 
-## 性能优化
+### 性能优化
 
 - **Matcher 失败** → 整个 hook 组跳过（避免启动进程）
 - **If 失败** → 跳过单个 handler（更精细的过滤）
@@ -104,7 +104,7 @@ Matcher 的解析取决于其内容：
 
 ---
 
-## 解析流程
+### 解析流程
 
 **解析顺序**（必须全部匹配，hook 才运行）：
 
@@ -112,7 +112,7 @@ Matcher 的解析取决于其内容：
 
 ---
 
-## 关键要点总结
+### 关键要点总结
 
 | 特性 | Matcher | If |
 |-----|---------|-----|

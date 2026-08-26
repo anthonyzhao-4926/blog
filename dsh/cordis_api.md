@@ -7,7 +7,7 @@ order: 1
 viewable: true
 ---
 
-# Cordis API 文档
+## Cordis API 文档
 
 > 基于当前仓库源码整理（`cordis@4.0.0-rc.8`）。  
 > **API 尚未稳定，可能不经通知变更。**  
@@ -66,7 +66,7 @@ flowchart TB
 
 ---
 
-## 包一览
+### 包一览
 
 **包**：独立发布的 npm 模块，可单独安装。本仓库是 monorepo（一个 git 仓库里放多个包）。
 
@@ -84,7 +84,7 @@ flowchart TB
 
 ---
 
-## 核心概念
+### 核心概念
 
 除开篇五个词外，阅读 API 时还会反复遇到这些：
 
@@ -129,7 +129,7 @@ await root.inject(['counter'], (ctx) => {
 
 ---
 
-## `cordis` 核心
+### `cordis` 核心
 
 安装包名就是 `cordis`。
 
@@ -154,7 +154,7 @@ import {
 
 ---
 
-### Context
+#### Context
 
 ```ts
 const ctx = new Context()
@@ -167,7 +167,7 @@ const ctx = new Context()
 
 **使用之后**：进程里出现可加载插件的根环境。此后 `ctx.plugin` / `ctx.on` / `ctx.provide` 才有对象可挂；构造本身不会加载任何业务插件，业务要自己 `plugin` 或交给 Loader。
 
-#### 静态成员
+##### 静态成员
 
 **symbol** 是 JavaScript 的唯一键，用来在对象上挂框架内部数据，避免和用户字段撞名。
 
@@ -179,7 +179,7 @@ const ctx = new Context()
 | `Context.isolate` | 隔离表 symbol，存「服务名 → 隔离域」。 |
 | `Context.intercept` | 拦截配置表 symbol，存「服务名 → 叠加配置」。 |
 
-#### 实例属性
+##### 实例属性
 
 | 属性 | 类型 | 说明 |
 | --- | --- | --- |
@@ -198,7 +198,7 @@ const ctx = new Context()
 - 来自 `events`：`on`、`once`、`emit`、`parallel`、`serial`、`bail`、`waterfall`（见 [事件](#事件-events)）
 - 来自 `reflect`：`get`、`set`、`provide`、`accessor`、`mixin`
 
-#### `ctx.extend(meta?)`
+##### `ctx.extend(meta?)`
 
 以当前 Context 为原型创建一个**影子 Context**：外表像新对象，读不到的属性会落到原来的 Context 上。可把 `meta` 里的自有属性贴上去。isolate / intercept 都用它实现「同一棵树上分出不同视角」。
 
@@ -209,7 +209,7 @@ const ctx = new Context()
 const child = ctx.extend({ foo: 1 })
 ```
 
-#### `ctx.isolate(name, label?)`
+##### `ctx.isolate(name, label?)`
 
 把服务名 `name` 切到独立**隔离域**（同一服务名的另一套存储）。
 
@@ -226,7 +226,7 @@ const a = root.isolate('foo', shared)
 const b = root.isolate('foo', shared)    // 传入同一 label，a / b 共享 foo
 ```
 
-#### `ctx.intercept(name, config)`
+##### `ctx.intercept(name, config)`
 
 向下游叠加一层名为 `name` 的拦截配置。下游服务可通过 `Service[Service.resolveConfig]()` 把祖先到当前的配置合并起来。
 
@@ -241,7 +241,7 @@ child.logger.debug('only visible under this intercept')
 
 ---
 
-### 插件 Plugin
+#### 插件 Plugin
 
 插件有三种形态，均可带**静态元数据**（写在函数 / 类 / 对象上的字段，加载器读取它们，而不是运行时才算）。
 
@@ -259,7 +259,7 @@ interface Plugin.Base<T> {
 
 **`Dict`**：键为字符串的普通对象，来自依赖库 `cosmokit`。
 
-#### 1. 函数插件
+##### 1. 函数插件
 
 ```ts
 function foo(ctx: Context, config: { bar?: string }) {
@@ -272,7 +272,7 @@ function foo(ctx: Context, config: { bar?: string }) {
 await ctx.plugin(foo, { bar: 'baz' }) // 第二个参数传入配置，函数插件体里就是 config
 ```
 
-#### 2. 对象插件
+##### 2. 对象插件
 
 必须有 `apply(ctx, config)`。加载器实际执行的是这个方法。
 
@@ -288,7 +288,7 @@ const plugin = {
 await ctx.plugin(plugin) // 对象插件：实际跑的是 apply
 ```
 
-#### 3. 类插件
+##### 3. 类插件
 
 用 `new` 构造。若实现了 `[Service.init]`，构造完成后会把返回值当成 Effect 执行。Effect 可以是 disposer、异步 disposer，或产生多个 disposer 的迭代器。
 
@@ -303,7 +303,7 @@ class Foo {
 await ctx.plugin(Foo, { n: 1 }) // 用 new Foo(ctx, { n: 1 }) 构造
 ```
 
-#### 配置校验
+##### 配置校验
 
 `plugin.Config` 需符合 [Standard Schema](https://github.com/standard-schema/standard-schema)（一套让 Zod / Valibot / ArkType 等校验库能被统一调用的接口）。Cordis **只支持同步**校验。
 
@@ -330,7 +330,7 @@ invalid plugin, expect function or object with an "apply" method
 
 ---
 
-### Registry
+#### Registry
 
 `ctx.registry` 管理「**插件运行时（Runtime）** → 多条 Fiber」。同一个插件函数可以加载多次（不同配置、不同父 Context），它们共享一条 Runtime，各自是一条 Fiber。
 
@@ -368,7 +368,7 @@ interface Plugin.Runtime {
 
 ---
 
-### Service 与依赖注入
+#### Service 与依赖注入
 
 **依赖注入**：插件不自己 `new` 依赖，而是声明「我需要 `foo`」，由运行时在 `foo` 就绪后再启动它。
 
@@ -383,7 +383,7 @@ abstract class Service<T = never> {
 
 `T` 是该服务可被 intercept 的配置类型。构造时会 `ctx.reflect.provide(name, this)`，把实例挂到 Context，之后别人就能 `inject(['该名字'])`。
 
-#### 静态 symbol
+##### 静态 symbol
 
 | Symbol | 用途 |
 | --- | --- |
@@ -415,7 +415,7 @@ class Http extends Service<{ timeout?: number }> {
 }
 ```
 
-#### Inject
+##### Inject
 
 ```ts
 type Inject = string[] | Record<string, any>
@@ -449,11 +449,11 @@ class Bar extends Service {
 
 ---
 
-### Reflect
+#### Reflect
 
 服务查找、提供、属性混入都走 `ctx.reflect`。下列方法也 mixin 到 Context。
 
-#### `ctx.provide(name, value?, check?)`
+##### `ctx.provide(name, value?, check?)`
 
 在当前 Fiber 上**注册服务**（把一个值放到名为 `name` 的槽里）。同一隔离域里同名服务不可重复注册。返回 disposer，调用后撤销该服务。
 
@@ -467,7 +467,7 @@ dispose()    // 撤销服务；依赖 foo 的 Fiber 会回到 PENDING
 
 可选 `check()`：返回 `false` 时，依赖该服务的 Fiber 会视为依赖未满足。
 
-#### `ctx.get(name, strict?)` / `ctx.set(name, value)`
+##### `ctx.get(name, strict?)` / `ctx.set(name, value)`
 
 - **`get`**：按当前 isolate 查找实现。`strict` 默认 `true`，意思是「提供方 Fiber 必须是 `ACTIVE` 才看得到」。
 - **`set`**：改已经 provide 过的值；只能由当初提供该服务的同一个 Fiber 设置。
@@ -481,13 +481,13 @@ cannot get property "foo" without inject
 cannot set property "foo" without provide
 ```
 
-#### `ctx.accessor(name, { get, set? })`
+##### `ctx.accessor(name, { get, set? })`
 
 声明**计算属性**（每次读写都走自定义 get / set），而不是存一份服务实例。mixin 内部就是用 accessor 实现的。
 
 **使用之后**：`ctx.xxx` 每次读写都现算。同名不能再 `provide` 成服务，撞名会抛错。登记 accessor 的 Fiber 卸掉后，这个名字从 Context 上消失。
 
-#### `ctx.mixin(source, mixins)`
+##### `ctx.mixin(source, mixins)`
 
 把某个对象或服务上的方法提升到 Context。框架启动时就用它把 `plugin`、`on`、`effect` 摊平到 `ctx`。
 
@@ -501,7 +501,7 @@ ctx.timeout(() => {}, 1000) // 等价于 ctx.timer.timeout(...)
 
 `mixins` 可以是字符串数组（同名提升），或 `{ 源键: 目标键 }` 映射（改名提升）。
 
-#### 其他
+##### 其他
 
 | 方法 | 说明 |
 | --- | --- |
@@ -511,7 +511,7 @@ ctx.timeout(() => {}, 1000) // 等价于 ctx.timer.timeout(...)
 
 ---
 
-### 事件 Events
+#### 事件 Events
 
 通过 TypeScript 的 **`declare module`（模块扩充）** 把事件名合并进核心的 `Events` 接口，这样 `ctx.on('message', ...)` 才能得到参数类型。
 
@@ -527,7 +527,7 @@ declare module 'cordis' {
 }
 ```
 
-#### 监听
+##### 监听
 
 ```ts
 const dispose = ctx.on('message', (text) => {
@@ -555,7 +555,7 @@ ctx.on('internal/update', handler, {
 })
 ```
 
-#### 派发模式
+##### 派发模式
 
 同一批监听，按不同策略执行：
 
@@ -586,7 +586,7 @@ ctx.waterfall('transform', 1, () => 2)  // 1 + (1 + 2) = 4；最后的 () => 2 �
 
 ---
 
-### Fiber 与 Effect
+#### Fiber 与 Effect
 
 `Fiber` 是一次插件运行。root Context 自带 `uid === 0` 且状态为 `ACTIVE` 的 Fiber。
 
@@ -594,7 +594,7 @@ ctx.waterfall('transform', 1, () => 2)  // 1 + (1 + 2) = 4；最后的 () => 2 �
 
 **使用 Fiber 之后**：你拿到的是「这一次插件运行」的把手。`await` 它 = 等到就绪或失败；`dispose` = 整段收回，依赖它服务的下游跟着停；`restart` = 先清再建（配置不变）；`update` = 换配置再走一遍，Loader 默认还会把新配置写回文件。状态进入 `ACTIVE` 时，它 `provide` 的服务才对外可见；进入 `FAILED` 时错误打进 logger，依赖方当服务不存在。
 
-#### 状态
+##### 状态
 
 ```ts
 enum FiberState {
@@ -607,7 +607,7 @@ enum FiberState {
 }
 ```
 
-#### 公开字段 / 方法
+##### 公开字段 / 方法
 
 | 成员 | 说明 |
 | --- | --- |
@@ -626,7 +626,7 @@ enum FiberState {
 | `name` | 运行时名称；没有则沿父链回退，直到 `'root'`。效果：日志默认通道名、`inspect(ctx)` 显示名都来自它。 |
 | `assertActive()` | 已 dispose 则抛 `CordisError`。效果：在死 Context 上登记新逻辑会立刻失败，而不是默默挂上去。 |
 
-#### Effect
+##### Effect
 
 ```ts
 type Disposable<T = any> = () => T // 释放函数；调用后撤销已使生效的逻辑
@@ -672,9 +672,9 @@ ctx.waterfall(fiber, 'internal/update', config, noSave, next)
 
 ---
 
-### 隔离 isolate 与拦截 intercept
+#### 隔离 isolate 与拦截 intercept
 
-#### isolate
+##### isolate
 
 服务在存储里的真正键不是字符串 `'db'`，而是 `ctx[Context.isolate]['db']` 这个 symbol。不同隔离域拿到不同 symbol，因此同名服务互不可见。
 
@@ -687,7 +687,7 @@ isolated.provide('db', localDb)         // 只填 isolated 的槽，root.db 仍�
 
 Service 默认带 filter：只有 isolate 标签相同的 Context，才能收到「以该服务为 `thisArg`」发出的事件。
 
-#### intercept
+##### intercept
 
 `ctx.intercept(name, config)` 把配置挂到 **原型链**（对象找不到自有属性就往父对象找）上。`Service[Service.resolveConfig](base?, head?)` 从祖先走到当前，收集同名配置后用 `Object.assign` 合并；若服务的 `Config` 带 `merge` 方法，则走自定义合并。
 
@@ -703,7 +703,7 @@ interface Loader.Intercept {
 
 ---
 
-### Logger
+#### Logger
 
 `ctx.logger` 是**可调用服务**（因为实现了 `Service.invoke`）：直接 `.info()` 用当前 Fiber 的默认名字；`ctx.logger('http')` 则得到一个名为 `http` 的 Logger。
 
@@ -734,7 +734,7 @@ enum LoggerLevel {
 ctx.intercept('logger', { name: 'worker', level: LoggerLevel.DEBUG })
 ```
 
-#### Exporter
+##### Exporter
 
 **Exporter** 是日志的出口：每条日志会送给所有已注册的导出器，由它们决定打印、落盘还是丢掉。
 
@@ -763,7 +763,7 @@ const dispose = ctx.logger.exporter({
 
 ---
 
-### 内部事件
+#### 内部事件
 
 框架自己发出的事件。一般不必手动订阅，除非在写 Loader、HMR 这类**基础设施插件**（给别的插件提供运行环境，而不是业务功能）。
 
@@ -780,7 +780,7 @@ const dispose = ctx.logger.exporter({
 
 ---
 
-## `@cordisjs/plugin-loader`
+### `@cordisjs/plugin-loader`
 
 **Loader** 按**配置树**加载插件。配置树是一份可嵌套的清单：每项是一个插件，分组节点的 `config` 又是子清单。
 
@@ -799,7 +799,7 @@ await ctx.plugin(Loader, { baseUrl: ctx.baseUrl }) // 可选；传入则写入 c
 
 挂载后 Context 上出现 `ctx.loader`。
 
-### Loader
+#### Loader
 
 继承 **`EntryTree`（条目树）**：内存里的整棵配置，负责 id 解析、增删改、递归等待加载完成。
 
@@ -819,7 +819,7 @@ await ctx.plugin(Loader, { baseUrl: ctx.baseUrl }) // 可选；传入则写入 c
 
 效果：依赖 `loader` 的插件会等整棵树装完再启动，而不是 Loader 服务一出现就跑。
 
-### EntryOptions
+#### EntryOptions
 
 配置树中的一条插件记录：
 
@@ -844,7 +844,7 @@ interface EntryOptions {
 - **`inject` / `intercept`**：叠在插件自带声明之上。效果：不改插件代码也能加依赖、改服务配置。
 - **`config`**：传给插件的配置。在 YAML 里可用 `!!js` 表达式，见 [表达式插值](#表达式插值)。表达式在该 Entry 的 Context 上求值，因此能读到当时已有的服务。
 
-### EntryTree
+#### EntryTree
 
 | 方法 | 说明 | 使用之后 |
 | --- | --- | --- |
@@ -869,7 +869,7 @@ ctx.loader.remove(id)                           // 从树上删掉并 write()
 await ctx.loader.await()                        // 等到所有 init / inertia 结束
 ```
 
-### Entry / EntryGroup
+#### Entry / EntryGroup
 
 **`Entry`**：配置里的一行，对应一次（或待执行的）插件加载，持有 `fiber`。主要方法：
 
@@ -887,7 +887,7 @@ await ctx.loader.await()                        // 等到所有 init / inertia �
 | `update(config[])` | 按 id 做 **diff**（新旧清单对比）：有则更新、无则删除、多则新增。 | 整组对齐到新清单，适合「文件重读」或 Group 收到 `internal/update`。 |
 | `stop()` | 停掉组内全部 entry。 | 组被卸时调用；孩子 Fiber 全部 dispose。 |
 
-### Loader 事件
+#### Loader 事件
 
 ```ts
 interface Events {
@@ -915,7 +915,7 @@ interface Events {
 
 若插件自己调用 `fiber.dispose()`，且不是 HMR、也不是祖先树在卸，Loader 会把该 entry 标为 `disabled` 并写回配置——相当于「运行时关掉自己，并记住下次不要再开」。
 
-### 表达式插值
+#### 表达式插值
 
 配置里可以嵌一段要在 Context 上执行的 JavaScript，而不是写死字面量。
 
@@ -933,7 +933,7 @@ YAML 用自定义标签 `!!js` 表示这种表达式，加载时在该 Entry 的
 
 ---
 
-## `@cordisjs/plugin-include`
+### `@cordisjs/plugin-include`
 
 把 YAML / JSON 配置文件变成一棵 EntryTree。依赖 `loader`（必须先加载 Loader）。
 
@@ -957,7 +957,7 @@ await ctx.loader.create({
 - 写入先写 `filename.tmp`，再 **rename**（改名覆盖），避免写到一半损坏原文件。并 **debounce** 到下一个 **macrotask**（事件循环里的宏任务，相当于 `setTimeout(0)`）再真正落盘，避免一次更新触发多次写。
 - 文件不存在且提供了 `initial`：先把这份初始清单写出去，再读回来。
 
-### PatchOptions
+#### PatchOptions
 
 **运行时补丁**：在读入的配置上再叠一层修改，不要求去改源文件。
 
@@ -984,7 +984,7 @@ interface PatchOptions {
 
 ---
 
-## `@cordisjs/plugin-group`
+### `@cordisjs/plugin-group`
 
 配置树里的分组节点。包本身只是把 loader 里的 `Group` 再导出一次，方便在 `name` 字段里写 `@cordisjs/plugin-group`。
 
@@ -1011,7 +1011,7 @@ import Group from '@cordisjs/plugin-group' // 与 loader 内部的 Group 是同�
 
 ---
 
-## `@cordisjs/plugin-timer`
+### `@cordisjs/plugin-timer`
 
 ```ts
 import TimerService from '@cordisjs/plugin-timer'
@@ -1051,7 +1051,7 @@ onResize.dispose()                           // 取消防抖包装，进行中�
 
 ---
 
-## `@cordisjs/plugin-hmr`
+### `@cordisjs/plugin-hmr`
 
 **HMR（热更新）**：监视源文件，改动后只重载受影响的插件。依赖 `loader` 和 `timer`，且 Loader 必须拿到 Node 内部 `ModuleLoader`（启动参数 `--expose-internals`）。
 
@@ -1095,7 +1095,7 @@ interface Events {
 
 ---
 
-## `@cordisjs/plugin-logger-console`
+### `@cordisjs/plugin-logger-console`
 
 把日志打到 console。Node 与浏览器的入口不同：
 
@@ -1121,7 +1121,7 @@ await ctx.plugin(ConsoleExporter, {
 
 ---
 
-## `@cordisjs/utils`
+### `@cordisjs/utils`
 
 内部包，未发布到 npm。提供随 Context / Fiber 回收的列表：
 
@@ -1141,7 +1141,7 @@ for (const item of list.filter(x => x.enabled)) {} // 惰性过滤，不生成�
 
 ---
 
-## `create-cordis`
+### `create-cordis`
 
 **脚手架**：从网上的模板包拉下一份项目骨架，改好 `package.json` 名字，可选地装依赖并启动。默认模板 `@cordisjs/boilerplate`，要求 Node `>= 22`。
 
@@ -1186,7 +1186,7 @@ await stageYarnBin({
 
 ---
 
-## CLI
+### CLI
 
 `cordis` 包自带 **`bin.js`**（npm 安装后可当作命令执行的入口脚本），做的事情等价于：
 
@@ -1215,7 +1215,7 @@ node --expose-internals --import tsx ./node_modules/cordis/bin.js
 
 ---
 
-## TypeScript 扩展约定
+### TypeScript 扩展约定
 
 插件通过 `declare module 'cordis'` 把服务和事件**合并进**核心类型（接口同名即合并，而不是覆盖）。这样使用方写 `ctx.foo`、`ctx.on('foo/ready')` 时才有补全。
 
@@ -1256,7 +1256,7 @@ ctx.on('foo/ready', () => {})   // 事件名同样来自模块扩充
 
 ---
 
-## 错误码与异常
+### 错误码与异常
 
 | 类型 | 条件 |
 | --- | --- |
@@ -1273,7 +1273,7 @@ ctx.on('foo/ready', () => {})   // 事件名同样来自模块扩充
 
 ---
 
-## 典型启动组合
+### 典型启动组合
 
 手工把日志、加载器、配置文件串起来，效果接近 CLI：
 
