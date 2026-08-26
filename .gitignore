@@ -6,3 +6,8 @@
 
 # Obsidian 配置（各设备独立维护，不共享）
 .obsidian/
+.claude/
+
+# Obsidian 回收站（删除的笔记/图片，不应入库）
+.trash/
+
