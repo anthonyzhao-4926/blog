@@ -10,4 +10,5 @@
 
 # Obsidian 回收站（删除的笔记/图片，不应入库）
 .trash/
+local/
 

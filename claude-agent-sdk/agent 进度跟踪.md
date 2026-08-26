@@ -90,11 +90,12 @@ Subagent 输出消息时会携带这个id, 字段是 `parent_tool_use_id`
 
 ## 转发Subagent消息
 
-默认情况下，
+默认情况下，仅从子代理发出 `tool_use` 和 `tool_result` 块。思考块和文本块不会吐出。
+可以在 query conds 参数设置 `forwardSubagentText = true`，子代理的文本和思考块就可以被正常吐出，同时消息中会设置 `parent_tool_use_id`，以便消费者可以呈现嵌套记录。
 
 ## Subagent 进度摘要
 
-Subagent 在执行过程中，有时很长一段时间都不调用工具，在前端的表现就像是静默了一样。
+Subagent 在执行过程中，有时很长一段时间都不调用工具，也没有消息吐出，在前端的表现就像是静默了一样。
 
 可以在 query conds 参数设置 `agentProgressSummaries = true`， 主agent 会定时发送subagent 的任务进度摘要消息。
 
@@ -104,29 +105,23 @@ Subagent 在执行过程中，有时很长一段时间都不调用工具，在�
 
 ### 消息
 
-打开 `agentProgressSummaries: true` 后，SDK 并不会单独再开一条「摘要流」。子代理进度统一走 `system` / `task_progress`。同一条 `task_id` 上会交错出现两类帧，消费时必须先拆开。
+打开 `agentProgressSummaries: true` 后，
 
-|                | 活动脉冲                                                     | AI 摘要                                                      |
-| :------------- | :----------------------------------------------------------- | ------------------------------------------------------------ |
-| 触发           | 子代理每次 `tool_use`，立刻发出                              | 默认约 30s 的定时器                                          |
-| 有没有模型调用 | 没有，本地拼文案                                             | 有，fork 子代理对话打一轮                                    |
-| 特征字段       | `last_tool_name` + `description`，无 `summary`               | 有 `summary`，通常没有 `last_tool_name`                      |
-| 文案从哪来     | 工具自己的 `getActivityDescription`，例如 Bash → `Running Count from 1 to 100...` | 模型按「3–5 个词、现在进行时」生成，例如 `Checking script existence` |
-| 成本           | 免费                                                         | 复用子代理 prompt cache，通常很低                            |
+|         | subagent 消息                                                               | AI 摘要                                              |
+| :------ | :------------------------------------------------------------------------ | -------------------------------------------------- |
+| 触发      | 子代理每次 `tool_use`，立刻发出                                                     | 默认约 30s 的定时器                                       |
+| 有没有模型调用 | 没有，本地拼文案                                                                  | 有，fork 子代理对话打一轮                                    |
+| 特征字段    | `last_tool_name` + `description`，无 `summary`                              | 有 `summary`，通常没有 `last_tool_name`                  |
+| 文案从哪来   | 工具自己的 `getActivityDescription`，例如 Bash → `Running Count from 1 to 100...` | 模型按「3–5 个词、现在进行时」生成，例如 `Checking script existence` |
+| 成本      | 免费                                                                        | 复用子代理 prompt cache，通常很低                            |
 
-判断规则很简单：有 `summary` 就是 AI 摘要，否则就是活动脉冲。
+判断规则很简单：有 `summary` 就是 AI 摘要，否则就是 subagent 消息。
 
-不要被时间间隔误导。日志里第一帧经常出现在 3s 左右，那只是子代理刚好那时调用了第一个工具，不是 3 秒心跳。
-
-**和主线程心跳的区别**
-
-主会话里跑很久的工具，会另发 `tool_progress` 且 `heartbeat: true`，大约每 30s 一次，带 `tool_name` 和 `elapsed_time_seconds`，用来区分「还在跑」和「会话卡死」。
-
-Agent / Task 本身不走这条。 子代理内部的工具调用也不会发这种心跳。子代理进度只看 `task_progress`。
 
 ### 如何处理消息
 
-后端不要把两类帧揉成同一个字段。有 `summary` 标 `source: 'summary'`，否则标 `source: 'activity'`，并带上 `usage.duration_ms` / `tool_uses`。
+后端不要把两类帧揉成同一个字段。有 `summary` 可以标 `source: 'summary'`，否则标 `source: 'activity'`。
+这里是为了前端好区分，单独设置了一个source字段。
 
 ```ts
     if (msg.type === 'system' && msg.subtype === 'task_progress') {
@@ -159,13 +154,9 @@ if (event.summary) {
 }
 ```
 
-UI 上可以拆开：活动脉冲做「当前活动 · Bash」，AI 摘要做卡片上那句更像人话的进度。长任务卡住、脉冲停更时，`duration_ms` 仍能证明任务还活着；也可以再听主线程的 `tool_progress` 心跳，但那是另一条通道。
+## 主 Agent 心跳
 
-一句话：活动脉冲跟着工具走，AI 摘要才是 30 秒 fork 出来的那句现在进行时。前端要把两种帧都接到同一块进度上，用户才能看到更新。
-
-### 主 Agent 心跳
-
-主Agent中某个工具跑太久时，大约每 30 秒发一条：
+主Agent中某个工具跑太久时，大约每 30 秒发一条会发送一条心跳，心跳没有内容，纯为了给前端保活。
 
 ```ts
     if (msg.type === 'tool_progress' && msg.heartbeat) {
@@ -180,13 +171,3 @@ UI 上可以拆开：活动脉冲做「当前活动 · Bash」，AI 摘要做卡
       ];
     }
 ```
-
-用来区分「工具还在跑」和「会话卡死了」。`heartbeat: true` 才是这类保活帧；没有这个字段的 `tool_progress` 可能是别的进度（比如重试），这里故意丢掉。
-
-这段代码做的事：
-
-1. 只收主线程心跳：`type === 'tool_progress' && heartbeat`
-2. 转成前端用的 `tool_heartbeat`
-3. 带上工具 id、名字、已运行秒数，以及 `parentToolUseId`（嵌套时用来对上父工具）
-
-注意：Agent / Task 本身不会发这种心跳，子代理内部的 Bash/Read 也不会。子代理进度走的是上面的 `task_progress`。所以这段在「主代理自己调了一个跑很久的工具、且没有委派给子代理」时才会有输出。
