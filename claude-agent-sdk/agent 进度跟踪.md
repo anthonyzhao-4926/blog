@@ -4,6 +4,7 @@ date: 2026-08-19
 tags: [ai, claude]
 column: claude-agent-sdk
 order: 5
+viewable: true
 ---
 
 > 需求：subagent 作为一个 可以独立执行任务的工具，其执行过程我们也是很关心的。
