@@ -11,8 +11,6 @@ viewable: true
 
 claude 启动时会默认生成一个主Agent，前边学习过 [宏观认识Claude code.md](宏观认识Claude code.md) ，知道主Agent的上下文窗口是有限的。当主Agent在执行主线任务时，避免不了会有一些不重要的或只需要知道结果不需要知道过程的支线任务（例如：从网络中进行搜索，只需要知道搜索后整理的结果，不需要知道搜索过程的明细数据），如果这些支线任务的内容统统放到主Agent的上下文中，就会污染主Agent的上下文，从而导致无法聚焦任务重点。
 
-<img src="assets/a5d54dd0b14393354d9657008ba67f1f.png" alt="a5d54dd0b14393354d9657008ba67f1f"  />
-
 ## subagent 分类
 
 claude code 的subagent 可以分为两类：命名subagent, fork subagent。fork subagent 比较简单，我们先介绍。
