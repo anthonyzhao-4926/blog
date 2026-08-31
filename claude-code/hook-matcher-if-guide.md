@@ -4,7 +4,7 @@ date: 2026-07-08
 tags: [ai, claude]
 column: claude-code
 order: 9
-viewable: true
+viewable: false
 ---
 
 ## Hook Matcher 和 If 字段详解

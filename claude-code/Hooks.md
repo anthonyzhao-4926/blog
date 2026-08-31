@@ -4,7 +4,7 @@ date: 2026-07-20
 tags: [ai, claude]
 column: claude-code
 order: 8
-viewable: true
+viewable: false
 ---
 
 Hook 是在特定时机触发指定动作的机制。简单来说就是，用户指定什么时候干一些用户自己想干的事。

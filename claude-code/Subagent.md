@@ -4,7 +4,7 @@ date: 2026-07-06
 tags: [ai, claude]
 column: claude-code
 order: 7
-viewable: true
+viewable: false
 ---
 
 ## 主子Agent
