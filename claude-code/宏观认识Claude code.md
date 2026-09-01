@@ -11,7 +11,7 @@ viewable: true
 
 学习使用claude code，有必要先从宏观角度认识一下 claude 有哪些组件。后续的学习也是学习每个组件如何使用，如何用好。
 
-![claude-code-components.drawio](assets/claude-code-components.drawio.png)
+![claude-code-components.drawio](../assets/claude-code-components.drawio.png)
 
 ### 核心指令层
 
@@ -52,7 +52,7 @@ viewable: true
 
 下图我理解就足够将本小结期望传递的内容描述清楚了。
 
-![上下文窗口](assets/上下文窗口.png)
+![上下文窗口](../assets/上下文窗口.png)
 
 claude 在一次对话中能够看到和理解的内容是有限的，内容过多会导致模型无法关注到真正要做的事情。
 
@@ -64,7 +64,7 @@ claude 官方文档提供了一个可交互的动画，用来展示每个组件�
 
 [动画传送门](https://code.claude.com/docs/zh-CN/context-window#what-the-timeline-shows)
 
-![image-20260609132413629](assets/image-20260609132413629.png)
+![image-20260609132413629](../assets/image-20260609132413629.png)
 
 
 
