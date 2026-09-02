@@ -42,8 +42,8 @@ my-skill/
 | `disallowed-tools`         | 2        | 当此 skill 处于活动状态时从 Claude 的可用工具池中移除的工具。用于不应该调用某些工具的自主 skills，例如用于后台循环的 `AskUserQuestion`。接受空格分隔的字符串或 YAML 列表。当你发送下一条消息时，限制会清除。 |                                                              |
 | `user-invocable`           | 2        | 设置为 `false` 以从 `/` 菜单中隐藏。用于用户不应直接调用的背景知识。默认值：`true`。 |                                                              |
 | `hooks`                    | 2        | 限定于此 skill 生命周期的 hooks。有关配置格式，请参阅 [Skills 和代理中的 Hooks](https://code.claude.com/docs/zh-CN/hooks#hooks-in-skills-and-agents)。 |                                                              |
-| `argument-hint`            | 1        | 该skill需要使用的参数提示。示例：`[issue-number]` 或 `[filename] [format]`。 | ![Clipboard_Screenshot_1781401238](../assets/Clipboard_Screenshot_1781401238.png) |
-| `arguments`                | 1        | 用于 skill 内容中`$name` 替换的命名位置参数。接受空格分隔的字符串或 YAML 列表。名称按顺序映射到参数位置。 | ![image-20260614094215137](../assets/image-20260614094215137.png) |
+| `argument-hint`            | 1        | 该skill需要使用的参数提示。示例：`[issue-number]` 或 `[filename] [format]`。 | ![Clipboard_Screenshot_1781401238](assets/Clipboard_Screenshot_1781401238.png) |
+| `arguments`                | 1        | 用于 skill 内容中`$name` 替换的命名位置参数。接受空格分隔的字符串或 YAML 列表。名称按顺序映射到参数位置。 | ![image-20260614094215137](assets/image-20260614094215137.png) |
 | `effort`                   | 1        | 默认继承自会话，详见[effort](琐碎内容.md#effort)             |                                                              |
 | `agent`                    | 1        | 当设置 `context: fork` 时要使用的 subagent 类型。            |                                                              |
 | `paths`                    | 1        | Glob 模式，限制何时激活此 skill。接受逗号分隔的字符串或 YAML 列表。设置后，Claude 仅在处理与模式匹配的文件时自动加载该 skill。使用与[路径特定规则](https://code.claude.com/docs/zh-CN/memory#path-specific-rules)相同的格式。 |                                                              |

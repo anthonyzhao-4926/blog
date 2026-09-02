@@ -7,4 +7,4 @@ order: 8
 viewable: true
 ---
 
-![Clipboard_Screenshot_1786699561](../assets/Clipboard_Screenshot_1786699561.png)
+![Clipboard_Screenshot_1786699561](assets/Clipboard_Screenshot_1786699561.png)

@@ -50,7 +50,7 @@ export function apply(ctx: Context) {
 [dsh-effect-func] ④ 卸载时：effect 清理函数执行
 ```
 
-![](../../assets/20260901212901_rec_.gif)
+![](assets/20260901212901_rec_.gif)
 
 四个阶段其实分属两个大阶段：
 

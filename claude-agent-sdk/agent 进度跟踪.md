@@ -15,13 +15,13 @@ viewable: true
 
 ### 效果
 
-![20260817090717_rec_](../assets/20260817090717_rec_.gif)
+![20260817090717_rec_](assets/20260817090717_rec_.gif)
 
 在这个 subagent 的调用中， 该subagent 进行了5次工具调用，工具调用过程穿插了输出块。最后是工具调用结果。
 
 然后，主agent 进行了一个总结。
 
-![image-20260817164723388](../assets/image-20260817164723388.png)
+![image-20260817164723388](assets/image-20260817164723388.png)
 
 ### subagent 消息归属
 
@@ -99,9 +99,9 @@ Subagent 在执行过程中，有时很长一段时间都不调用工具，也�
 
 可以在 query conds 参数设置 `agentProgressSummaries = true`， 主agent 会定时发送subagent 的任务进度摘要消息。
 
-![Clipboard_Screenshot_1787099305](../assets/Clipboard_Screenshot_1787099305.png)
+![Clipboard_Screenshot_1787099305](assets/Clipboard_Screenshot_1787099305.png)
 
-![Clipboard_Screenshot_1787099351](../assets/Clipboard_Screenshot_1787099351.png)
+![Clipboard_Screenshot_1787099351](assets/Clipboard_Screenshot_1787099351.png)
 
 ### 消息
 

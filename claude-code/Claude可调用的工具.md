@@ -11,7 +11,7 @@ viewable: true
 
 工具是使 Claude Code 成为代理的原因。没有工具，Claude 只能用文本回应。有了工具，Claude 可以采取行动：读取您的代码、编辑文件、运行命令、搜索网络并与外部服务交互。
 
-![06a5fae76ddee62a330f818c15920e7c](../assets/06a5fae76ddee62a330f818c15920e7c.png)
+![06a5fae76ddee62a330f818c15920e7c](assets/06a5fae76ddee62a330f818c15920e7c.png)
 
 内置工具通常分为五个类别，每个类别代表不同类型的代理能力。
 

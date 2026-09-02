@@ -115,4 +115,4 @@ dsh --profile test --dump-config
 ```
 
 然后启动 DSH，日志里出现 `hello world`。
-![](../../assets/Pasted%20image%2020260831215440.png)
+![](assets/Pasted%20image%2020260831215440.png)
