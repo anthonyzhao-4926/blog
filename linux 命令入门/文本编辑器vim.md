@@ -3,7 +3,7 @@ title: 文本编辑器 vim
 date: 2025-06-01
 tags:
   - linux
-column: linux 命令入门
+column: linux-command
 order: 3
 viewable: true
 ---

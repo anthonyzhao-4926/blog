@@ -3,7 +3,7 @@ title: shell 基础
 date: 2025-06-01
 tags:
   - linux
-column: linux 命令入门
+column: linux-command
 order: 4
 viewable: true
 ---

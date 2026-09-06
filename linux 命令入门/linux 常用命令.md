@@ -3,7 +3,7 @@ title: linux 常用命令
 date: 2025-06-01
 tags:
   - linux
-column: linux 命令入门
+column: linux-command
 order: 2
 viewable: true
 ---
