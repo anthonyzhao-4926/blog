@@ -1,0 +1,21 @@
+# 专栏配置：新增专栏时在这里加一条记录即可，
+# 由 _plugins/column_pages.rb 为每个 id 自动生成落地页 /columns/<id>/。
+# id 需与文章 front matter 的 column 字段一致；order 决定专栏总览里的排序。
+# tags 可选（多选），决定专栏总览页顶部的筛选标签与行内小标签。
+- id: claude-code
+  title: claude code 进阶指南
+  description: 用人话拆解 Claude Code 的指令、工具、记忆、Skills、Hooks 与 Subagent，只讲各组件怎么用。
+  tags: [claude, AI]
+  order: 1
+
+- id: claude-agent-sdk
+  title: claude agent sdk 指南
+  description: 案例驱动地 claude agent sdk 使用方法介绍
+  tags: [claude, AI]
+  order: 2
+
+- id: linux-command
+  title: linux 命令入门
+  description: 
+  tags: [linux]
+  order: 3
