@@ -1,6 +1,6 @@
 ---
 title: linux 常用命令
-date: 2026-09-06
+date: 2025-06-01
 tags:
   - linux
 column: linux 命令入门
@@ -54,7 +54,7 @@ lrwxrwxrwx.   1         root     root       7      May 11 2019     bin -> usr/bi
 
 对于权限，权限由10个字母组成，第一个表示文件类型。然后接下来分三组，分别是所有者权限、所属组权限和其他人权限。权限有三种，读、写和执行，分别用r、w和x表示，没有该权限用`-`表示。如下图：
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696753513-a3c8756d-717d-4e9e-9d73-e0ac39752df5.png)
+![linux-ls权限说明](assets/linux-ls权限说明.png)
 
 文件类型：
 
@@ -80,7 +80,7 @@ $ mkdir -p Japan/canglaoshi/2023
 ### pwd命令
 
 - 命令名称：pwd
-- 命令英文原意：print workding directory
+- 命令英文原意：print working directory
 - 命令所在路径：/bin/pwd
 - 执行权限：所有用户
 - 功能描述：显示当前目录
@@ -244,7 +244,7 @@ $ more /etc/services
 - n 下一个匹配项
 - N 上一个匹配项
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696753369-1a2d1f98-6368-48a1-91ca-7be1feddc108.png)
+![linux-less分页](assets/linux-less分页.png)
 
 ### head命令
 
@@ -336,21 +336,20 @@ $ ls -il /etc/issue issue.soft issue.hard
 
 - 命令名称：chmod
 - 命令英文原意：change the permissions mode of a file
-- 命令所在路径：/bin/chomod
+- 命令所在路径：/bin/chmod
 - 执行权限：所有用户
 - 功能描述：改变文件或目录的权限
 - 语法：chmod [{ugoa}{+-=}{rwx}] [文件或目录] [mode=421] [文件或目录]
 
 - -R 递归修改
 
-|   |   |   |   |   |
-|---|---|---|---|---|
-|**权限字母**|**权限数字**|**权限**|**文件**|**目录**|
+| 权限字母 | 权限数字 | 权限 | 文件 | 目录 |
+| --- | --- | --- | --- | --- |
 |r|4|读|查看文件内容|列出目录内容|
 |w|2|写|修改文件内容|在目录中创建、删除文件|
 |x|1|执行|执行文件|进入目录|
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696753457-ab6ec7fd-edfd-4f0c-9a7c-ed7d5640f7ea.png)
+![linux-chmod权限](assets/linux-chmod权限.png)
 
 ### chown命令
 
@@ -383,7 +382,7 @@ $ chgrp learn_linux booklist.txt
 
 ### umask命令
 
-- 命令名称：umsak
+- 命令名称：umask
 - 命令英文原意：the user file-creation mask
 - 命令所在路径：Shell内置命令
 - 执行权限：所有用户
@@ -577,7 +576,7 @@ ifconfig (8)         - configure a network interface
 
 ### --help选项
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696753461-04f11e16-834f-45dd-84ca-9205e1b8371e.png)
+![linux-help选项](assets/linux-help选项.png)
 
 ### help命令
 
@@ -873,12 +872,12 @@ traceroute www.baidu.com
 - 语法：netstat [选项]
 
 - -t TCP协议
-- -u UPD协议
+- -u UDP协议
 - -l 监听
 - -r 查看路由表
 - -n 显示IP地址和端口号
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696753650-1682edaa-9b04-42ca-a4a8-b833f6dce00a.png)
+![linux-netstat](assets/linux-netstat.png)
 
 **更详细的netstat**
 

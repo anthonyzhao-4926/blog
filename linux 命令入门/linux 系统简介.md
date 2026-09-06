@@ -1,8 +1,8 @@
 ---
-title: linux 简介
-date: 2026-09-06
+title: linux 系统简介
+date: 2025-06-01
 tags:
-  - go-package
+  - linux
 column: linux 命令入门
 order: 1
 viewable: true
@@ -15,11 +15,11 @@ Linux的起源可以追溯到1990年代初期。当时，芬兰的一位名为Li
 
 ## 2. Linux的发行版本
 
-内核版：https://www.kernel.org/
+内核版：可前往 Linux 内核官网（kernel.org）查看最新版本
 
 发行版：下边例举了一些，当然还有其他发行版
 
-![](https://cdn.nlark.com/yuque/0/2025/png/57225290/1748696613208-21195418-7dd0-4058-868a-8e68506622ac.png)
+![linux-发行版本](assets/linux-发行版本.png)
 
 内核版和开发版在本质上有所不同。内核版是基础，包含了系统的最基层代码，而开发版则是在内核版的基础上加入了自己的桌面、应用程序等。
 
