@@ -1,10 +1,12 @@
 ---
 title: Subagent
 date: 2026-07-06
-tags: [ai, claude]
+tags:
+  - ai
+  - claude
 column: claude-code
 order: 7
-viewable: false
+viewable: true
 ---
 
 ## 主子Agent

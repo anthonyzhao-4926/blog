@@ -35,3 +35,5 @@ columns:
 exclude:
   # 新建笔记用的模板头,不应作为文章发布
   - obsidian_template/
+  # Custom File Explorer sorting 插件的排序规则文件,不应作为文章发布
+  - sortspec.md

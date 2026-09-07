@@ -1,5 +1,14 @@
+---
+title: go-carbon
+date: 2025-05-14
+tags:
+  - go-package
+column:
+order:
+viewable: true
+---
+
 > 🔗原文链接：[https://segmentfault.com/a/1190000039164888](https://segmentfault.com/a/1190000039164888)
->
 
 #### 安装使用
 ##### Golang 版本大于等于 1.16 (推荐)
