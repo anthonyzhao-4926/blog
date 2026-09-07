@@ -47,7 +47,7 @@ Content 是一个接口，但是接口中有一个非导出方法，也就意味
 | 字段名 | 作用 |
 | --- | --- |
 | Data | 图片数据（编码后以 Base64 出现在 JSON 的 `data` 字段）。 |
-| MIMEType | 媒体类型（如 `image/png`），对应 JSON `mimeType`。详见[[MIME 类型]] |
+| MIMEType | 媒体类型（如 `image/png`），对应 JSON `mimeType`。详见[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | Annotations | 可选注解。 |
 
 ```go
@@ -71,7 +71,7 @@ Content 是一个接口，但是接口中有一个非导出方法，也就意味
 | 字段名 | 作用 |
 | --- | --- |
 | Data | 音频数据（JSON 中 Base64 的 `data`）。 |
-| MIMEType | 媒体类型（如 `audio/wav`）。[[MIME 类型]] |
+| MIMEType | 媒体类型（如 `audio/wav`）。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | Annotations | 可选注解。 |
 
 ---
@@ -86,7 +86,7 @@ Content 是一个接口，但是接口中有一个非导出方法，也就意味
 | Name | 程序侧名称。 |
 | Title | 面向展示的标题。 |
 | Description | 资源说明。 |
-| MIMEType | 已知时的 MIME 类型。[[MIME 类型]] |
+| MIMEType | 已知时的 MIME 类型。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | Size | 可选，资源大小（字节）。 |
 | Meta | 扩展元数据（`_meta`）。 |
 | Annotations | 可选注解。 |
@@ -112,11 +112,11 @@ Content 是一个接口，但是接口中有一个非导出方法，也就意味
 | 字段名 | 作用 |
 | --- | --- |
 | URI | 资源 URI。 |
-| MIMEType | MIME 类型（可选）。[[MIME 类型]] |
+| MIMEType | MIME 类型（可选）。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | Text | 文本类资源内容，通常是字符串文本，而不是文本文件。 |
 | Blob | 使用 `Blob` 的场景**真正的二进制文件**：图片、PDF、Office、压缩包、音视频片段、字体等；不宜或不能可靠表示为 UTF-8 字符串。**需要字节级保真**：避免文本编码、换行规范化等破坏原始字节。**通用「读文件」**：服务端按字节读取未知类型文件时，常见做法是 `{ URI, Blob: data }`，并视情况填写 `mimeType`。 |
 
-示例详见[[Resources 知识库]]
+示例详见[Resources 知识库](Resources%20%E7%9F%A5%E8%AF%86%E5%BA%93.md)
 
 ---
 

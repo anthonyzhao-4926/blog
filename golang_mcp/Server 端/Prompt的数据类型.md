@@ -94,4 +94,4 @@ func promptHandler(_ context.Context, req *mcp.GetPromptRequest) (*mcp.GetPrompt
 
 Content 不仅仅在Prompt有用到，它是一个公共定义。具体内容详见
 
-[[Content]]
+[Content](Content.md)

@@ -86,7 +86,7 @@ type StreamableHTTPOptions struct {
 
 小结：EventStore = 可插拔的「SSE 事件存储 + 重放」后端；内存实现适合单机/演示，生产可以换成 Redis 等满足同一接口的实现。
 
-例子见 [[端点续传]]
+例子见 [端点续传](%E7%AB%AF%E7%82%B9%E7%BB%AD%E4%BC%A0.md)
 
 ### SessionTimeout
 

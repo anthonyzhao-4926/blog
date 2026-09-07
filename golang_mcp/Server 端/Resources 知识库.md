@@ -7,7 +7,7 @@ order: 13
 viewable: true
 ---
 
-MCP 所支持的 Resources 其实就是一个用来检索的知识库。为了测试，我让AI随便生成了一个MySQl表的描述。[[mysql_settlement_line_demo]]
+MCP 所支持的 Resources 其实就是一个用来检索的知识库。为了测试，我让AI随便生成了一个MySQl表的描述。[mysql_settlement_line_demo](../%E5%8F%82%E8%80%83/mysql_settlement_line_demo.md)
 
 # 一个小例子
 
@@ -106,7 +106,7 @@ const demoResourceURI = "file:///demo/mysql-settlement-fields.md"
 | --- | --- |
 | `Annotations` | 给客户端用的可选注解（如展示、行为提示等）。 |
 | `Description` | 资源含义说明，便于客户端/模型理解“这是什么”。 |
-| `MIMEType` | 资源内容的 MIME 类型。[[MIME 类型]] |
+| `MIMEType` | 资源内容的 MIME 类型。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | `Name` | 逻辑/程序侧名称；旧版或缺 `title` 时可作展示名。 |
 | `Size` | 原始内容字节数（编码/分词前）；便于展示大小与估算上下文。 |
 | `Title` | 面向 UI/终端用户的可读标题；缺省则用 `name` 展示。 |
@@ -142,7 +142,7 @@ func readDemoMarkdown(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.Rea
 | 字段名 | 作用 |
 | --- | --- |
 | URI | 资源 URI。 |
-| MIMEType | MIME 类型（可选）。[[MIME 类型]] |
+| MIMEType | MIME 类型（可选）。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
 | Text | 文本类资源内容，通常是字符串文本，而不是文本文件。 |
 | Blob | 使用 `Blob` 的场景**真正的二进制文件**：图片、PDF、Office、压缩包、音视频片段、字体等；不宜或不能可靠表示为 UTF-8 字符串。**需要字节级保真**：避免文本编码、换行规范化等破坏原始字节。**通用「读文件」**：服务端按字节读取未知类型文件时，常见做法是 `{ URI, Blob: data }`，并视情况填写 `mimeType`。 |
 

@@ -7,7 +7,7 @@ order: 4
 viewable: true
 ---
 
-我们在[[Go MCP SDK：各 Transport 用法示例]]中学习了各种MCP 支持的Transport，也知道了如何启动服务。Streamable HTTP将会作为未来常用的Transport，这里再举例说明，同时描述更多细节。
+我们在[Go MCP SDK：各 Transport 用法示例](Go%20MCP%20SDK%EF%BC%9A%E5%90%84%20Transport%20%E7%94%A8%E6%B3%95%E7%A4%BA%E4%BE%8B.md)中学习了各种MCP 支持的Transport，也知道了如何启动服务。Streamable HTTP将会作为未来常用的Transport，这里再举例说明，同时描述更多细节。
 
 # 一个小例子
 
@@ -134,4 +134,4 @@ if err != nil {
 func NewStreamableHTTPHandler(getServer func(*http.Request) *Server, opts *StreamableHTTPOptions) *StreamableHTTPHandler
 ```
 
-第一个参数上边已经说过了，第二个参数可选配置，虽然说大部分不用太关心，但是也还是了解一下吧。详见[[mcp-streamable-http-options]]
+第一个参数上边已经说过了，第二个参数可选配置，虽然说大部分不用太关心，但是也还是了解一下吧。详见[mcp-streamable-http-options](mcp-streamable-http-options.md)
