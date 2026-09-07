@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(*)",
+      "Bash(ls .trash/ && ls -la .trash/ 2>/dev/null | head -50)",
+      "Bash(head -30 \"local/claude_agent_sdk官方文档.md\" && echo ---- && head -30 tool/go-carbon.md)",
+      "Bash(command -v yuque yuque-cli yq md 2>/dev/null; ls ~/bin 2>/dev/null | head; npm ls -g --depth=0 2>/dev/null | grep -i yuque; echo \"---\"; ls ~/.config 2>/dev/null | head -20)",
+      "Bash(git log --oneline -5 -- golang_mcp; echo ---; git log --all --oneline | head -3)",
+      "Bash(ls -la /Users/anthonyzhao/anthonyzhao/blog/blog && ls /Users/anthonyzhao/anthonyzhao/blog/blog/_plugins 2>/dev/null && git -C /Users/anthonyzhao/anthonyzhao/blog/blog log --oneline -3)",
+      "Bash(cat /Users/anthonyzhao/anthonyzhao/blog/blog/sync.sh; echo \"---\"; ls /Users/anthonyzhao/anthonyzhao/blog; echo \"---\"; ls /Users/anthonyzhao/anthonyzhao/blog/*/ -d 2>/dev/null)"
+    ]
+  }
+}

@@ -19,3 +19,9 @@
   description: 
   tags: [linux]
   order: 3
+
+- id: golang-mcp
+  title: golang mcp 学习笔记
+  description: 语雀《AI》知识库 Golang MCP 分组笔记：MCP 服务端实现（Transport、鉴权、输入限制、Content、Resources、预置提示词、错误处理）及参考材料。
+  tags: [AI]
+  order: 4
