@@ -1,27 +1,37 @@
-# 专栏配置：新增专栏时在这里加一条记录即可，
-# 由 _plugins/column_pages.rb 为每个 id 自动生成落地页 /columns/<id>/。
-# id 需与文章 front matter 的 column 字段一致；order 决定专栏总览里的排序。
-# tags 可选（多选），决定专栏总览页顶部的筛选标签与行内小标签。
-- id: claude-code
-  title: claude code 进阶指南
-  description: 用人话拆解 Claude Code 的指令、工具、记忆、Skills、Hooks 与 Subagent，只讲各组件怎么用。
-  tags: [claude, AI]
-  order: 1
+# 笔记仓库根配置(本文件位于仓库根目录,随仓库同步):
+# - columns: 本仓库的专栏配置。新增专栏在这里加一条记录即可;
+#   id 与文章 front matter 的 column 字段一致,站点侧会为每个 id 生成落地页 /columns/<id>/
+#   并聚合到 _data/columns.yml(插件 _plugins/column_pages.rb 消费)。
+#   order 决定专栏总览里的排序;tags 可选(多选),决定总览页顶部的筛选标签与行内小标签。
+# - exclude: 发布时排除的 md 文件或文件夹(相对本仓库根目录,可多选)。
+#   以 / 结尾的条目视为文件夹;不带 / 的条目按文件精确匹配,命中同名目录时按目录前缀匹配。
+#   除 README.md 外,所有未排除的 .md 都会被站点构建脚本拉取为文章。
+# 注:顶层键(columns: / exclude:)需顶格书写。
+columns:
+  - id: claude-code
+    title: claude code 进阶指南
+    description: 用人话拆解 Claude Code 的指令、工具、记忆、Skills、Hooks 与 Subagent，只讲各组件怎么用。
+    tags: [claude, AI]
+    order: 1
 
-- id: claude-agent-sdk
-  title: claude agent sdk 指南
-  description: 案例驱动地 claude agent sdk 使用方法介绍
-  tags: [claude, AI]
-  order: 2
+  - id: claude-agent-sdk
+    title: claude agent sdk 指南
+    description: 案例驱动地 claude agent sdk 使用方法介绍
+    tags: [claude, AI]
+    order: 2
 
-- id: linux-command
-  title: linux 命令入门
-  description: 
-  tags: [linux]
-  order: 3
+  - id: linux-command
+    title: linux 命令入门
+    description: 
+    tags: [linux]
+    order: 3
 
-- id: golang-mcp
-  title: golang mcp 学习笔记
-  description: 语雀《AI》知识库 Golang MCP 分组笔记：MCP 服务端实现（Transport、鉴权、输入限制、Content、Resources、预置提示词、错误处理）及参考材料。
-  tags: [AI]
-  order: 4
+  - id: golang-mcp
+    title: golang mcp 学习笔记
+    description: MCP 服务端实现（Transport、鉴权、输入限制、Content、Resources、预置提示词、错误处理）及参考材料。
+    tags: [AI]
+    order: 4
+
+exclude:
+  # 新建笔记用的模板头,不应作为文章发布
+  - obsidian_template/
