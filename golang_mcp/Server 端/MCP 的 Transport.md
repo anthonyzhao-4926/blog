@@ -11,7 +11,7 @@ viewable: true
 
 # 先搞清楚概念:传输其实只有两种
 
-平时聊天总说"stdio、HTTP、SSE 三种传输",其实是把概念混在一起了。MCP 官方标准里的传输就两种:
+平时聊天总说「stdio、HTTP、SSE 三种传输」,其实是把概念混在一起了。MCP 官方标准里的传输就两种:
 
 1. **stdio**——客户端把服务端当子进程拉起来,往 stdin 写 JSON-RPC 消息、从 stdout 读,一行一条,所以消息体里不能有裸换行。日志走 stderr,千万别往 stdout 打,否则客户端解析直接乱掉。典型场景是本机 IDE(Cursor 之类)连本地服务:不暴露端口,也没有 Origin/CORS 这些麻烦。
 2. **Streamable HTTP**——服务端就是一个普通 HTTP 服务。客户端每次 POST 一条 JSON-RPC 消息,响应可能是普通 JSON,也可能是 SSE 流;服务端想主动往下推消息时,客户端可以另开一条 GET 的 SSE 连接,会话用 `MCP-Session-Id` 绑定。服务跑在服务器上供远程访问时用这个。
@@ -157,7 +157,7 @@ func main() {
 
 # 什么时候才需要 StreamableServerTransport
 
-这个类型是给"自己处理 http.Request、自己按会话建 transport"的进阶场景用的。绝大多数项目用上一节的 `NewStreamableHTTPHandler` 就够,会话和路由它都封装好了,没必要手写这个类型。
+这个类型是给「自己处理 http.Request、自己按会话建 transport」的进阶场景用的。绝大多数项目用上一节的 `NewStreamableHTTPHandler` 就够,会话和路由它都封装好了,没必要手写这个类型。
 
 # 一张表记住怎么配
 
@@ -171,4 +171,4 @@ func main() {
 
 # Run 还是 Connect
 
-启动 server 有两种姿势:`Server.Run(ctx, transport)` 和 `Server.Connect(ctx, transport, opts)`。区别在于 Run 要求传输是"天生就绪、持久"的——StdioTransport 就是典型,进程一启动管道就在那儿了;HTTP 系的两个 handler 则是在收到入站请求时才现场创建一个 transport 并 Connect,会话跟着请求走,所以它们没有"Run"一说。go-sdk 里 transport 相关的结构体一共九个(三个服务端套件拆开算),看着多,拆开就上面这几类,拿不准就照例子的姿势写。
+启动 server 有两种姿势:`Server.Run(ctx, transport)` 和 `Server.Connect(ctx, transport, opts)`。区别在于 Run 要求传输是「天生就绪、持久」的——StdioTransport 就是典型,进程一启动管道就在那儿了;HTTP 系的两个 handler 则是在收到入站请求时才现场创建一个 transport 并 Connect,会话跟着请求走,所以它们没有"Run"一说。go-sdk 里 transport 相关的结构体一共九个(三个服务端套件拆开算),看着多,拆开就上面这几类,拿不准就照例子的姿势写。

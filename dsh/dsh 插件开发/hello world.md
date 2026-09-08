@@ -75,7 +75,16 @@ export function apply(ctx: Context) {
 
 意思是：往插件树里插一行——id 叫 `dsh-hello-world`，代码在哪个文件。
 
-![mermaid-hello-world-插件加载流程](assets/mermaid-hello-world-插件加载流程.png)
+```mermaid
+flowchart TD
+    A["dsh --profile test 启动"] --> B["读取 profile 的 package.json"]
+    B --> C["bundles 列表中发现 dsh-hello-world"]
+    C --> D["读取插件 package.json 的 dsh.bundle.patch"]
+    D --> E["解析 patch.yaml，执行 insert"]
+    E --> F["插件树新增一行: id=dsh-hello-world"]
+    F --> G["loader 加载 TS 文件，执行 apply()"]
+    G --> H["控制台输出 hello world"]
+```
 
 > 小坑：`name` 要用绝对路径。DSH 加载器的基准目录是 profile 目录本身，相对路径会找不到文件。
 

@@ -59,7 +59,20 @@ export function apply(ctx: Context) {
 
 配一张时序图：
 
-![mermaid-effect函数-加载时序](assets/mermaid-effect函数-加载时序.png)
+```mermaid
+sequenceDiagram
+    participant L as DSH loader
+    participant M as 模块
+    participant A as apply(ctx)
+    participant F as Fiber
+    L->>M: import 插件文件
+    Note over M: ① 顶层代码同步执行
+    L->>A: 挂载插件，调用 apply(ctx)
+    A->>F: 注册 effect（回调立即执行）
+    A-->>F: 返回清理函数被收集
+    L->>F: 插件卸载
+    F-->>L: 逆序执行清理函数
+```
 
 ## fiber 是什么
 

@@ -12,7 +12,7 @@ viewable: true
 > 官方文档:https://modelcontextprotocol.io
 > 用到的 SDK:https://github.com/modelcontextprotocol/go-sdk
 
-用 Go 写 MCP 服务端的学习笔记。整体思路是"先跑起来,再拆开讲",大部分文章都带一个能直接跑的小例子。
+用 Go 写 MCP 服务端的学习笔记。整体思路是「先跑起来,再拆开讲」,大部分文章都带一个能直接跑的小例子。
 
 ### 阅读路线(Server 端,按顺序)
 
@@ -31,7 +31,7 @@ viewable: true
 
 用到再查的知识卡和素材,不用按顺序读:
 
-- [Content](参考/Content.md)——消息里"一段内容"都有哪些类型
+- [Content](参考/Content.md)——消息里「一段内容」都有哪些类型
 - [MIME 类型](参考/MIME%20类型.md)——MIME 是什么、MCP 里常用哪些取值
 - [mysql_settlement_line_demo](参考/mysql_settlement_line_demo.md)——Resources 示例用的测试文档
 - [分析日志Prompt 模板](参考/分析日志Prompt%20模板.md)——预置提示词示例的模板文件
