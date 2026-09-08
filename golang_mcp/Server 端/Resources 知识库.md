@@ -3,11 +3,11 @@ title: Resources 知识库
 date: 2026-03-29
 tags: [go, mcp, ai]
 column: golang-mcp
-order: 13
+order: 9
 viewable: true
 ---
 
-MCP 所支持的 Resources 其实就是一个用来检索的知识库。为了测试，我让AI随便生成了一个MySQl表的描述。[mysql_settlement_line_demo](../%E5%8F%82%E8%80%83/mysql_settlement_line_demo.md)
+MCP 所支持的 Resources 其实就是一个用来检索的知识库。为了测试，为了测试，我让 AI 随便生成了一个 MySQL 表的描述。[mysql_settlement_line_demo](../%E5%8F%82%E8%80%83/mysql_settlement_line_demo.md)
 
 # 一个小例子
 
@@ -83,12 +83,12 @@ const demoResourceURI = "file:///demo/mysql-settlement-fields.md"
 
 ![image](assets/1774753672584-65da6e81-a495-403e-a124-b6356337ca46.png)
 
-| **Scheme** | **用途与注意** |
+| Scheme | 用途 |
 | --- | --- |
-| `https://` | 表示**客户端自己能直接从 Web 拉**的资源时更合适； |
-| `file://` | 类似文件的资源，**不必**对应真实磁盘；目录等可用 [XDG MIME](https://specifications.freedesktop.org/shared-mime-info-spec/0.14/ar01s02.html#id-1.3.14)如 `inode/directory` |
+| `https://` | 客户端自己能直接从 Web 拉取的资源 |
+| `file://` | 类似文件的资源，**不必**对应真实磁盘 |
 | `git://` | Git 集成场景 |
-| **自定义** | 须符合 [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)，并考虑上面各 scheme 的指导 |
+| 自定义 | 遵循 [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986) 即可 |
 
 ## 资源注册
 
@@ -104,14 +104,13 @@ const demoResourceURI = "file:///demo/mysql-settlement-fields.md"
 
 | 字段名 | 作用 |
 | --- | --- |
-| `Annotations` | 给客户端用的可选注解（如展示、行为提示等）。 |
-| `Description` | 资源含义说明，便于客户端/模型理解“这是什么”。 |
+| `Name` | 逻辑/程序侧名称；缺 `Title` 时可作展示名。 |
+| `Title` | 面向 UI 用户的可读标题，缺省则用 `name` 展示。 |
+| `Description` | 资源是什么、有什么用，给客户端/模型看的。 |
+| `URI` | 资源唯一标识（`file://`、`https://` 等协议 URI）。 |
 | `MIMEType` | 资源内容的 MIME 类型。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
-| `Name` | 逻辑/程序侧名称；旧版或缺 `title` 时可作展示名。 |
-| `Size` | 原始内容字节数（编码/分词前）；便于展示大小与估算上下文。 |
-| `Title` | 面向 UI/终端用户的可读标题；缺省则用 `name` 展示。 |
-| `URI` | 资源唯一标识（如 `file://`、`https://` 等协议 URI）。 |
-| `Icons` | 资源可选图标列表。 |
+
+`Annotations`、`Size`、`Icons` 这些属于可选补充信息，用到再看 [pkg.go.dev](https://pkg.go.dev/github.com/modelcontextprotocol/go-sdk/mcp#Resource)。
 
 ## 资源处理Handler
 
@@ -143,10 +142,10 @@ func readDemoMarkdown(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.Rea
 | --- | --- |
 | URI | 资源 URI。 |
 | MIMEType | MIME 类型（可选）。[MIME 类型](../%E5%8F%82%E8%80%83/MIME%20%E7%B1%BB%E5%9E%8B.md) |
-| Text | 文本类资源内容，通常是字符串文本，而不是文本文件。 |
-| Blob | 使用 `Blob` 的场景**真正的二进制文件**：图片、PDF、Office、压缩包、音视频片段、字体等；不宜或不能可靠表示为 UTF-8 字符串。**需要字节级保真**：避免文本编码、换行规范化等破坏原始字节。**通用「读文件」**：服务端按字节读取未知类型文件时，常见做法是 `{ URI, Blob: data }`，并视情况填写 `mimeType`。 |
+| Text | 字符串文本内容。 |
+| Blob | 原始字节内容（二进制文件）。Text 和 Blob 怎么选，见 [Content](../%E5%8F%82%E8%80%83/Content.md) 里的说明。 |
 
-将返回内容改为Bolb看下
+那把返回内容改成 Blob 看下效果
 
 ```go
 	// 返回资源内容

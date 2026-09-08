@@ -3,7 +3,7 @@ title: mysql_settlement_line_demo
 date: 2026-03-29
 tags: [go, mcp, ai]
 column: golang-mcp
-order: 15
+order: 13
 viewable: true
 ---
 

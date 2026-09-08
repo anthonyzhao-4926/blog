@@ -37,29 +37,7 @@ Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五�
 - 别的 Fiber 用 `inject` 等道具。道具一摆好，等待的演出开场；道具一撤，那些演出先散场再排队。
 - 事件从 Context 派发，监听却记在 Fiber 上。演出结束，对白听筒一起收走。
 
-```mermaid
-flowchart TB
-  newCtx["new Context()"]
-  newCtx --> C["Context<br/>舞台：plugin / 读服务 / 收发事件"]
-  newCtx --> RootF["root Fiber<br/>uid = 0，一开始就是 ACTIVE"]
-
-  C -->|"plugin(Plugin)"| P["Plugin<br/>剧本：函数 / 类 / 带 apply 的对象"]
-  P -->|"加载一次产生"| F["Fiber<br/>一场演出的生命周期"]
-  F -->|"extend 出作用域"| C2["这场演出的 Context"]
-  F -->|"执行插件体"| Body["插件体"]
-
-  Body -->|"provide / new Service"| S["Service<br/>道具：挂到 Context，供 inject"]
-  S -.->|"名字解析 ctx.xxx"| C2
-  S -->|"出现 → 唤醒<br/>撤销 → 卸载再等待"| OtherF["其他 Fiber"]
-
-  Body -->|"on / once"| L["Event 监听"]
-  C2 -->|"emit / parallel / serial / bail / waterfall"| E["Event<br/>对白：按模式驱动监听"]
-  E --> L
-  L -.->|"登记为使生效，dispose 时摘掉"| F
-
-  F -->|"dispose"| Clean["收回服务、监听、定时器、端口"]
-  Clean --> OtherF
-```
+![mermaid-cordis-概念关系](assets/mermaid-cordis-概念关系.png)
 
 本文档按公开 npm 包梳理**可编程 API**（给 TypeScript / JavaScript 调用的接口），不是 HTTP REST 文档。
 
