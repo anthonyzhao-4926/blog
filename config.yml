@@ -26,12 +26,6 @@ columns:
     tags: [linux]
     order: 3
 
-  - id: golang-mcp
-    title: golang mcp 学习笔记
-    description: 用 Go 写 MCP 服务端的学习笔记:从快速开始到 Transport、鉴权、输入限制、预置提示词、Resources 与错误处理,附参考知识卡。
-    tags: [AI]
-    order: 4
-
 exclude:
   # 新建笔记用的模板头,不应作为文章发布
   - obsidian_template/
