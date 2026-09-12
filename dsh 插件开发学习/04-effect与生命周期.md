@@ -83,7 +83,7 @@ sequenceDiagram
 
 fiber = 一个插件的一次运行实例。
 
-- 每次插件被挂载（`ctx.plugin(...)`），Cordis 就创建一个 fiber。DSH 的插件树里，每个节点其实就是一个 fiber。
+- 每次插件被挂载，Cordis 就创建一个 fiber。DSH 的插件树里，每个节点其实就是一个 fiber。
 - 同一个插件被挂载两次（比如在两个地方各启用一次），就有两个各自独立的 fiber，互不干扰。
 
 ## 清理的必要性
