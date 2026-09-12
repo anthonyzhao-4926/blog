@@ -5,15 +5,15 @@ tags:
   - ai
   - dsh
 column: dsh-plugin
-order: 4
+order: 5
 viewable: true
 ---
 
 > **读完这篇你能**：说清插件从加载到卸载的四个阶段，知道什么该交给 `ctx.effect` 管理。
 >
-> **前置**：[给页面加背景](03-给页面加背景.md)。约 15 分钟。
+> **前置**：[给页面加背景](04-给页面加背景.md)。约 15 分钟。
 
-[上一篇](03-给页面加背景.md)里，我们用了 `ctx.effect(() => webServer.register(...))`，当时留了一句话："`ctx.effect` 下一篇着重讲解"。这篇就把它彻底讲透。
+[上一篇](04-给页面加背景.md)里，我们用了 `ctx.effect(() => webServer.register(...))`，当时留了一句话："`ctx.effect` 下一篇着重讲解"。这篇就把它彻底讲透。
 
 先记住一句话：`ctx.effect` 是 Cordis 生命周期的地基。路由、事件监听、子插件……所有"需要随插件卸载而消失"的东西，底层都是它。
 
@@ -89,7 +89,7 @@ fiber = 一个插件的一次运行实例。
 
 ## 清理的必要性
 
-上一篇[给页面加背景](03-给页面加背景.md)里我们写过这么一段：
+[给页面加背景](04-给页面加背景.md)那篇里我们写过这么一段：
 
 ```ts
 ctx.effect(() => webServer.register({
@@ -108,6 +108,6 @@ ctx.effect(() => webServer.register({
 
 ---
 
-**下一篇**：[让插件可配置](05-让插件可配置.md)——把写死的图片路径和透明度挪进 `Config`，换图改配置就行。
+**下一篇**：[让插件可配置](06-让插件可配置.md)——把写死的图片路径和透明度挪进 `Config`，换图改配置就行。
 
 排障和查阅去[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有 `inject`、`on`、`plugin` 等能力，见 [Cordis API 文档](../dsh/cordis_api.md)。
