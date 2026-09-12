@@ -90,7 +90,11 @@ viewable: true
   └─ 命令行 --patch 覆盖
 ```
 
-想给某个插件加参数、临时关掉某一行、或者插一条自己的 entry，写这里。比如换掉侧边栏内置终端的 shell：
+想给某个插件加参数、临时关掉某一行、或者插一条自己的 entry，写这里。
+
+当所有插件的特性patch后，我们还可以在这里最后对已经挂载的所有插件特性进行最后的修改。
+
+比如换掉侧边栏内置终端的 shell：
 
 ```yaml
 - insert:
@@ -122,13 +126,13 @@ allowBuilds:
 
 五条设置各有用途：
 
-| 配置 | 作用 | 为什么这么设 |
-|---|---|---|
-| `packages: [.]` | 单包工作区 | profile 自己就是一个包 |
-| `nodeLinker: hoisted` | 依赖**平铺**到顶层 `node_modules` | 插件之间要互相 `import`，扁平布局才好解析（pnpm 默认的隔离布局会让插件找不到 peer） |
-| `autoInstallPeers: false` | 不自动补 peer 依赖 | 避免 DSH 内核包被重复装一份，导致"两个实例"类诡异 bug |
-| `minimumReleaseAgeExclude` | 对指定包跳过"新版本冷静期" | 刚发布的版本想立刻用 |
-| `allowBuilds` | 只放行这两个包的安装脚本 | pnpm 默认拦截依赖的 postinstall；`node-pty` 要编译原生模块（终端功能），`protobufjs` 要生成代码 |
+| 配置                         | 作用                         | 为什么这么设                                                               |
+| -------------------------- | -------------------------- | -------------------------------------------------------------------- |
+| `packages: [.]`            | 单包工作区                      | profile 自己就是一个包                                                      |
+| `nodeLinker: hoisted`      | 依赖**平铺**到顶层 `node_modules` | 插件之间要互相 `import`，扁平布局才好解析（pnpm 默认的隔离布局会让插件找不到 peer）                  |
+| `autoInstallPeers: false`  | 不自动补 peer 依赖               | 避免 DSH 内核包被重复装一份，导致"两个实例"类诡异 bug                                     |
+| `minimumReleaseAgeExclude` | 对指定包跳过"新版本冷静期"             | 刚发布的版本想立刻用                                                           |
+| `allowBuilds`              | 只放行这两个包的安装脚本               | pnpm 默认拦截依赖的 postinstall；`node-pty` 要编译原生模块（终端功能），`protobufjs` 要生成代码 |
 
 装插件时报 "Ignored build scripts"，八成就是这里没放行。
 
@@ -234,19 +238,19 @@ dsh-better-sidebar/
 
 这也说明 profile 的设计意图就是"**一套内核，多套界面/插件集合，互不干扰**"。
 
-## 一张速查表：哪些能改，哪些别碰
+## 文件维护速查表
 
-| 文件/目录 | 手改？ | 说明 |
-|---|---|---|
-| `package.json` | ✅ 可以 | 但优先用 `dsh plugin add` |
-| `cordis.patch.yml` | ✅ 推荐 | 覆盖配置、临时禁用、自定义 entry 都写这里 |
-| `pnpm-workspace.yaml` | ✅ 可以 | 装插件报错时才需要动 |
-| `cordis.yml` | ❌ 别动 | 空根，动了会破坏 patch 合成模型 |
-| `pnpm-lock.yaml` / `.pnpm/lock.yaml` | ❌ 别动 | 由 pnpm 维护 |
-| `node_modules/` | ❌ 别动 | 由 pnpm 维护；软链断了就 `pnpm install` |
-| `.dsh-module-fallback/` | ❌ 别动 | 运行期自动生成 |
+| 文件/目录                                | 手改？  | 说明                             |
+| ------------------------------------ | ---- | ------------------------------ |
+| `package.json`                       | ✅ 可以 | 但优先用 `dsh plugin add`          |
+| `cordis.patch.yml`                   | ✅ 推荐 | 覆盖配置、临时禁用、自定义 entry 都写这里       |
+| `pnpm-workspace.yaml`                | ✅ 可以 | 装插件报错时才需要动                     |
+| `cordis.yml`                         | ❌ 别动 | 空根，动了会破坏 patch 合成模型            |
+| `pnpm-lock.yaml` / `.pnpm/lock.yaml` | ❌ 别动 | 由 pnpm 维护                      |
+| `node_modules/`                      | ❌ 别动 | 由 pnpm 维护；软链断了就 `pnpm install` |
+| `.dsh-module-fallback/`              | ❌ 别动 | 运行期自动生成                        |
 
-## 排错小抄
+## 常用命令
 
 ```sh
 cd ~/.dsh/profiles/web
@@ -264,7 +268,7 @@ dsh web          # 等价于 dsh --profile web
 ls -la node_modules/dsh-better-sidebar node_modules/.bin | head
 ```
 
-## 小结
+## 要点
 
 - `profiles/web` = **装配清单**，不是代码仓库：四个手写文件 + 三个生成物。
 - 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件的 patch → profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
