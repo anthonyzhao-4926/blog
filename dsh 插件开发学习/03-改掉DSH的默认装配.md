@@ -23,10 +23,9 @@ dsh --profile web --dump-config | grep -c '^- id:'
 
 我这台机器是 154 行，全来自 `node_modules` 里的现成代码。于是这些需求都无处下手：
 
-- 内置的 `web-fetch-http` 不想让它跑；
-- 内置插件的一个参数想换；
-- 02 装的 hello world 想停用而不是卸载；
-- 所有 profile 都关掉同一个东西。
+- 内置插件的一个参数想换（比如 bash 的命令超时）；
+- 内置能力想整行关掉；
+- 所有 profile 关掉同一个东西。
 
 ## patch 的工作原理
 
@@ -48,9 +47,10 @@ flowchart TD
 写进 `~/.dsh/profiles/test/cordis.patch.yml`：
 
 ```yaml
-# 1) 关掉遥测上报
-- id: session-telemetry-otel
-  disabled: true
+# 1) 让 bash 命令的超时从 60 秒缩到 3 秒
+- id: bash-sandbox
+  config:
+    timeoutMs: 3000
 
 # 2) 让自动生成的会话标题短到肉眼可见
 - id: session-title
@@ -65,13 +65,26 @@ flowchart TD
       name: '/绝对路径/dsh-patch-demo/my-note.ts'
 ```
 
-| 写法               | 作用         | 这条的效果                   |
-| ---------------- | ---------- | ----------------------- |
-| `disabled: true` | 这一行不启动     | 遥测带着 OTLP 端点，关掉就没有数据发出去 |
-| `id` + 字段        | 找到那一行，替换字段 | 新开一个会话，侧边栏标题被截断         |
-| `insert:`        | 往列表尾部追加行   | 启动日志多打印一行               |
+| # | 写法 | 作用 | 这条的效果 |
+| --- | --- | --- | --- |
+| 1 | `id` + `config` | 找到那一行，替换字段 | 跑个 `sleep 10`，命令 3 秒就被掐断，输出里带 `[timed out after 3000ms]` |
+| 2 | `id` + `config` | 找到那一行，替换字段 | 新开一个会话，标题明显变短 |
+| 3 | `insert:` | 往列表尾部追加行 | 启动日志多打印一行 |
 
-三条都短，效果都能当场看到。`id` 就是 `--dump-config` 打印的那个 `id:`，别背，去 dump 里抄。
+> 1、2 两条故意做成"一眼能看出来生效"，所以都不太能用：3 秒的超时只够演示，标题截到 30 字节只够好看。改完记得调回合适值。
+
+再短也就到这儿了——一条 patch 最少就是一个 `id` 加一个字段，或者一个 `insert`。
+
+**`disabled` 是同一个写法**，只是把字段换成它。想停用某一行，加一条就行：
+
+```yaml
+- id: <dump 里的 id>
+  disabled: true
+```
+
+要留意内置行：它们的 `disabled` 本来就是 `!!js` 表达式（`bash-sandbox` 那条是"Windows 上不启动"），你写常量会把整个表达式换掉——写 `true` 就是在所有平台都停用。
+
+`id` 就是 `--dump-config` 打印的那个 `id:`，别背，去 dump 里抄。
 
 ## 用 `--dump-config` 验证
 
@@ -81,23 +94,24 @@ dsh --profile test --dump-config
 
 ```yaml
 # == @deepseek-ai/dsh-base, patched by ~/.dsh/profiles/test/cordis.patch.yml
+- id: bash-sandbox
+  name: '@deepseek-ai/dsh-bash-sandbox'
+  config:
+    timeoutMs: 3000
 - id: session-title
   config:
     fallbackMaxWords: 3
     fallbackMaxBytes: 16
     maxTitleBytes: 30
-- id: session-telemetry-otel
-  config: { …原来的那一大块不动… }
-  disabled: true
 ```
 
-`config` 换掉了，`disabled` 挂上了，`# ==` 那行注明了是哪一层改的——都对，patch 就生效了。
+`timeoutMs` 换掉了，`# ==` 那行注明了是哪一层改的——都对，patch 就生效了。
 
 `--dump-config` 只做合成，不启动插件，也不执行 `!!js`，随时可以跑。
 
 ## patch 语法
 
-patch 文件是一个顶层数组，每条 patch 只有两种形状。完整可跑的版本在 `dsh_plugin/dsh-patch-demo/`。
+patch 文件是一个顶层数组，每条 patch 两种形状：`insert:`，或者 `id` 加上要覆盖的字段。完整可跑的版本在 `dsh_plugin/dsh-patch-demo/`。
 
 ### insert：追加一行
 
@@ -116,11 +130,13 @@ patch 文件是一个顶层数组，每条 patch 只有两种形状。完整可�
 ### id：覆盖字段
 
 ```yaml
-- id: session-telemetry-otel
+- id: dsh-hello-world
   disabled: true
 ```
 
-`id` 必写。字段逐个覆盖到目标行，**没写的字段保持原样**。
+`id` 必写。字段逐个覆盖到目标行，**没写的字段保持原样**——上面那条 `bash-sandbox` 只写了 `timeoutMs`，它原带的 `cwd`、`maxTimeoutMs` 等键都不受影响。这里覆盖的是"行"这一层，不是 `config` 对象那一层（见易错点 1）。
+
+`disabled` 只是可覆盖的字段之一，和 `config` 平级：写 `true` 这行就不启动；写 `!!js` 表达式，就按条件决定（下一节）。
 
 加一个 `name:` 可以做校验：与目标行的 `name` 不一致就跳过。想确认自己没改错行时才用。
 
@@ -152,12 +168,29 @@ patch 文件是一个顶层数组，每条 patch 只有两种形状。完整可�
 
 ### 1. `config` 是整块替换
 
-上面第 2 条 patch 之所以把 `session-title` 的三个键全写了，就是因为这个：`config` 换的是整块，`dsh-base` 写在这一行上的其它键会回落到插件 schema 的默认值。要保留就把用到的键写全。
+上面 `session-title` 那条把三个键全写了，就是因为这个。只写一个键，其余会回落到插件 schema 的默认值——如果那个键根本没有默认值，整行就起不来：
+
+```yaml
+# 踩法：写一个键，丢掉另外两个
+- id: session-title
+  config:
+    fallbackMaxWords: 3
+```
+
+这个插件的 schema 里 `fallbackMaxBytes` 和 `maxTitleBytes` 是必填的，于是启动时直接失败：
+
+```text
+Error: dsh: plugin tree failed to load: … failed to apply loader entry session-title
+  (@deepseek-ai/dsh-session-title): invalid config:
+  - $.fallbackMaxBytes missing required value (at fallbackMaxBytes)
+```
+
+反过来，`bash-sandbox` 的 `cwd`、`maxTimeoutMs` 这些键各自有默认值，所以那条只写 `timeoutMs` 就够了。**有没有默认值，去 [Cordis API 文档](../dsh/cordis_api.md)或包自己的类型里看一眼**，别猜。
 
 ### 2. id 写错静默跳过
 
 ```text
-dsh: [/tmp/patch.yml] patch: entry "session-titles" not found
+dsh: [/tmp/patch.yml] patch: entry "bash-sandbax" not found
 ```
 
 只警告，插件照原样启动，现象是"配置没生效"。改完记得认 `# == ... patched by ...` 那行。
@@ -182,15 +215,6 @@ dsh --profile test --dump-config --patch ./tmp.yml
 
 `~/.dsh/cordis.patch.yml` 这一层大于 profile 自己那层——想让所有 profile 都关掉同一个内置能力时写这里。
 
-## 停用自己装的插件
-
-```yaml
-- id: dsh-hello-world
-  disabled: true
-```
-
-先禁用再卸载的好处是：改主意只需删这两行；彻底不要了再 `dsh plugin --profile test remove <包名>`。
-
 ## 完整代码
 
 `dsh_plugin/dsh-patch-demo/` 下三个文件：`cordis.patch.yml`（本文的完整 patch）、`my-note.ts`（`insert` 插进去的插件）、`install.sh`（填绝对路径，复制进指定 profile）。
@@ -202,8 +226,8 @@ cd dsh_plugin/dsh-patch-demo && ./install.sh
 装好后两层都验证一遍：
 
 ```bash
-# 装配层：三条 patch 都落实了
-dsh --profile test --dump-config | grep -A6 'id: session-title$'
+# 装配层：值都落上去了
+dsh --profile test --dump-config | grep -A5 'id: bash-sandbox'
 
 # 运行层：insert 那行真的跑起来了
 dsh --profile test --no-open --port 3099
@@ -211,7 +235,7 @@ dsh --profile test --no-open --port 3099
 
 `--dump-config` 证明不了插件能跑，所以 insert 这类改动要真启动一次看日志。3099 是躲开正在跑的 3080。
 
-第 2 条的效果要开一个新会话才看得见：侧边栏标题会被截断到很短。这是"改参数"和"改装配"的区别——dump 里看到的是值，效果得用一次才知道。
+前两条的效果要用一次才看得见：跑个 `sleep 10` 会被 3 秒掐断，新开一个会话能看到标题被截断。
 
 ## 注意事项
 
