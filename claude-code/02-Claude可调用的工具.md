@@ -8,6 +8,7 @@ viewable: true
 ---
 
 > **读完这篇你能**：知道 Claude 内置了哪些工具，各自能做什么。
+>
 > **前置**：[宏观认识 Claude Code](01-宏观认识Claude%20code.md)。约 20 分钟。
 
 ## 可使用的工具
