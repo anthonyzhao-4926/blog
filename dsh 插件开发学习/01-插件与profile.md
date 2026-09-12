@@ -1,0 +1,73 @@
+---
+title: 插件与 profile
+date: 2026-08-25
+tags:
+  - ai
+  - dsh
+column: dsh-plugin
+order: 1
+viewable: true
+---
+
+> **读完这篇你能**：说清 profile、bundle、插件三者的关系，并建好一个干净的 test profile。
+> **前置**：无。约 10 分钟。
+
+## profile 含义理解
+如下是dsh 插件安装命令，我们来理解一下 profile 的含义。
+
+```
+dsh plugin --profile <档案名> add <插件来源>
+````
+
+以我为例，我和我老婆在家里共用这一台电脑。我俩使用场景不同，我老婆会使用 A， B， C 插件， 而我使用 A， E， F 插件。因此，就为 我俩每个人各自创建一个profile。
+她在她的 wife_profile 下安装 A， B， C插件。我在我的 husband_profile 下安装 A， E， F插件。
+现在是不是就好理解了，其实 profile 就是一个插件集合隔离。
+
+DSH 默认的 profile 名字叫做web, 所以你会看到很多插件的安装命令都是用web，例如： `dsh plugin --profile web add dsh-better-sidebar`
+DSH 快速启动执行的命令也是 `dsh web`。 所以，可以理解了 这里的 web 原来是指定 profile 启动呀。
+
+dsh profile 的存放路径是 `~/.dsh/profiles`。 可以看到这个目录下有个web文件夹，这个web文件夹就是web profile。
+
+我们先搞一个最小可用的 test profile。创建一个 test 目录，在目录中创建 profile 描述文件 package.json，预置两个组件：一个基础组件，一个web页面组件。
+
+直接复制如下内容执行即可
+
+```sh
+cd ~/.dsh/profiles
+mkdir test
+cd test
+touch package.json
+echo '{"name":"dhs-profile-test","private":true,"dsh":{"profile":{"bundles":["@deepseek-ai/dsh-base","@deepseek-ai/dsh-web-app"]}}}' >> package.json
+pnpm install
+```
+
+我们向 package.json 中写入的内容如下
+```json
+{
+	"name": "dhs-profile-test",  // 项目名称，用于标识和日志
+	"private": true, // 设为私有，不发布到 NPM 仓库
+	"dsh": {
+	  "profile": {
+	    "bundles": [
+	      "@deepseek-ai/dsh-base", // 基础核心包：日志、配置、生命周期等底层能力
+	      "@deepseek-ai/dsh-web-app" // Web 应用包：提供 HTTP 服务、路由、中间件等 Web 能力
+	    ]
+	  }
+	}
+}
+```
+
+bundle 如何理解，事实上这就是插件包，也就是我们理解的插件。一个插件包包含多种能力，例如 dsh-web-app 提供 HTTP 服务、路由、中间件等 Web 能力。
+
+现在我们打开 这个 profile 看一下
+```sh
+dsh --profile test
+```
+![](assets/Pasted%20image%2020260831202733.png)
+
+---
+
+**下一篇**：[第一个插件](02-第一个插件.md)——profile 建好了，往里放第一个插件。
+
+profile 目录里哪些文件能改、哪些是生成物，见[profile 与插件包结构](参考/05-profile与插件包结构.md)。
+

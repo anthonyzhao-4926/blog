@@ -26,8 +26,22 @@ columns:
     tags: [linux]
     order: 3
 
+  - id: dsh-plugin
+    title: dsh 插件开发学习
+    description: 从零写一个 DSH 插件：最小 apply 函数、bundle 自动装配、注册 HTTP 路由、往页面注入样式，以及插件生命周期与清理。
+    tags: [dsh, AI]
+    order: 4
+
+  - id: golang-mcp
+    title: golang mcp 服务端指南
+    description: 用 Go 把 MCP 服务端做出来、跑起来、部署上去：工具与参数约束、Resources 知识库、预置提示词、鉴权与 HTTP 部署。
+    tags: [go, mcp, AI]
+    order: 5
+
 exclude:
   # 新建笔记用的模板头,不应作为文章发布
   - obsidian_template/
   # Custom File Explorer sorting 插件的排序规则文件,不应作为文章发布
   - sortspec.md
+  # 专栏写作规范,给作者看的元文档,不应作为文章发布
+  - 专栏写作规范.md
