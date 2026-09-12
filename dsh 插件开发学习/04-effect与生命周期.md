@@ -109,4 +109,4 @@ ctx.effect(() => webServer.register({
 
 **主线到此结束。** 到这里，你已经能写出一个挂得进插件树、注册得了路由、往页面注入得了内容的插件。
 
-排障和查阅去[profile 与插件包结构](参考/05-profile与插件包结构.md)；`ctx` 上还有 `inject`、`on`、`plugin` 等能力，见 [Cordis API 文档](../dsh/cordis_api.md)。
+排障和查阅去[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有 `inject`、`on`、`plugin` 等能力，见 [Cordis API 文档](../dsh/cordis_api.md)。

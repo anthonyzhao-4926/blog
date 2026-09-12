@@ -5,7 +5,6 @@ tags:
   - ai
   - dsh
 column: dsh-plugin
-order: 5
 viewable: true
 ---
 

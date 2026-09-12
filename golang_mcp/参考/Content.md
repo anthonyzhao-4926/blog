@@ -3,7 +3,6 @@ title: Content
 date: 2026-03-29
 tags: [go, mcp, ai]
 column: golang-mcp
-order: 15
 viewable: true
 ---
 

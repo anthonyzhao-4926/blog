@@ -3,7 +3,6 @@ title: go:embed 速查
 date: 2026-03-28
 tags: [go, mcp, ai]
 column: golang-mcp
-order: 14
 viewable: true
 ---
 

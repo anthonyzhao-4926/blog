@@ -14,7 +14,7 @@ viewable: true
 
 `StdioTransport` 的宿主是「把你的程序当子进程拉起来」，所以只有本机的客户端能用。要让同事连、要部署到服务器，就得暴露一个 HTTP 端点。
 
-MCP 规范里的传输只有两种：**stdio** 和 **Streamable HTTP**。前者管本机，后者管远程——就这么简单。其余的几种类型只是这两种的封装或历史版本，见[Transport 对照表](参考/11-Transport对照表.md)。
+MCP 规范里的传输只有两种：**stdio** 和 **Streamable HTTP**。前者管本机，后者管远程——就这么简单。其余的几种类型只是这两种的封装或历史版本，见[Transport 对照表](参考/Transport对照表.md)。
 
 # 改哪里
 

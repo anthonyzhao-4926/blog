@@ -87,10 +87,10 @@ for f, s, _ in rows:
         if not os.path.exists(real):
             problems.append(f"图片缺失  {f}  ->  {a}")
 
-# 3. order 唯一性
+# 3. order 唯一性（参考卡片不编号、不带 order，不参与）
 seen = {}
 for f, _, o in rows:
-    if f.endswith("README.md") or o is None:
+    if f.endswith("README.md") or is_ref(f) or o is None:
         continue
     seen.setdefault(o, []).append(f)
 for o, fs in seen.items():
@@ -131,10 +131,10 @@ for i, (o, f, s) in enumerate(spine):
         if "主线到此结束" not in s:
             problems.append(f"缺终点标记  {f}  (末篇应写「主线到此结束」)")
 
-# 6. 文件名编号必须与 order 一致
+# 6. 文件名编号必须与 order 一致（参考卡片不编号，跳过）
 for f, _s, o in rows:
     base = os.path.basename(f)
-    if base == "README.md":
+    if base == "README.md" or is_ref(f):
         continue
     m = re.match(r"^(\d+)-", base)
     if not m:

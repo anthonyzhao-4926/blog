@@ -10,6 +10,7 @@ viewable: true
 ---
 
 > **读完这篇你能**：说清 profile、bundle、插件三者的关系，并建好一个干净的 test profile。
+> 
 > **前置**：无。约 10 分钟。
 
 ## profile 含义理解
@@ -69,5 +70,5 @@ dsh --profile test
 
 **下一篇**：[第一个插件](02-第一个插件.md)——profile 建好了，往里放第一个插件。
 
-profile 目录里哪些文件能改、哪些是生成物，见[profile 与插件包结构](参考/05-profile与插件包结构.md)。
+profile 目录里哪些文件能改、哪些是生成物，见[profile 与插件包结构](参考/profile与插件包结构.md)。
 

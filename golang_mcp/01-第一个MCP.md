@@ -117,7 +117,7 @@ func(ctx context.Context, req *CallToolRequest, in In) (result *CallToolResult, 
 
 看着参数不少，但框架在背后做了很多事：自动生成 schema、自动反序列化、自动校验、自动填充结果。**多数场景只需要关心 `in` → `out` / `error` 这条线**，`req` 和 `result` 都可以传 `nil`。
 
-完整的自动化行为清单见[工具签名](参考/12-工具签名.md)。
+完整的自动化行为清单见[工具签名](参考/工具签名.md)。
 
 ## 启动
 
@@ -127,7 +127,7 @@ server.Run(context.Background(), &mcp.StdioTransport{})
 
 第二个参数是传输方式。`StdioTransport` 适合本机调试——宿主（IDE 之类）把你的程序当子进程拉起来，走标准输入输出通信，不占端口。
 
-MCP 一共就那么几种传输，选型查[Transport 对照表](参考/11-Transport对照表.md)。部署到服务器要用的 Streamable HTTP 在[第三篇](03-跑成HTTP服务.md)。
+MCP 一共就那么几种传输，选型查[Transport 对照表](参考/Transport对照表.md)。部署到服务器要用的 Streamable HTTP 在[第三篇](03-跑成HTTP服务.md)。
 
 ---
 

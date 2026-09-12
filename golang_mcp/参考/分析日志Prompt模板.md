@@ -3,7 +3,6 @@ title: 分析日志 Prompt 模板
 date: 2026-03-27
 tags: [go, mcp, ai]
 column: golang-mcp
-order: 18
 viewable: true
 ---
 

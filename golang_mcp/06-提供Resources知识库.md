@@ -32,7 +32,7 @@ Resource 就是 MCP 提供的第三个能力：**一份带 URI 的资料，模�
 
 # 完整代码
 
-素材是一份日志系统的字段与查询语法说明：[日志系统字段与查询语法](参考/17-日志系统字段与查询语法.md)。
+素材是一份日志系统的字段与查询语法说明：[日志系统字段与查询语法](参考/日志系统字段与查询语法.md)。
 
 ```go
 package main
@@ -127,7 +127,7 @@ s.AddResource(&mcp.Resource{ ... }, readDemoMarkdown)
 | `Title` | 面向 UI 用户的可读标题 |
 | `Description` | 资源是什么、有什么用——**模型靠它决定要不要读** |
 | `URI` | 资源唯一标识 |
-| `MIMEType` | 资源内容的类型，见 [MIME 类型](参考/16-MIME类型.md) |
+| `MIMEType` | 资源内容的类型，见 [MIME 类型](参考/MIME类型.md) |
 
 `Annotations`、`Size`、`Icons` 属于可选补充信息，用到再看 [pkg.go.dev](https://pkg.go.dev/github.com/modelcontextprotocol/go-sdk/mcp#Resource)。
 
@@ -150,7 +150,7 @@ return &mcp.ReadResourceResult{
 | `Text` | 字符串文本内容 |
 | `Blob` | 原始字节内容（二进制文件） |
 
-`Text` 和 `Blob` 二选一，怎么选见 [Content](参考/15-Content.md)。把返回内容改成 `Blob` 试试——内容一样能取到：
+`Text` 和 `Blob` 二选一，怎么选见 [Content](参考/Content.md)。把返回内容改成 `Blob` 试试——内容一样能取到：
 
 ```go
 return &mcp.ReadResourceResult{
