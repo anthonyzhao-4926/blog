@@ -218,7 +218,7 @@ dsh-better-sidebar/
 
 任何 DSH 插件都是这个结构：`package.json` 里声明 `dsh.bundle.patch`，自带的 `cordis.patch.yml` 里写一行 `insert: { id: ..., name: '<插件名>' }` 把自己挂上树；宿主端代码（`lib/index.js`）提供 HTTP 路由，客户端代码（`lib/client.js`）注册界面上的标签页或查看器。你自己写的插件只要照这个骨架填内容就能被自动装配。
 
-## profile 对照：`dsh-tui`
+## dsh-tui profile 对照
 
 ```json
 // profiles/dsh-tui/package.json
