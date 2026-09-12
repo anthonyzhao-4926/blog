@@ -36,7 +36,7 @@ _ = &mcp.ImageContent{
 }
 ```
 
-MIME 的常用取值见 [MIME 类型](16-MIME类型.md)。
+MIME 的常用取值见 [MIME 类型](MIME类型.md)。
 
 **EmbeddedResource 里装的是 `ResourceContents`,最容易搞混的是它跟普通「读文件」的关系。** `ResourceContents` 的正文有两种形态:
 

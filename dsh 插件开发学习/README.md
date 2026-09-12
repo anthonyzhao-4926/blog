@@ -63,71 +63,71 @@ viewable: true
 
 三条规则：
 
-- **编号从 06 起。** `05` 已被参考卡片占用，参考卡片不参与「下一篇」阅读链；新篇一律 `NN-描述.md`，`NN` 与 frontmatter 的 `order` 一致。
-- **案例只增不改。** 阶段 2–4 继续拿 03 那个背景插件当主线案例，每篇只在它身上加一层，不换新案例。
+- **编号从 05 起。** 参考卡片在 `参考/` 下，不编号、不写 `order`、也不占文章号；正文一律 `NN-描述.md`，`NN` 与 frontmatter 的 `order` 一致。
+- **例子跟着主题走，不是跟着专栏走。** 每篇挑最能说明该概念的例子，不为了「全栏共用一个」把不合适的案例硬套上去。只有连续几篇讲同一件事时才延续同一个例子（比如 `search_notes` 会贯穿工具、设置卡、Remote API、对话渲染）。
 - **「按需深挖」不占号。** 内核那批篇目在主线之外，想改内核或写大型扩展时再挑。
 
-主线共 17 篇（06–22）：`06–08` 补 Cordis 地基，`09–10` 讲组合与热更新，`11–17` 挂到 DSH 扩展点，`18–20` 进浏览器端，`21–22` 发布与维护。
+主线共 17 篇（05–21）：`05–07` 补 Cordis 地基，`08–09` 讲组合与热更新，`10–16` 挂到 DSH 扩展点，`17–19` 进浏览器端，`20–21` 发布与维护。
 
-#### 阶段 2：服务、事件、配置（06–08）
+#### 阶段 2：服务、事件、配置（05–07）
 
 **为什么现在学**：01–04 里的 `ctx.inject`、`ctx.on`、`ctx.effect` 都是照抄的用法。DSH 的所有扩展点——工具、权限门、会话、设置——全建在这三样上，不补这一层，后面只能死记。
 
-| 编号 | 文件 | 读完你能 | 写什么 |
-| --- | --- | --- | --- |
-| 06 | `06-服务与依赖注入.md` | 把插件拆成「提供服务」和「消费服务」两半，说清 `inject` 的依赖跟踪 | 服务是什么：`ctx.tools` / `ctx.llm` / `ctx.agents` 都是服务，消费方只认能力名、不 import 提供方；`ctx.provide` 与 `Service` 子类（`super(ctx, name)` + `declare module` 扩展类型）；`inject` 的必需与可选依赖，加载顺序由依赖而非文件顺序决定；加载后仍跟踪依赖：服务消失自动卸载、回归自动重载；`ctx.isolate` 的隔离场景；动手把 03 的背景插件拆成「图片源服务 + 消费者」两个插件 |
-| 07 | `07-事件与四种派发模式.md` | 选对派发模式，用事件把两个插件解耦 | 声明 / 发出 / 监听，typed events 的类型怎么写；`emit` 广播、`bail` 短路、`serial` 顺序、`waterfall` 管道（`next()` 语义）；什么时候必须用 waterfall（审批、工具前置门都会遇到）；「监听本身就是 effect」，卸载自动摘掉；Cordis 事件与会话记录的区别（哪些会进 session 日志）；给背景插件加一个「主题切换」事件，让另一个插件响应 |
-| 08 | `08-配置与校验.md` | 给插件加上有默认值、会报错的配置 | 导出 `Config` 类型 + 同名 Schemastery schema；默认值写在 schema 字段上而不是代码里硬编码；非法配置加载失败并给出准确报错（绝不在配置不完整时启动）；计算得到的配置值；哪些值不该硬编码；把背景图片路径、透明度、模糊开关都变成配置项 |
+| 编号  | 文件                | 读完你能                                   | 写什么                                                                                                                                                                                                                                                                                                         |
+| --- | ----------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 05  | `05-服务与依赖注入.md`   | 把插件拆成「提供服务」和「消费服务」两半，说清 `inject` 的依赖跟踪 | 服务是什么：`ctx.tools` / `ctx.llm` / `ctx.agents` 都是服务，消费方只认能力名、不 import 提供方；`ctx.provide` 与 `Service` 子类（`super(ctx, name)` + `declare module` 扩展类型）；`inject` 的必需与可选依赖，加载顺序由依赖而非文件顺序决定；加载后仍跟踪依赖：服务消失自动卸载、回归自动重载；`ctx.isolate` 的隔离场景；例子：做一个「背景图来源」能力——服务定义 + 本地目录 / 远程 URL 两个 provider + 消费者，演示换 provider 不用改消费者 |
+| 06  | `06-事件与四种派发模式.md` | 选对派发模式，用事件把两个插件解耦                      | 声明 / 发出 / 监听，typed events 的类型怎么写；`emit` 广播、`bail` 短路、`serial` 顺序、`waterfall` 管道（`next()` 语义）；什么时候必须用 waterfall（审批、工具前置门都会遇到）；「监听本身就是 effect」，卸载自动摘掉；Cordis 事件与会话记录的区别（哪些会进 session 日志）；例子：用「工具调用审计」讲 emit / serial 的多监听者与顺序，用「审批决定链」讲 waterfall，用「多个标题生成器取第一个有结果的」讲 bail                                    |
+| 07  | `07-配置与校验.md`     | 给插件加上有默认值、会报错的配置                       | 导出 `Config` 类型 + 同名 Schemastery schema；默认值写在 schema 字段上而不是代码里硬编码；非法配置加载失败并给出准确报错（绝不在配置不完整时启动）；计算得到的配置值；哪些值不该硬编码；例子：把审计插件做成可配置——记录哪些事件类型、日志级别、结果是否脱敏，演示默认值与非法值报错                                                                                                                                             |
 
-前置：06←04；07←06；08←06。官方对应：`docs/cordis-tutorial/03-services`、`04-events`、`05-config`；`docs/user/develop/framework/service.md`、`events.md`、`docs/user/develop/basic/config.md`。
+前置：05←04；06←05；07←05。官方对应：`docs/cordis-tutorial/03-services`、`04-events`、`05-config`；`docs/user/develop/framework/service.md`、`events.md`、`docs/user/develop/basic/config.md`。
 
-#### 阶段 3：组合与热更新（09–10）
+#### 阶段 3：组合与热更新（08–09）
 
 **为什么现在学**：手上有了两个以上插件，才会真的遇到「谁先加载、谁覆盖谁、改完要不要重启」。
 
 | 编号 | 文件 | 读完你能 | 写什么 |
 | --- | --- | --- | --- |
-| 09 | `09-patch语义与加载顺序.md` | 读懂并手写 patch，知道谁覆盖谁 | `cordis.yml` 配置项的完整形态（`id` / `name` / `config` / `disabled`）；insert / override / group 的语义；`dsh.profile.bundles` → `cordis.patch.yml` → home patch → `--patch` 的叠加顺序；表达式插值；loader / include / group / timer 四个内置插件各干什么；用 `dsh --dump-config`、`--dump-default-config` 验证自己的理解；参考卡片 05 那张合成图的「动手版」 |
-| 10 | `10-HMR与装配诊断.md` | 改插件不重启就生效，并能诊断「插件为什么不加载」 | HMR 覆盖哪些改动、哪些必须重启；`patchReload: live` 与 `startup` 的区别；Fiber 状态机（PENDING / LOADING / ACTIVE / FAILED / UNLOADING / DISPOSED）怎么读；依赖没满足、模块解析失败、循环依赖的典型症状与日志；`plugin-hmr` 的相关配置 |
+| 08 | `08-patch语义与加载顺序.md` | 读懂并手写 patch，知道谁覆盖谁 | `cordis.yml` 配置项的完整形态（`id` / `name` / `config` / `disabled`）；insert / override / group 的语义；`dsh.profile.bundles` → `cordis.patch.yml` → home patch → `--patch` 的叠加顺序；表达式插值；loader / include / group / timer 四个内置插件各干什么；用 `dsh --dump-config`、`--dump-default-config` 验证自己的理解；例子：在 `cordis.patch.yml` 里禁用内置插件、把 bash 的 provider 换成 sandbox 版、再用 group 组织自己的插件；参考卡片那张合成图的「动手版」 |
+| 09 | `09-HMR与装配诊断.md` | 改插件不重启就生效，并能诊断「插件为什么不加载」 | HMR 覆盖哪些改动、哪些必须重启；`patchReload: live` 与 `startup` 的区别；Fiber 状态机（PENDING / LOADING / ACTIVE / FAILED / UNLOADING / DISPOSED）怎么读；依赖没满足、模块解析失败、循环依赖的典型症状与日志；`plugin-hmr` 的相关配置；例子：故意造两个坏插件——一个 `inject` 不存在的服务、一个模块路径写错，再逐个诊断 |
 
-前置：09←08；10←09。官方对应：`docs/cordis-tutorial/06-composition-and-hmr`；`docs/user/develop/framework/index.md`；`cordis_api.md` 的 loader / include / group / timer / hmr 各节。
+前置：08←07；09←08。官方对应：`docs/cordis-tutorial/06-composition-and-hmr`；`docs/user/develop/framework/index.md`；`cordis_api.md` 的 loader / include / group / timer / hmr 各节。
 
-#### 阶段 4：挂到 DSH 的扩展点上（11–17）
+#### 阶段 4：挂到 DSH 的扩展点上（10–16）
 
-**到这里才算真的会写 DSH 插件**。11–13 是每个插件作者都该会的三件事，14–15 用得上 Web 端时再写，16–17 可选。
+**到这里才算真的会写 DSH 插件**。10–12 是每个插件作者都该会的三件事，13–14 用得上 Web 端时再写，15–16 可选。
 
 | 编号 | 文件 | 读完你能 | 写什么 |
 | --- | --- | --- | --- |
-| 11 | `11-写一个工具.md` | 写一个模型能调用、UI 里看得见结果的工具 | `defineTool` 的最小形态（name / description / parameters / execute / result）；参数用 Schema 还是裸 JSON Schema、描述怎么写模型才用对；构造 `ToolResult`（文本 / 结构化 / 错误）；`run_in_background` 与长任务；工具在对话里的展示（presentation）；案例：给背景插件加一个 `set_background` 工具，让模型自己换背景 |
-| 12 | `12-工具执行管线与权限门.md` | 在工具执行前后插手，做出放行 / 拒绝 / 改写 | 四个拦截点的分工：`tools/pre-execute`（waterfall 决定 allow / deny）、`tools/execute`（包住派发生命周期，做超时 / 重试 / 埋点）、`tools/post-execute`（改写结果）、`tools/result`（只观察、不可改）；`ctx.tools.guard()` 的单调最终否决（不变式）与 waterfall 的区别；`PreToolDecision` 的形状；案例：写一个「禁止删图」的权限门 |
-| 13 | `13-写一个skill.md` | 把一个可复用工作流封装成按需加载的 skill | 两种形态：`<name>/SKILL.md` 目录与顶层 `<name>.md`（嵌套 `**/SKILL.md` 不会被扫描）；frontmatter 必填 `name` / `description` 与可选 `whenToUse` / `metadata`；`disable-model-invocation`、`user-invocable` 两个开关；扫描根与优先级（project-dsh 100 / project-agents 200 / custom 300 / user-dsh 400 / user-agents 500）；目录与正文分离的生命周期（改正文不用重启与失效缓存）；上下文成本：模型看到什么、正文何时才加载 |
-| 14 | `14-注册一张设置卡.md` | 把插件配置搬到 Web 设置页 | 一个包的两半：Host（`src/`）与浏览器（`src/client/`，用 `dsh.client` 声明并从 `./client` 导出）；在 Host 注册一个 settings namespace，设置页凭 namespace 自动把两半配对；读 / 写用户设置与层叠解析（默认值 → 组合 base → 用户文档）；客户端 HMR 与热提交 |
-| 15 | `15-加一个RemoteAPI.md` | 给浏览器端加一个带类型约束的 Host 调用 | `ctx.remote` 的五步：声明方法、声明失败、注册、客户端消费、测试；装饰器语义与查找解析；代码生成管线与 `/api` 路由；失败词汇表（一个 `RemoteError` + 错误码表） |
-| 16 | `16-接一个LLM-adapter.md`（可选） | 接一个自己的模型供应商 | 继承 `LlmAdapter` 实现 `stream()`；`StreamChunk` 协议与关键规则；`GenerateOptions`；`ctx.llm.registerAdapter`；错误处理；两个参考实现（直连 HTTP 与包一层 LLM 库） |
-| 17 | `17-动态Cordis工具.md`（可选） | 让 agent 在运行中挂载 / 卸载插件 | `dsh-tool-cordis` 的装法与用途；运行中检查当前插件树；内存插件的挂载、卸载、生命周期与清理；风险：临时插件会影响同进程的其他会话 |
+| 10 | `10-写一个工具.md` | 写一个模型能调用、UI 里看得见结果的工具 | `defineTool` 的最小形态（name / description / parameters / execute / result）；参数用 Schema 还是裸 JSON Schema、描述怎么写模型才用对；构造 `ToolResult`（文本 / 结构化 / 错误）；`run_in_background` 与长任务；工具在对话里的展示（presentation）；例子：写一个 `search_notes` 工具，在工作区里搜 Markdown——参数含关键词 / 根目录 / 条数上限，返回结构化的「文件 + 行号 + 片段」，目录不存在时给可读错误，大目录走后台 |
+| 11 | `11-工具执行管线与权限门.md` | 在工具执行前后插手，做出放行 / 拒绝 / 改写 | 四个拦截点的分工：`tools/pre-execute`（waterfall 决定 allow / deny）、`tools/execute`（包住派发生命周期，做超时 / 重试 / 埋点）、`tools/post-execute`（改写结果）、`tools/result`（只观察、不可改）；`ctx.tools.guard()` 的单调最终否决（不变式）与 waterfall 的区别；`PreToolDecision` 的形状；例子：给 shell 工具加一层「命令黑名单 + 超时 + 输出脱敏」，把四个拦截点各用一次 |
+| 12 | `12-写一个skill.md` | 把一个可复用工作流封装成按需加载的 skill | 两种形态：`<name>/SKILL.md` 目录与顶层 `<name>.md`（嵌套 `**/SKILL.md` 不会被扫描）；frontmatter 必填 `name` / `description` 与可选 `whenToUse` / `metadata`；`disable-model-invocation`、`user-invocable` 两个开关；扫描根与优先级（project-dsh 100 / project-agents 200 / custom 300 / user-dsh 400 / user-agents 500）；目录与正文分离的生命周期（改正文不用重启与失效缓存）；上下文成本：模型看到什么、正文何时才加载；例子：把本仓库的《专栏写作规范》做成 skill，写新文章时让模型按规范自检 |
+| 13 | `13-注册一张设置卡.md` | 把插件配置搬到 Web 设置页 | 一个包的两半：Host（`src/`）与浏览器（`src/client/`，用 `dsh.client` 声明并从 `./client` 导出）；在 Host 注册一个 settings namespace，设置页凭 namespace 自动把两半配对；读 / 写用户设置与层叠解析（默认值 → 组合 base → 用户文档）；客户端 HMR 与热提交；例子：给 10 的 `search_notes` 加设置卡——默认搜索根、结果上限、是否包含草稿 |
+| 14 | `14-加一个RemoteAPI.md` | 给浏览器端加一个带类型约束的 Host 调用 | `ctx.remote` 的五步：声明方法、声明失败、注册、客户端消费、测试；装饰器语义与查找解析；代码生成管线与 `/api` 路由；失败词汇表（一个 `RemoteError` + 错误码表）；例子：给前端一个 `notes/stats` 接口，把工作区笔记数与最近搜索返回给设置页 |
+| 15 | `15-接一个LLM-adapter.md`（可选） | 接一个自己的模型供应商 | 继承 `LlmAdapter` 实现 `stream()`；`StreamChunk` 协议与关键规则；`GenerateOptions`；`ctx.llm.registerAdapter`；错误处理；两个参考实现（直连 HTTP 与包一层 LLM 库）；例子：接一个本地 Ollama，或任意 OpenAI 兼容端点 |
+| 16 | `16-动态Cordis工具.md`（可选） | 让 agent 在运行中挂载 / 卸载插件 | `dsh-tool-cordis` 的装法与用途；运行中检查当前插件树；内存插件的挂载、卸载、生命周期与清理；风险：临时插件会影响同进程的其他会话；例子：让 agent 现场写一个给页面角标换色的临时插件，用完卸载 |
 
-前置：11←08；12←11；13←08；14←12；15←14；16←08；17←12。官方对应：`docs/user/develop/basic/tool.md`、`docs/user/develop/practice/`、`packages/skill/skill-filesystem/README.md`、`docs/cookbook/adding-a-tool.md`、`adding-a-settings-card.md`、`adding-a-remote-api.md`、`adding-an-llm-adapter.md`、`docs/subsystems/tools.md`、`docs/subsystems/settings.md`、`docs/subsystems/typert.md`。
+前置：10←07；11←10；12←07；13←11；14←13；15←07；16←11。官方对应：`docs/user/develop/basic/tool.md`、`docs/user/develop/practice/`、`packages/skill/skill-filesystem/README.md`、`docs/cookbook/adding-a-tool.md`、`adding-a-settings-card.md`、`adding-a-remote-api.md`、`adding-an-llm-adapter.md`、`docs/subsystems/tools.md`、`docs/subsystems/settings.md`、`docs/subsystems/typert.md`。
 
-#### 阶段 5：客户端 / UI 插件（18–20）
+#### 阶段 5：客户端 / UI 插件（17–19）
 
 上面「不能」里明确划出去的那块，放到这里。三篇之间有严格依赖，别拆开读。
 
 | 编号 | 文件 | 读完你能 | 写什么 |
 | --- | --- | --- | --- |
-| 18 | `18-浏览器插件与dshclient.md` | 让插件往 Web 前端注入一个客户端模块 | `dsh.client` 声明；client bundle 的路由与 index tap；`WebBootGraph` 的线组；Host / Client 配对模型；client HMR 怎么工作 |
-| 19 | `19-Slot体系.md` | 把组件挂到正确的 UI 位置 | slot 的声明归属；基数与作用域；框架注入与 feature 注入；props 怎么推导；现有 slot 层级怎么查 |
-| 20 | `20-自定义对话渲染.md` | 让某类会话事件在对话流里渲染成自己的行 | `ConversationNodeDefinition` + 按 key 注册的 Chat renderer；从 `session/event` 取数据（`assistant/chunk`、turn / step 边界、工具活动）；用 `agent.followup()` / `agent.steer()` 把输入送回；为什么渲染要挂在事件流上而不是直接拿模型输出 |
+| 17 | `17-浏览器插件与dshclient.md` | 让插件往 Web 前端注入一个客户端模块 | `dsh.client` 声明；client bundle 的路由与 index tap；`WebBootGraph` 的线组；Host / Client 配对模型；client HMR 怎么工作；例子：在页面右下角加一个显示当前工作区路径的小角标 |
+| 18 | `18-Slot体系.md` | 把组件挂到正确的 UI 位置 | slot 的声明归属；基数与作用域；框架注入与 feature 注入；props 怎么推导；现有 slot 层级怎么查；例子：把「笔记统计」挂进侧边栏的 slot，而不是自己往 DOM 里塞节点 |
+| 19 | `19-自定义对话渲染.md` | 让某类会话事件在对话流里渲染成自己的行 | `ConversationNodeDefinition` + 按 key 注册的 Chat renderer；从 `session/event` 取数据（`assistant/chunk`、turn / step 边界、工具活动）；用 `agent.followup()` / `agent.steer()` 把输入送回；为什么渲染要挂在事件流上而不是直接拿模型输出；例子：把 10 的 `search_notes` 结果渲染成可点击的笔记卡片 |
 
-前置：18←15；19←18；20←19。官方对应：`docs/subsystems/web-client.md`、`client-modules.md`、`slots.md`、`conversation.md`；现成例子是 `packages/client/ui-*`。
+前置：17←14；18←17；19←18。官方对应：`docs/subsystems/web-client.md`、`client-modules.md`、`slots.md`、`conversation.md`；现成例子是 `packages/client/ui-*`。
 
-#### 阶段 6：发布与维护（21–22）
+#### 阶段 6：发布与维护（20–21）
 
 | 编号 | 文件 | 读完你能 | 写什么 |
 | --- | --- | --- | --- |
-| 21 | `21-把插件发布成bundle.md` | 把插件发成 npm 包，让别人装进自己的 profile | bundle manifest `dsh.bundle` 与 profile manifest `dsh.profile` 的分工；`dsh plugin add` 装进别人的 profile；加载顺序；给 surface bundle 自带命令行；从 GitHub 装时的 build script 坑 |
-| 22 | `22-跟进上游与兼容.md`（可选） | 跟得住 developer preview 的破坏性变更 | 破坏性变更的发布节奏与渠道；怎么读 Agent Notes 与 changelog；invariants 是干什么的、失败了怎么查；升级 `dsh` 与 profile 里插件的步骤 |
+| 20 | `20-把插件发布成bundle.md` | 把插件发成 npm 包，让别人装进自己的 profile | bundle manifest `dsh.bundle` 与 profile manifest `dsh.profile` 的分工；`dsh plugin add` 装进别人的 profile；加载顺序；给 surface bundle 自带命令行；从 GitHub 装时的 build script 坑；例子：把 `search_notes` 发成 npm bundle 并装进另一个 profile |
+| 21 | `21-跟进上游与兼容.md`（可选） | 跟得住 developer preview 的破坏性变更 | 破坏性变更的发布节奏与渠道；怎么读 Agent Notes 与 changelog；invariants 是干什么的、失败了怎么查；升级 `dsh` 与 profile 里插件的步骤 |
 
-前置：21←11；22 无强前置。官方对应：`docs/user/develop/basic/publish.md`、`docs/cookbook/adding-a-package.md`、`docs/testing.md`、`docs/subsystems/invariants.md`、`SAFETY.md`。
+前置：20←10；21 无强前置。官方对应：`docs/user/develop/basic/publish.md`、`docs/cookbook/adding-a-package.md`、`docs/testing.md`、`docs/subsystems/invariants.md`、`SAFETY.md`。
 
 #### 按需深挖：内核（不预先占号）
 
@@ -151,7 +151,7 @@ viewable: true
 
 #### 动笔写第一篇时顺手做的事
 
-- 04 的结尾要从「**主线到此结束。**」改成「**下一篇**：服务与依赖注入」，终点标记往后挪到 22。
+- 04 的结尾要从「**主线到此结束。**」改成「**下一篇**：服务与依赖注入」，终点标记往后挪到 21。
 - 新文件名 `NN-描述.md` 的 `NN` 必须与 frontmatter 的 `order` 一致（`tool/check-columns.sh` 会校验）。
-- 参考卡片 05 在 `参考/` 下，不参与「下一篇」链路，不用动。
+- 参考卡片在 `参考/` 下，不编号、不写 `order`，也不参与「下一篇」链路，不用动。
 - 改完跑一次：`tool/check-columns.sh "dsh 插件开发学习"`。
