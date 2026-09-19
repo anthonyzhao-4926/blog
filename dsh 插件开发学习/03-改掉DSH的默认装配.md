@@ -282,7 +282,7 @@ dsh --profile test --no-open --port 3099
 ## 注意事项
 
 - **id 从 dump 里抄**，它不是包名，也不是插件自己的 `name`。
-- **改完要重启。** patch 只在启动那一刻合成一次，进程里的树不会跟着文件变。这个 `test` profile 也没开配置热重载。
+- **改完 patch 不用重启。** 自建 profile（我们的 `test`）默认 `patchReload: live`，保存 `cordis.patch.yml` 就重新组合装配；想让它只在启动时应用一次，见[改代码不想重启](07-改代码不想重启.md)。
 - **禁用有依赖的东西，dump 里看不出来。** dump 只显示装配，不显示谁在用谁，被禁用的插件如果有消费者，会在启动时报错——记得看启动日志。
 - **`--dump-default-config` 去掉的是你自己写的那几层，不是 bundle 层。** 留下的正是 `dsh-base`、`dsh-web-app` 这些 bundle 自带的层，也就是“还没有你的时候，DSH 默认长什么样”。它和 `--dump-config` 的差别，一层一层看：
 

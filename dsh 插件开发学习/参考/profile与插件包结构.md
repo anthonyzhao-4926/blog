@@ -235,9 +235,23 @@ dsh-better-sidebar/
 }
 ```
 
-结构一模一样（`dependencies` + `bundles` + 那五个文件），差别只在内容：界面包从 `dsh-web-app` 换成 TUI 包，并且多了一个 `patchReload: "live"` —— **改 patch 文件后热重载，不用重启**。web profile 没开这个，所以改了 `cordis.patch.yml` 记得重启 `dsh web`。
+结构一模一样（`dependencies` + `bundles` + 那五个文件），差别只在内容：界面包从 `dsh-web-app` 换成 TUI 包，另外显式写了 `patchReload: "live"` —— **改 patch 文件后热重载，不用重启**。这个字段不写时，自定义 profile 也按 `live` 算；随附模板里倒是有一批是 `startup`，取值见下面速查。
 
 这也说明 profile 的设计意图就是"**一套内核，多套界面/插件集合，互不干扰**"。
+
+## patchReload 速查
+
+`dsh.profile.patchReload`：`live` | `startup`。它管的是**用户 patch 文件**要不要热重载，跟源码热重载（`hmr` 那行）是两回事。
+
+| 值 | 作用 | 随附模板 |
+| --- | --- | --- |
+| `live` | 装监视器盯 profile 的 `cordis.patch.yml` 和 `~/.dsh/cordis.patch.yml`：有效编辑即时重新组合装配，被拒绝的编辑保留上一个能用版本、进程不退；树里没有 `hmr` 服务时再补一个只盯 config 的实例（`root` 为空） | `web` |
+| `startup` | 不装监视器，patch 只在启动那一刻应用一次 | `headless`、`acp`、`sdk`、`sdk-minimal` |
+
+- 省略字段：自定义 profile 按 `live`（历史默认值）；`--from-default-profile <模板>` 建的 profile 继承模板的值，bundle 组合与某个随附模板完全一致的 profile 也会被规范化成模板的值并写回文件。
+- 写别的值启动直接失败：`patchReload must be "live" or "startup"`。
+- `--patch` 传进来的临时层不在监视范围。
+- 为什么热重载的是插件而不是进程、哪些改动必须重启，见[改代码不想重启](../07-改代码不想重启.md)。
 
 ## 文件维护速查表
 
