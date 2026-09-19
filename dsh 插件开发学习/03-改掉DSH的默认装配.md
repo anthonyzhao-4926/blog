@@ -23,7 +23,7 @@ viewable: true
 
 不用改任何源码，让 `test` profile 里的默认装配听你的话：
 
-- **改参数**：把内置 bash 命令的超时从 60 秒缩到 3 秒，把自动生成的会话标题截短。
+- **改参数**：把自动生成的会话标题截短。
 - **加一行**：往树里插一个自己的插件。
 - **停一行**：不需要的内置插件，让它不启动。
 
@@ -52,38 +52,32 @@ flowchart TD
 | `~/.dsh/cordis.patch.yml` | 所有 profile | 跨 profile 的机器级选择 |
 | 命令行 `--patch <file>` | 这一次启动 | 临时试验，满意了再落进上两处 |
 
-## 三个 patch
+## 动手：两条改动
 
-先拿三条改动把 patch 跑通：把 bash 命令的超时缩短、把自动生成的会话标题截短、往树里插一行自己的插件。
+先拿两条改动把 patch 跑通：把自动生成的会话标题截短，再往树里插一行自己的插件。
 
 它们都写进上面的第一层，`~/.dsh/profiles/test/cordis.patch.yml`：
 
 ```yaml
-# 1) 让 bash 命令的超时从 60 秒缩到 3 秒
-- id: bash-sandbox
-  config:
-    timeoutMs: 3000
-
-# 2) 让自动生成的会话标题短到肉眼可见
+# 1) 让自动生成的会话标题短到肉眼可见
 - id: session-title
   config:
     fallbackMaxWords: 3
     fallbackMaxBytes: 16
     maxTitleBytes: 30
 
-# 3) 插一行自己的插件
+# 2) 插一行自己的插件
 - insert:
     - id: dsh-note
       name: '/绝对路径/dsh-patch-demo/my-note.ts'
 ```
 
-| #   | 写法              | 作用         | 这条的效果                                                    |
-| --- | --------------- | ---------- | -------------------------------------------------------- |
-| 1   | `id` + `config` | 找到那一行，替换字段 | 跑个 `sleep 10`，命令 3 秒就被掐断，输出里带 `[timed out after 3000ms]` |
-| 2   | `id` + `config` | 找到那一行，替换字段 | 新开一个会话，标题明显变短                                            |
-| 3   | `insert:`       | 往列表尾部追加行   | 启动日志多打印一行                                                |
+| #   | 写法              | 作用         | 这条的效果                             |
+| --- | --------------- | ---------- | --------------------------------- |
+| 1   | `id` + `config` | 找到那一行，替换字段 | 新开一个会话，标题明显变短                     |
+| 2   | `insert:`       | 往列表尾部追加行   | 启动日志多打印一行，出现 `[dsh-note] … apply() 执行了` |
 
-> 1、2 两条故意做成“一眼能看出来生效”，所以都不太能用：3 秒的超时只够演示，标题截到 30 字节只够好看。改完记得调回合适值。
+> 第 1 条故意做成“一眼能看出来生效”，所以不太能用：标题截到 30 字节只够好看。改完记得调回合适值。
 
 一条 patch 最少就是一个 `id` 加一个字段，或者一个 `insert`。
 
@@ -94,7 +88,7 @@ flowchart TD
   disabled: true
 ```
 
-前面那三条，配上这条停用写法，就是一整套 patch 能做的事。
+前面那两条，配上这条停用写法，就是一整套 patch 能做的事。
 
 ## 用 `--dump-config` 验证
 
@@ -108,18 +102,15 @@ dsh --profile test --dump-config
 
 ```yaml
 # == @deepseek-ai/dsh-base, patched by ~/.dsh/profiles/test/cordis.patch.yml
-- id: bash-sandbox
-  name: '@deepseek-ai/dsh-bash-sandbox'
-  config:
-    timeoutMs: 3000
 - id: session-title
+  name: '@deepseek-ai/dsh-session-title'
   config:
     fallbackMaxWords: 3
     fallbackMaxBytes: 16
     maxTitleBytes: 30
 ```
 
-`timeoutMs` 变成 3000 了；`# ==` 那行注明了改动来自哪一层——写的是你的 profile patch，就对上了。
+`fallbackMaxWords` 变成 3 了；`# ==` 那行注明了改动来自哪一层——写的是你的 profile patch，就对上了。
 
 `--dump-config` 只做合成：不启动插件，也不去算 `!!js`（后面会讲）——表达式原样打印出来。所以它随时可以跑，但也只能证明“装配层写对了”，证明不了插件能跑起来。
 
@@ -127,11 +118,11 @@ dsh --profile test --dump-config
 
 拆开看，patch 文件里每条只有两种形状：**改一行**（`id` 加上要覆盖的字段），或者**加一行**（`insert`）。
 
-上面三条里，`bash-sandbox` 和 `session-title` 是第一种，`dsh-note` 是第二种。下面把两种写法各自讲透，完整可跑的版本在 `dsh_plugin/dsh-patch-demo/`。
+上面两条里，`session-title` 是第一种，`dsh-note` 是第二种。下面把两种写法各自讲透，完整可跑的版本在 `dsh_plugin/dsh-patch-demo/`。
 
 ### insert：追加一行
 
-**加一行**就是把一个新插件追加到列表尾部。它不找目标，所以除了 `insert:` 之外没有别的键：
+**加一行**就是把一个新插件追加到列表尾部。
 
 ```yaml
 - insert:
@@ -143,7 +134,24 @@ dsh --profile test --dump-config
 
 被插进来的一行会真的执行：`my-note.ts` 里就一句 `console.log`，启动后日志出现 `[dsh-note] 我被 patch 插进了插件树，apply() 执行了`。
 
-带 `id` 的 `insert` 是另一个变体：`insert` 下面写 `id` 时，新行插到那一行下面，而不是列表尾部。这个变体要求目标行是 `group: true` 的分组行——默认的 profile 树里一个都没有，遇到再查[加载器文档](https://deepseek-harness.github.io/deepseek-harness/)。
+注意 `name` 指到的那个文件不是 DSH 帮你装的——[02 篇](02-第一个插件.md)里 `dsh plugin add` 装的是一个插件包，这里只是往树里引一行代码。两种加法看着都是“树上多一行”，实际不是一回事，下面单独比一比。
+
+#### 和 02 篇的 `bundle` 加法有什么不同
+
+`my-note.ts` 就一个文件：直接给个绝对路径，DSH 加载它、跑 `apply()`。02 篇的 hello world 则是一个**包**——`package.json` 里声明 `dsh.bundle.patch`，`dsh plugin add` 把它装进 profile 的 `node_modules`，顺手把包名写进 profile `package.json` 的 `dsh.profile.bundles`。
+
+两者都是“往插件树里加一行”，区别在那一行是谁写的、依附在什么上：
+
+| | bundle（02 篇） | insert（本文） |
+| --- | --- | --- |
+| 入口是谁写的 | 包自己的 `patch.yaml`，随包分发 | 你手写在这个 profile 的 `cordis.patch.yml` |
+| 要装东西吗 | 要，`dsh plugin add` 走 pnpm 装进 profile 的 `node_modules` | 不要，`name` 指向磁盘上已有的文件 |
+| 装完还改了什么 | profile 的 `dsh.profile.bundles` 多了个包名 | 没有清单，只有你写的那几行 |
+| 怎么卸载 | `dsh plugin --profile test remove <包名>` | 手动删掉这几行 |
+| 生效范围 | 装了它的 profile 都有 | 只有这份 patch 覆盖到的 profile |
+| 什么时候用 | 插件要分发、要复用、要跟版本走 | 本地试验，或插件就一个文件 |
+
+一句话：bundle 是“把插件装进来”，insert 是“在装配清单里加一行”。所以 insert 必须自己保证那行指向的东西存在、能用——`my-note.ts` 没有依赖，复制到哪个目录都能跑；换成带 `import` 的插件，插件包里还缺依赖（比如 `@deepseek-ai/cordis`），就得你自己在插件目录里装好，`insert` 不替你解决这一步。
 
 ### id：覆盖字段
 
@@ -165,15 +173,17 @@ dsh --profile test --dump-config
 
 ### `!!js` 表达式
 
-上面那几个字段，值不一定非得写死。同一份 patch 要跟平台走、要跟环境变量走、要按别人的装配情况决定时，就写一条表达式，值在加载那一刻算出来。作用域里有 `process.env`、`process.platform` 和 `ctx`：
+上面那几个字段，值不一定非得写死。同一份 patch 要跟平台走、要跟环境变量走、要按别人的装配情况决定时，就在值的位置写一条 `!!js` 表达式，它在加载那一刻才求值。作用域里有 `process.env`、`process.platform` 和 `ctx`：
 
 ```yaml
-- id: bash-sandbox
-  name: '@deepseek-ai/dsh-bash-sandbox'
+# id 照抄 dump 里那一行，值改成一条表达式
+- id: <某行的 id>
   disabled: !!js process.platform === 'win32'
 ```
 
-`dsh-base` 里有一批这样的行，上面这条就是从那里抄来的：Windows 上不启动，别的平台照常。
+`dsh-base` 里就有一批这样的行，上面这条就是最常见的那个路子：Windows 上不启动，别的平台照常。
+
+要留意的是：这条 patch 会把那一行的 `disabled` 整块顶掉，原来的条件不会合进来，得自己一次写全。
 
 `better-sidebar` 是另一个装进来的插件，它用同一机制做“有人挂过我就不挂”：
 
@@ -212,7 +222,7 @@ Error: dsh: plugin tree failed to load: … failed to apply loader entry session
   - $.fallbackMaxBytes missing required value (at fallbackMaxBytes)
 ```
 
-反过来，`bash-sandbox` 那条只写 `timeoutMs` 就够了：这个插件的必填键只有 `timeoutMs`，其余键（`cwd`、`maxTimeoutMs` 等）都可选。**某个键是必填还是可选，去 [Cordis API 文档](../dsh/cordis_api.md)或包自己的类型里看一眼**，别猜。
+反过来，别的插件不一定这么严格：像 `bash-sandbox`，必填键就只有 `timeoutMs`，`cwd`、`maxTimeoutMs` 这些都可选，只写要改的那个键也能起来。**某个键是必填还是可选，去 [Cordis API 文档](../dsh/cordis_api.md)或包自己的类型里看一眼**，别猜。
 
 ### 2. id 写错只警告
 
@@ -244,7 +254,7 @@ dsh --profile test --dump-config --patch ./tmp.yml
 
 ## 完整代码
 
-把前面散着讲的东西收成一份可跑的：`dsh_plugin/dsh-patch-demo/` 下三个文件——`cordis.patch.yml`（本文那三条 patch）、`my-note.ts`（`insert` 插进去的插件）、`install.sh`（填绝对路径，复制进指定 profile）。
+把前面散着讲的东西收成一份可跑的：`dsh_plugin/dsh-patch-demo/` 下三个文件——`cordis.patch.yml`（本文那两条 patch）、`my-note.ts`（`insert` 插进去的插件）、`install.sh`（填绝对路径，复制进指定 profile）。
 
 ```bash
 cd dsh_plugin/dsh-patch-demo && ./install.sh
@@ -254,15 +264,15 @@ cd dsh_plugin/dsh-patch-demo && ./install.sh
 
 ```bash
 # 装配层：值都落上去了
-dsh --profile test --dump-config | grep -A5 'id: bash-sandbox'
+dsh --profile test --dump-config | grep -A6 'id: session-title'
 
 # 运行层：insert 那行真的跑起来了
 dsh --profile test --no-open --port 3099
 ```
 
-第一条看的是装配：值落上去了没有。第二条才看运行：`--dump-config` 只证明合成对了，证明不了插件跑得起来，所以 `insert` 这类改动必须真启动一次，在日志里找 `[dsh-note]`。3099 是躲开正在跑的 3080。
+第一条看的是装配：`config` 里的三个值都落上去了没有。第二条才看运行：`--dump-config` 只证明合成对了，证明不了插件跑得起来，所以 `insert` 这类改动必须真启动一次，在日志里找 `[dsh-note]`。3099 是躲开正在跑的 3080。
 
-至于前两条的效果，得用一次才看得见：跑个 `sleep 10` 会被 3 秒掐断，新开一个会话能看到标题被截断。
+至于第 1 条的效果，得新开一个会话才看得见：标题被截短了。
 
 ## 注意事项
 
