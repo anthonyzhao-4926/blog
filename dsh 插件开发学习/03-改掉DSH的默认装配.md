@@ -199,7 +199,7 @@ dsh --profile test --dump-config
 
 ## 三个易错点
 
-patch 写错有两种待遇：改错了地方只警告，文件本身写坏了直接退出。下面三条是最容易撞上的。
+patch 写错有两种结果：改错了地方只警告，文件本身写坏了直接退出。下面三条是最容易撞上的。
 
 ### 1. `config` 是整块替换
 
@@ -222,8 +222,7 @@ Error: dsh: plugin tree failed to load: … failed to apply loader entry session
   - $.fallbackMaxBytes missing required value (at fallbackMaxBytes)
 ```
 
-反过来，别的插件不一定这么严格：像 `bash-sandbox`，必填键就只有 `timeoutMs`，`cwd`、`maxTimeoutMs` 这些都可选，只写要改的那个键也能起来。**某个键是必填还是可选，去 [Cordis API 文档](../dsh/cordis_api.md)或包自己的类型里看一眼**，别猜。
-
+反过来，别的插件不一定这么严格：像 `bash-sandbox`，必填键就只有 `timeoutMs`，`cwd`、`maxTimeoutMs` 这些都可选，只写要改的那个键也能起来。
 ### 2. id 写错只警告
 
 ```text
@@ -236,13 +235,11 @@ dsh: [/tmp/patch.yml] patch: entry "bash-sandbax" not found
 
 ### 3. patch 文件写错启动失败
 
-YAML 语法错、顶层不是数组、元素不是映射（`insert:` 那一条不是键值对），都在启动时直接抛错退出。
-
-两种待遇是故意的：这类错误自己就能证伪，当场失败最省事；引用不到的东西只警告，因为它可能只是属于别的 profile。
+YAML 语法错、顶层不是数组、元素不是KV（`insert:` 那一条不是键值对），都在启动时直接抛错退出。
 
 ## patch 放哪
 
-三个位置在开头那张表里列过了，这里补两点使用上的差别。
+三个位置在开头那张表里列过了，这里补三点使用上的差别。
 
 profile 那层是默认选择：要动的内置装配都属于某个 profile。换到 `~/.dsh/cordis.patch.yml` 就跨 profile 生效——所有 profile 都不想要同一个内置能力时写这里，代价是它同时也影响别的 profile，写之前先确认这一点。
 
@@ -251,6 +248,14 @@ profile 那层是默认选择：要动的内置装配都属于某个 profile。�
 ```bash
 dsh --profile test --dump-config --patch ./tmp.yml
 ```
+
+`--dump-config` 会把上面三处一起打出来，每层的内容都标着自己的来源。想看“还没加这三处之前”的树，就用它的对照开关 `--dump-default-config`（两者到底差哪几层，见文末「注意事项」的表）：
+
+```bash
+dsh --profile test --dump-default-config
+```
+
+它去掉的正是这三处（profile patch、家目录 patch、`--patch`），留下的只有 bundle 自带的层——换句话说，是“还没有你的时候，DSH 默认长什么样”。
 
 ## 完整代码
 
@@ -279,7 +284,16 @@ dsh --profile test --no-open --port 3099
 - **id 从 dump 里抄**，它不是包名，也不是插件自己的 `name`。
 - **改完要重启。** patch 只在启动那一刻合成一次，进程里的树不会跟着文件变。这个 `test` profile 也没开配置热重载。
 - **禁用有依赖的东西，dump 里看不出来。** dump 只显示装配，不显示谁在用谁，被禁用的插件如果有消费者，会在启动时报错——记得看启动日志。
-- **`--dump-default-config`** 打印的是不含你那一层的树，也就是 patch 之前的样子。怀疑自己哪条写坏了，拿它对照最快。
+- **`--dump-default-config` 去掉的是你自己写的那几层，不是 bundle 层。** 留下的正是 `dsh-base`、`dsh-web-app` 这些 bundle 自带的层，也就是“还没有你的时候，DSH 默认长什么样”。它和 `--dump-config` 的差别，一层一层看：
+
+| 层 | `--dump-config` | `--dump-default-config` |
+| --- | --- | --- |
+| 各 bundle 自带的 `cordis.patch.yml`（dsh-base → dsh-web-app → …） | ✓ | ✓ |
+| profile 自己的 `cordis.patch.yml` | ✓ | ✗ |
+| `~/.dsh/cordis.patch.yml`（机器级） | ✓ | ✗ |
+| 命令行 `--patch` | ✓ | ✗（和这个开关互斥，不能一起用） |
+
+所以 dump 里少了东西时，先用这张表定位是哪一层没了，再看那个文件。`--dump-default-config` 只做救援：`cordis.patch.yml` 写坏了、解析都会失败时，它照样能跑出来。
 
 ---
 
