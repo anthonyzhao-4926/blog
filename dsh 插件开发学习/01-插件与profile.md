@@ -13,7 +13,7 @@ viewable: true
 > 
 > **前置**：无。约 10 分钟。
 
-## profile 是什么
+## profile 的含义
 如下是dsh 插件安装命令，我们来理解一下 profile 的含义。
 
 ```

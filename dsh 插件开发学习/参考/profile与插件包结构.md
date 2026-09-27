@@ -235,23 +235,35 @@ dsh-better-sidebar/
 }
 ```
 
-结构一模一样（`dependencies` + `bundles` + 那五个文件），差别只在内容：界面包从 `dsh-web-app` 换成 TUI 包，另外显式写了 `patchReload: "live"` —— **改 patch 文件后热重载，不用重启**。这个字段不写时，自定义 profile 也按 `live` 算；随附模板里倒是有一批是 `startup`，取值见下面速查。
+结构一模一样（`dependencies` + `bundles` + 那五个文件），差别只在内容：界面包从 `dsh-web-app` 换成 TUI 包。
+
+上面这份 `package.json` 里的 `patchReload` 是旧版本 dsh 写的字段，新版已经不读它了（写什么都当没写，也不会报错）。现在的热重载开关在插件树里的 `hmr` 那行，见下面速查。
 
 这也说明 profile 的设计意图就是"**一套内核，多套界面/插件集合，互不干扰**"。
 
-## patchReload 速查
+## 热重载速查
 
-`dsh.profile.patchReload`：`live` | `startup`。它管的是**用户 patch 文件**要不要热重载，跟源码热重载（`hmr` 那行）是两回事。
+热重载由 base 组合包里 id 为 `hmr` 的那行负责，插件是 `@deepseek-ai/dsh-hmr`，配置和源码两部分共用一个队列：
 
-| 值 | 作用 | 随附模板 |
+```yaml
+# Profile configuration reloads by default; module roots are opt-in.
+- id: hmr
+  name: '@deepseek-ai/dsh-hmr'
+  disabled: !!js "!ctx.get('profileContext')"
+  config:
+    root: []
+```
+
+| 部分 | 默认 | 怎么开 |
 | --- | --- | --- |
-| `live` | 装监视器盯 profile 的 `cordis.patch.yml` 和 `~/.dsh/cordis.patch.yml`：有效编辑即时重新组合装配，被拒绝的编辑保留上一个能用版本、进程不退；树里没有 `hmr` 服务时再补一个只盯 config 的实例（`root` 为空） | `web` |
-| `startup` | 不装监视器，patch 只在启动那一刻应用一次 | `headless`、`acp`、`sdk`、`sdk-minimal` |
+| 配置热重载 | 开 | 盯 profile 的 `cordis.patch.yml`、`~/.dsh/cordis.patch.yml` 和 profile 的 `package.json`，变化就重新组合装配 |
+| 源码热重载 | 关（`root: []`） | 在 profile patch 里给这行配 `root`，列出要监视的目录 |
 
-- 省略字段：自定义 profile 按 `live`（历史默认值）；`--from-default-profile <模板>` 建的 profile 继承模板的值，bundle 组合与某个随附模板完全一致的 profile 也会被规范化成模板的值并写回文件。
-- 写别的值启动直接失败：`patchReload must be "live" or "startup"`。
-- `--patch` 传进来的临时层不在监视范围。
-- 为什么热重载的是插件而不是进程、哪些改动必须重启，见[改代码不想重启](../07-改代码不想重启.md)。
+- `disabled` 是条表达式：dsh 启动的 profile 有 `profileContext`，所以启用；嵌入式宿主没有这个上下文就关掉。
+- `headless`、`sdk`、`acp` 组合包在各自 patch 里把这行 `disabled: true`；要在那边用，在自己的 profile patch 里写 `disabled: false`。
+- `ignored` 默认 `**/node_modules`、`**/.*`、`cache`、`data`；`debounce` 默认 100ms；配置监听还用 Chokidar 的写入稳定窗口（默认 2 秒）。
+- 旧 profile 里残留的 `dsh.profile.patchReload`（`live` / `startup`）新版不再读，写了也不报错。
+- 哪些改动接不住、改了没生效怎么查，见[改代码不想重启](../07-改代码不想重启.md)。
 
 ## 文件维护速查表
 

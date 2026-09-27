@@ -52,7 +52,7 @@ flowchart TD
 | `~/.dsh/cordis.patch.yml` | 所有 profile | 跨 profile 的机器级选择 |
 | 命令行 `--patch <file>` | 这一次启动 | 临时试验，满意了再落进上两处 |
 
-## 动手：两条改动
+## 两条改动
 
 先拿两条改动把 patch 跑通：把自动生成的会话标题截短，再往树里插一行自己的插件。
 
@@ -90,7 +90,7 @@ flowchart TD
 
 前面那两条，配上这条停用写法，就是一整套 patch 能做的事。
 
-## 用 `--dump-config` 验证
+## `--dump-config` 验证
 
 patch 写完，得先知道它有没有落到树上。`--dump-config` 就是干这个的：
 
@@ -197,7 +197,7 @@ dsh --profile test --dump-config
 
 同一个包挂两遍会让路由注册撞车，把整棵树搞崩，所以这一行在发现别人已经挂了同一个包时禁用自己。注意表达式只能看见排在它前面的行，守卫得写在被守卫的行之前。
 
-## 三个易错点
+## 易错点
 
 patch 写错有两种结果：改错了地方只警告，文件本身写坏了直接退出。下面三条是最容易撞上的。
 
@@ -237,7 +237,7 @@ dsh: [/tmp/patch.yml] patch: entry "bash-sandbax" not found
 
 YAML 语法错、顶层不是数组、元素不是KV（`insert:` 那一条不是键值对），都在启动时直接抛错退出。
 
-## patch 放哪
+## patch 的位置
 
 三个位置在开头那张表里列过了，这里补三点使用上的差别。
 
@@ -282,7 +282,7 @@ dsh --profile test --no-open --port 3099
 ## 注意事项
 
 - **id 从 dump 里抄**，它不是包名，也不是插件自己的 `name`。
-- **改完 patch 不用重启。** 自建 profile（我们的 `test`）默认 `patchReload: live`，保存 `cordis.patch.yml` 就重新组合装配；想让它只在启动时应用一次，见[改代码不想重启](07-改代码不想重启.md)。
+- **改完 patch 不用重启。** 配置热重载默认开着（base 里 `hmr` 那行负责），保存 `cordis.patch.yml` 就重新组合装配。默认关着的是源码热重载，要在那行配 `root`，见[改代码不想重启](07-改代码不想重启.md)。
 - **禁用有依赖的东西，dump 里看不出来。** dump 只显示装配，不显示谁在用谁，被禁用的插件如果有消费者，会在启动时报错——记得看启动日志。
 - **`--dump-default-config` 去掉的是你自己写的那几层，不是 bundle 层。** 留下的正是 `dsh-base`、`dsh-web-app` 这些 bundle 自带的层，也就是“还没有你的时候，DSH 默认长什么样”。它和 `--dump-config` 的差别，一层一层看：
 
