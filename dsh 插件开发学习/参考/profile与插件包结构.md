@@ -183,7 +183,7 @@ profile 只是清单，插件的"实体"在 `node_modules/<插件名>`。以侧�
 ```
 dsh-better-sidebar/
 ├── package.json        # 关键在 dsh 字段（见下）
-├── cordis.patch.yml    # 自带的挂载声明
+├── cordis.patch.yml    # 自带的挂载声明（文件名由 dsh.bundle.patch 声明，见下）
 ├── lib/                # 编译产物：index.js（宿主）+ client.js（浏览器端）
 ├── src/                # TypeScript 源码（client/ 下是 React 组件）
 ├── scripts/            # install.sh / install.ps1 安装辅助
@@ -203,6 +203,9 @@ dsh-better-sidebar/
 ```
 
 - `bundle.patch`：CLI 读到这个声明，就把包名追加进 `dsh.profile.bundles`；启动时把这份 patch 合进插件树 —— **一条命令完成"安装 + 挂载"，不用改 profile 任何文件**。
+
+> **这个字段决定文件名，文件名本身没有约定。** 内核里写死的只有 profile 目录和 `~/.dsh/` 下的 `cordis.patch.yml`；插件包自带的补丁叫什么由 `bundle.patch` 指，可以是一个路径，也可以是**有序数组**（一个包多份补丁按序应用）。所以官方模板里叫 `cordis.patch.yml`、[02 篇](../02-第一个插件.md) 的示例叫 `patch.yaml`，两者身份完全相同 —— 都是被声明的 bundle 层，不是两种格式。
+
 - `client.platform` / `client.inject`：告诉宿主"这个包有浏览器端代码，需要注入哪些前端依赖（slot、locale 等）"。
 
 再看它自带的 `cordis.patch.yml`，里面藏了一个很精巧的设计：
@@ -298,6 +301,6 @@ ls -la node_modules/dsh-better-sidebar node_modules/.bin | head
 ## 要点
 
 - `profiles/web` = **装配清单**，不是代码仓库：四个手写文件 + 三个生成物。
-- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件的 patch → profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
+- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02 篇](../02-第一个插件.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
 - `dsh` 字段（`bundle.patch` / `client.platform`）让插件能"装完即挂载"，这是官方推荐的插件分发姿势；profile 里的手工挂载行是会被升级冲掉的旧姿势。
 - `.dsh-module-fallback` 解决"插件不在 profile 目录里也能解析依赖"的问题，属于运行期状态，断了 `pnpm install` 即可。
