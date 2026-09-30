@@ -1,0 +1,4 @@
+# 本文件由 install.sh 按本机绝对路径重新生成；这里的内容只是占位示意。
+- insert:
+    - id: dsh-note-search
+      name: '/绝对路径/dsh-note-search/src/dsh-note-search.ts'

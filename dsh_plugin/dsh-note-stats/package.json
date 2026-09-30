@@ -1,0 +1,23 @@
+{
+  "name": "dsh-note-stats",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./client.js"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@deepseek-ai/dsh-client-connection": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.1.7-rc.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./patch.yaml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}
