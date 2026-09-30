@@ -207,6 +207,7 @@ viewable: true
 - 01–15 已经写好：**15 现在是链路末篇**，挂着终点标记；写 16 时把它换成指向 16 的「**下一篇**：」，终点标记继续往后传。同时把上面「一条主线」的有序列表补上 16，并把九级表里对应的行标上（已写）。
 - **10 / 14 / 15 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：10 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，15 的卡片从 `meta` 读——改一边必须改另一边。
 - **14 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。
+- **13 篇有一处对规划的澄清**：「热提交」是规划用词，仓库真名是 volatile 提交（`_commitVolatile` + `loader/volatile-update` 事件），文中以真名为主；另外仓库内的 `clientBundle` tsdown 预设不发布，仓库外的包要自己带 `tsdown.config.ts` 复现输出契约（demo 里有最小复现）。
 - **15 篇有一处对规划的澄清**：`followup()` / `steer()` 是 host 侧 `Agent` 的方法，浏览器端没有；卡片回送走 `session.prompt(content, 'queue' | 'steer')`，host 侧才映射到这两个动词。
 - 09 的演示代码在 `dsh_plugin/dsh-event-log/`（三个插件：lab 只监听、probe 只派发、stats 监听真实事件并挂计数路由）。它**不写 profile 覆盖层**——插件没有配置项，`install.sh` 不该去覆盖 08 篇留在 `cordis.patch.yml` 里的换源配置。
 - patch 篇原本排在 **07**（那版规划里 05 是 config、06 是 HMR），后来提前到 **03**：`patch.yaml` 在 02 就出现了，拖到 07 才解释太晚。原来的 03–06（背景、生命周期、config、HMR）依次后移成 04–07，`service` 仍是 08；文件名、`order` 与所有交叉引用都已同步改过。
