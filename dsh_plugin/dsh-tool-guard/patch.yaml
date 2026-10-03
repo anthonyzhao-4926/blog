@@ -1,3 +1,0 @@
-- insert:
-    - id: dsh-tool-guard
-      name: '/绝对路径/dsh-tool-guard/src/dsh-tool-guard.ts'
