@@ -4,7 +4,7 @@
  * 它监听三件不同的事：
  *   - `tools/execute`（管道）：包住一次工具执行，量它花了多久；
  *   - `tools/result`（广播）：一次调用结束，记成功/失败；
- *   - `session/event`（广播）：每有一条会话记录落日志就响一次。
+ *   - `session/event`（广播）：每有一条会话记录落日志就触发一次。
  *
  * 三种用法各自对应一种分发模式的选择理由，正文里逐个说。
  */
@@ -70,7 +70,7 @@ export function apply(ctx: Context): void {
         recorded: sorted(recorded),
     })
 
-    // 广播：会话记录落一条响一次。`event.type` 就是记录类型，`event.data` 是它的内容。
+    // 广播：会话记录落一条触发一次。`event.type` 就是记录类型，`event.data` 是它的内容。
     ctx.on('session/event', (_session, event) => {
         bump(recorded, event.type)
         if (event.type === 'approval/decided') {

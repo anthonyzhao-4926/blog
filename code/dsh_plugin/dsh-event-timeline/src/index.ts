@@ -96,7 +96,7 @@ export function apply(ctx: Context): void {
         say(`internal/plugin  ${fiber.uid === null ? 'dispose' : 'create '}  ${fiber.name ?? '匿名'}`)
     })
 
-    // 每次派发之前响一次，带 (mode, name, args, thisArg)。
+    // 每次派发之前触发一次，带 (mode, name, args, thisArg)。
     // 这是排查用的快照钩子，不是 harness 事件，别留在长期代码里。
     ctx.on('internal/dispatch', (mode, eventName, args, thisArg) => {
         if (!WATCHED.has(eventName)) return
