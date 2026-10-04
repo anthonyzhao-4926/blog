@@ -12,6 +12,8 @@ viewable: true
 > **读完这篇你能**：用一份 patch 文件关掉不需要的内置插件、改掉内置插件的参数，不动 `node_modules` 里的一行源码。
 >
 > **前置**：[第一个插件](02-第一个插件.md)。约 20 分钟。
+>
+> **示例代码**：[dsh-patch-demo](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-patch-demo)
 
 [上一篇](02-第一个插件.md)结尾留了个钩子：`patch.yaml` 到底在干什么，能不能用同一套写法改 DSH 自己装的东西。这篇就回答它。
 
