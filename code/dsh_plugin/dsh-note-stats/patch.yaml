@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-note-stats
+      name: '__PLUGIN_DIR__/src/index.ts'

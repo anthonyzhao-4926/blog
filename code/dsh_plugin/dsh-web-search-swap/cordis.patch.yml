@@ -1,0 +1,22 @@
+# 08 篇的覆盖层：把 web_search 的搜索源换成我们自己的。
+#
+# 这是"这台机器上的选择"，落到 <profile>/cordis.patch.yml。
+# 里面的路径占位符由 install.sh 填成真实路径，直接 cp 过去是不能用的。
+#
+# 只改这一行 config 里的 searchProvider：插件树里那一行还是
+# @deepseek-ai/dsh-web（服务定义），换掉的只是它选中哪个 provider。
+
+# 1) 换供应商。
+#    config 是整块替换（03 篇的易错点 1）：要保留的字段得一起写全。
+#    这里 fetchProvider 和 searchProvider 都重写了一遍——漏写不会报错，
+#    但含义从"保持原值"变成"不指定"，选择方式也就跟着变了。
+- id: web
+  config:
+    searchProvider: notes-local
+    fetchProvider: http
+
+# 2) 给自己那行配参数：笔记根目录。
+#    这一行本身由 bundle 的 patch.yaml 插进树（插在树尾），这里只按 id 给它 config。
+- id: dsh-notes-search
+  config:
+    root: '__ABS_PATH__/notes'

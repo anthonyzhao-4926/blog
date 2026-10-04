@@ -1,0 +1,18 @@
+/* 布局根（AppFrame.frame）铺一张背景图，同时覆盖侧边栏与聊天区。
+   遮罩浓度由 Host 半按配置生成 --dsh-chat-background-veil 注入。 */
+div:has(> [data-shell-overlay]) {
+  background-image:
+    linear-gradient(var(--dsh-chat-background-veil), var(--dsh-chat-background-veil)),
+    url('/dsh-chat-background-settings/image');
+  background-size: cover;
+}
+
+/* 侧边栏列：局部置空 fill 变量，透出布局根背景 */
+div:has(> [data-shell-overlay]) > div:first-child {
+  --dsw-specific-sidebar-fill: transparent;
+}
+
+/* 聊天列根：背景置透明，透出布局根背景 */
+div:has(> [data-shell-overlay]) [data-slot='conversation'] > [data-phase] {
+  background: transparent;
+}

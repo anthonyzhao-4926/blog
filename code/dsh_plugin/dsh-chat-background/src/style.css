@@ -1,0 +1,19 @@
+/* 布局根（AppFrame.frame，源码锚点：其直接子 overlayLayer 带 data-shell-overlay）
+   铺一张背景图，同时覆盖侧边栏与聊天区。 */
+div:has(> [data-shell-overlay]) {
+    background-image: url('/dsh-chat-background/image.jpg');
+    background-size: cover;
+}
+
+/* 侧边栏列（frame 的第一个 DOM 子元素，DocumentTitle 渲染 null）：
+   局部置空 --dsw-specific-sidebar-fill，透出布局根背景。 */
+div:has(> [data-shell-overlay])>div:first-child {
+    --dsw-specific-sidebar-fill: transparent;
+}
+
+/* 聊天列根（ConversationRoot.root）：slot 渲染带 data-slot 包装层
+   （display:contents，仍是 DOM 元素），root 自身 background 不透明
+   （--dsw-alias-bg-base），置透明后透出布局根背景。 */
+div:has(> [data-shell-overlay]) [data-slot='conversation']>[data-phase] {
+    background: transparent;
+}

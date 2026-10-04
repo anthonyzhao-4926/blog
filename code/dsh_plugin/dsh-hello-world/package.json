@@ -1,0 +1,13 @@
+{
+	"name": "dsh-hello-world",
+	"version": "0.1.0",
+	"type": "module",
+	"dependencies": {
+		"@deepseek-ai/cordis": "^4.0.1"
+	},
+	"dsh": {
+		"bundle": {
+			"patch": "./patch.yaml"
+		}
+	}
+}

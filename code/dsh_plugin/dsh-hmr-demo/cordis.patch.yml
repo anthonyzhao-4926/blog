@@ -1,0 +1,26 @@
+# 07 篇的合成层：两条路各一行，跑 ./install.sh 会填好 __ABS_PATH__。
+#
+# 这是「你自己写的合成层」，应该落到 <profile>/cordis.patch.yml。
+# 直接 cp 不够用——里面的 __ABS_PATH__ 是占位符。
+
+# 1) 我们的插件。config.tag 归「配置热重载」管：改了它，插件 restart，进程不动。
+- insert:
+    - id: dsh-hmr-demo
+      name: '__ABS_PATH__/my-plugin.ts'
+      config:
+        tag: patched-v1
+
+# 2) 给 hmr 那行配上要监视的源码目录。dsh-base 里这行的 root 默认是 []，
+#    意思是「只看配置、不看源码」；把目录填进去，改 .ts 才会触发模块热重载。
+#
+#    config 是整块替换（03 篇的易错点 1），所以 root 要写全；
+#    ignored / debounce 不写就落回默认值（默认忽略 **/node_modules、
+#    **/.*、cache、data，合并窗口 100ms）。
+#
+#    web profile 里这行默认启用（disabled 是一条看 profileContext 的
+#    !!js 表达式），所以这里不用写 disabled: false；headless / sdk / acp
+#    的组合包把它禁用了，那几个 profile 要额外写 disabled: false。
+- id: hmr
+  config:
+    root:
+      - '__ABS_PATH__'

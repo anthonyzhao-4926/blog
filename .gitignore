@@ -12,3 +12,18 @@
 .trash/
 local/
 
+# Node 依赖与包管理器缓存（体积大、可重装，不入库）
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+
+# 构建产物（由源码生成，不入库）
+dist/
+*.tsbuildinfo
+
+# 包管理器调试日志
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+

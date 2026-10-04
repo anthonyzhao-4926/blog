@@ -1,0 +1,37 @@
+# 03 篇的完整 patch：两条，各演示一件 patch 能做的事。
+#
+# 这是「你自己写的合成层」，应该落到 <profile>/cordis.patch.yml。
+# 直接 cp 不够用——里面的 __ABS_PATH__ 是占位符，
+# 先跑一次 ./install.sh，它会填好路径并复制到 test profile。
+#
+# patch 只有两种形状：
+#   - id + 要覆盖的字段   改一行（config 是整块替换，disabled 是同级的字段）
+#   - insert:             追加一行
+
+# 1) 改内置参数：让自动生成的会话标题短到肉眼可见。
+#    效果：新开一个会话，标题明显变短。
+#    这条是有意改短的，演示完记得调回 dsh-base 的原值
+#    （fallbackMaxWords 5 / fallbackMaxBytes 40 / maxTitleBytes 80）。
+#
+#    注意 config 是整块替换：这三个键原样来自 dsh-base，
+#    session-title 的 schema 把 fallbackMaxBytes / maxTitleBytes 定为必填，
+#    少写一个这行就起不来。
+- id: session-title
+  config:
+    fallbackMaxWords: 3
+    fallbackMaxBytes: 16
+    maxTitleBytes: 30
+
+# 2) 插一行自己的插件，name 用绝对路径最稳（相对路径会以本文件所在
+#    目录为基准转成 file:// URL，路径一挪就断）。
+#    效果：启动日志出现 [dsh-note] 我被 patch 插进了插件树，apply() 执行了
+- insert:
+    - id: dsh-note
+      name: '__ABS_PATH__/my-note.ts'
+
+# 想停用某一行（自己装的、或内置的），再加一条就够了：
+#   - id: <dump 里的 id>
+#     disabled: true
+# 注意内置行的 disabled 常常本来就是 !!js 表达式（例如 dsh-base 里
+# bash-sandbox 那条是「Windows 上不启动」）。你写常量会把它整个替换掉——
+# 写 true 就是在所有平台都停用，Windows 的判断也没了。
