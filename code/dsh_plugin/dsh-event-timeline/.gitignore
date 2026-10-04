@@ -1,0 +1,6 @@
+# install.sh 会用本机绝对路径生成它
+patch.yaml
+
+# 依赖与本地的包管理器状态
+node_modules/
+pnpm-lock.yaml

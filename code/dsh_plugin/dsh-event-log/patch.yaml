@@ -5,12 +5,13 @@
 #   dsh-event-stats  监听真实事件 + 一条 HTTP 路由：回传计数
 #
 # 三行都只负责"挂上树"；本篇的插件没有配置项，所以不需要 profile 覆盖层。
+# （10 篇的事件时间线是另一个包：dsh-event-timeline。）
 - insert:
     - id: dsh-event-lab
-      name: '/Users/anthonyzhao/anthonyzhao/blog/dsh_plugin/dsh-event-log/src/dsh-event-lab.ts'
+      name: '/Users/anthonyzhao/anthonyzhao/blog/blog/code/dsh_plugin/dsh-event-log/src/dsh-event-lab.ts'
 
     - id: dsh-event-probe
-      name: '/Users/anthonyzhao/anthonyzhao/blog/dsh_plugin/dsh-event-log/src/dsh-event-probe.ts'
+      name: '/Users/anthonyzhao/anthonyzhao/blog/blog/code/dsh_plugin/dsh-event-log/src/dsh-event-probe.ts'
 
     - id: dsh-event-stats
-      name: '/Users/anthonyzhao/anthonyzhao/blog/dsh_plugin/dsh-event-log/src/dsh-event-stats.ts'
+      name: '/Users/anthonyzhao/anthonyzhao/blog/blog/code/dsh_plugin/dsh-event-log/src/dsh-event-stats.ts'

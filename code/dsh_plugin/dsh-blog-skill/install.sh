@@ -15,7 +15,7 @@ rm -rf "$TARGET/blog-writing" "$TARGET/blog-publish.md"
 cp -R "$DIR/blog-writing" "$TARGET/blog-writing"
 cp "$DIR/blog-publish.md" "$TARGET/blog-publish.md"
 
-echo "已装到 $TARGET："
+echo "已装到 ${TARGET}："
 echo "  blog-writing/SKILL.md  目录形态（正文 + reference/ + templates/）"
 echo "  blog-publish.md        平铺形态（仅 /blog-publish 唤起）"
 echo "扫描根有被监视，新会话的 skill 目录里就能看到，不用重启。"
