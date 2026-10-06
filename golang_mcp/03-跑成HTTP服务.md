@@ -1,4 +1,5 @@
 ---
+flowix_key: xs9ps5lt
 title: 跑成 HTTP 服务
 date: 2026-03-25
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 3
 viewable: true
 ---
-
 > **读完这篇你能**：把已经写好的 MCP 换成 Streamable HTTP 启动，并用 ApiFox 连上验证。
 >
 > **前置**：[工具的参数](02-工具的参数.md)。约 10 分钟。

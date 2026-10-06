@@ -1,4 +1,5 @@
 ---
+flowix_key: vhz25pi7
 title: profile 与插件包结构
 date: 2026-09-12
 tags:
@@ -7,7 +8,6 @@ tags:
 column: dsh-plugin
 viewable: true
 ---
-
 > 本文是知识卡，不用顺序读。装插件报错、想知道某个文件能不能手改、或者要弄清装配顺序时来查。
 
 `~/.dsh/profiles/web` 是 web profile 的全部配置所在。本文按文件逐个说明：它是什么、由谁维护、什么情况下需要改、以及它们如何组合成一棵 Cordis 插件树。

@@ -1,4 +1,5 @@
 ---
+flowix_key: qcyjnpbu
 title: 挂到 gin 路由
 date: 2026-03-25
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 4
 viewable: true
 ---
-
 > **读完这篇你能**：把 MCP 挂到 gin（或任何 HTTP 框架）的某个路由上。
 >
 > **前置**：[跑成 HTTP 服务](03-跑成HTTP服务.md)。

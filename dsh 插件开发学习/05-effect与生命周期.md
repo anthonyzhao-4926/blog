@@ -1,4 +1,5 @@
 ---
+flowix_key: zhtxt3dg
 title: effect 与插件生命周期
 date: 2026-09-01
 tags:
@@ -8,7 +9,6 @@ column: dsh-plugin
 order: 5
 viewable: true
 ---
-
 > **读完这篇你能**：说清插件从加载到卸载的四个阶段，知道什么该交给 `ctx.effect` 管理。
 >
 > **前置**：[给页面加背景](04-给页面加背景.md)。约 15 分钟。

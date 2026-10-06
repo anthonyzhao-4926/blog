@@ -1,3 +1,7 @@
+---
+flowix_key: fl4tbsma
+---
+
 # dsh-event-timeline
 
 《[事件进阶](../../../dsh%20插件开发学习/10-事件进阶.md)》的示例插件：把 DSH 真实派发过的

@@ -1,4 +1,5 @@
 ---
+flowix_key: b1pnk6yr
 title: linux 命令入门
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 0
 viewable: true
 ---
-
 ## linux 命令入门
 
 > 面向「学校没教、工作要用」的人：把 Linux 从零用起来。

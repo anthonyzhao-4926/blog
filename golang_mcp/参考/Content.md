@@ -1,11 +1,11 @@
 ---
+flowix_key: afsqsii1
 title: Content
 date: 2026-03-29
 tags: [go, mcp, ai]
 column: golang-mcp
 viewable: true
 ---
-
 > 本文是知识卡,不需要从头读到尾;哪篇文章提到 Content 类型了,再跳过来查对应的那节。
 
 `Content` 是 MCP 里消息内容的公共接口,工具结果、提示词消息、采样消息里的「一段内容」都是它。接口里带一个非导出方法,所以只能用 SDK 提供的实现,一共七种:

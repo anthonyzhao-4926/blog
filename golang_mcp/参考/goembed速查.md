@@ -1,11 +1,11 @@
 ---
+flowix_key: 28my11r4
 title: go:embed 速查
 date: 2026-03-28
 tags: [go, mcp, ai]
 column: golang-mcp
 viewable: true
 ---
-
 > 本文是知识卡。MCP 里用它嵌提示词模板、流程图这类固定资源，见[注册预置提示词](../07-注册预置提示词.md)。
 
 `//go:embed` 是 Go 1.16 起的编译指令：**在编译时把文件打进可执行文件**，而不是运行时再从磁盘读。部署时不用带着一堆模板文件。

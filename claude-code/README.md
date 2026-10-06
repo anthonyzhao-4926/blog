@@ -1,4 +1,5 @@
 ---
+flowix_key: a0na9dxp
 title: claude-code
 date: 2026-06-08
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-code
 order: 0
 viewable: true
 ---
-
 ## claude-code
 
 > 官方文档：https://code.claude.com/docs/zh-CN/overview

@@ -1,11 +1,11 @@
 ---
+flowix_key: yjkq9h8i
 title: MIME 类型
 date: 2026-03-28
 tags: [go, mcp, ai]
 column: golang-mcp
 viewable: true
 ---
-
 MIME 最初是 *Multipurpose Internet Mail Extensions*(多用途互联网邮件扩展),用来在邮件里标明附件是什么格式。今天更常见的叫法是**媒体类型(Media Type)**或**内容类型(Content Type)**:一段字节/文本该按什么格式解析,靠一个字符串说清楚,`image/png` 是 PNG 图片,`text/plain; charset=utf-8` 是 UTF-8 纯文本。IANA 维护着官方登记表:[Media Types](https://www.iana.org/assignments/media-types/media-types.xhtml)。
 
 # 语法

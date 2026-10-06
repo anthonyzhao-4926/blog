@@ -1,8 +1,8 @@
 ---
+flowix_key: 0pik7cwl
 name: blog-writing
 description: 本博客仓库的撰文规矩：专栏文章文件名 NN-描述.md、frontmatter 六个字段、配图放专栏的 assets/ 目录、文章骨架。在本仓库新建或修改专栏文章时使用。
 ---
-
 # 博客撰文规矩
 
 本仓库是中文技术博客，文章按专栏组织，一个专栏一个目录（如 `dsh 插件开发学习/`），专栏 id 在根目录 `config.yml` 的 `columns:` 里注册。

@@ -1,4 +1,5 @@
 ---
+flowix_key: fwe7ah6y
 title: Hooks
 date: 2026-07-20
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-code
 order: 8
 viewable: false
 ---
-
 > **状态：草稿，未发布。** 「如何指定触发时机」这一半已经写全；「触发后执行什么动作」还没展开。
 
 Hook 是在特定时机触发指定动作的机制。简单来说就是，用户指定什么时候干一些用户自己想干的事。

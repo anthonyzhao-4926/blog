@@ -1,4 +1,5 @@
 ---
+flowix_key: biu8tv9v
 title: Turn
 date: 2026-08-24
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-agent-sdk
 order: 8
 viewable: true
 ---
-
 > **读完这篇你能**：说清一个 turn 的边界。**注意：本篇目前只有一张截图，文字待补。**
 >
 > **前置**：[工具调用过程](04-工具调用过程.md)。约 2 分钟。

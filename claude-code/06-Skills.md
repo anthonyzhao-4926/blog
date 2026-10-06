@@ -1,4 +1,5 @@
 ---
+flowix_key: ksq1xoh2
 title: Skills
 date: 2026-06-16
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-code
 order: 6
 viewable: true
 ---
-
 > **读完这篇你能**：按规范写出一个 Skill，并知道怎么让它按需加载。
 >
 > **前置**：[记忆机制](05-记忆机制.md)。约 25 分钟。

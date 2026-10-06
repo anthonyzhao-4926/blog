@@ -1,4 +1,5 @@
 ---
+flowix_key: acsl50xv
 title: Streamable HTTP 配置与安全
 date: 2026-03-25
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 9
 viewable: true
 ---
-
 > **这篇不影响主线。** 等你要把 MCP 部署到别人能访问的地方、或者要调 handler 行为时再看。
 
 # 配置项

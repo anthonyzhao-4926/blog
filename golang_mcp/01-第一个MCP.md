@@ -1,4 +1,5 @@
 ---
+flowix_key: lj9cyae8
 title: 第一个 MCP
 date: 2026-04-01
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 1
 viewable: true
 ---
-
 > **读完这篇你能**：写一个能跑的 MCP 服务端，并在 Inspector 里调用它的工具。
 >
 > **前置**：会 Go。约 10 分钟。

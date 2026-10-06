@@ -1,4 +1,5 @@
 ---
+flowix_key: uds0g8gp
 title: effort、设置优先级与模型
 date: 2026-07-02
 tags:
@@ -8,7 +9,6 @@ column: claude-code
 order: 9
 viewable: true
 ---
-
 > **读完这篇你能**：查 effort 档位、设置优先级和模型别名的含义。
 >
 > **前置**：无。约 5 分钟。

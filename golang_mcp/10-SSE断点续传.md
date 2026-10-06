@@ -1,4 +1,5 @@
 ---
+flowix_key: fxgwoz30
 title: SSE 断点续传
 date: 2026-03-25
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 10
 viewable: true
 ---
-
 > **这篇不影响主线。** 等真的部署到公网、遇到「SSE 断线丢消息」了再回来看。
 
 # 为什么需要 EventStore

@@ -1,4 +1,5 @@
 ---
+flowix_key: eva4vggd
 title: claude-agent-sdk
 date: 2026-08-14
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-agent-sdk
 order: 0
 viewable: true
 ---
-
 ## claude agent sdk
 
 > 官方文档：https://docs.claude.com/en/api/agent-sdk/overview

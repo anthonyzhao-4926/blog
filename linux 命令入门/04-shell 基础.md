@@ -1,4 +1,5 @@
 ---
+flowix_key: w89hk8r7
 title: shell 基础
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 4
 viewable: true
 ---
-
 > **读完这篇你能**：写一个带变量和判断的 shell 脚本，并知道环境变量该配在哪。
 >
 > **前置**：[linux 常用命令](02-linux%20常用命令.md)。约 45 分钟。

@@ -1,4 +1,5 @@
 ---
+flowix_key: jpt9le9i
 title: linux 系统简介
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 1
 viewable: true
 ---
-
 > **读完这篇你能**：说清 Linux 是什么、内核版和发行版差在哪。
 >
 > **前置**：无。约 5 分钟。

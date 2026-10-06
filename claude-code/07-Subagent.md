@@ -1,4 +1,5 @@
 ---
+flowix_key: oj1sm4p8
 title: Subagent
 date: 2026-07-06
 tags:
@@ -8,7 +9,6 @@ column: claude-code
 order: 7
 viewable: true
 ---
-
 > **读完这篇你能**：定义并调用 subagent，把支线任务挪出主上下文。
 >
 > **前置**：[Skills](06-Skills.md)。约 20 分钟。

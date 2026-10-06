@@ -1,4 +1,5 @@
 ---
+flowix_key: h3tqox5j
 title: Claude可调用的工具
 date: 2026-06-22
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-code
 order: 2
 viewable: true
 ---
-
 > **读完这篇你能**：知道 Claude 内置了哪些工具，各自能做什么。
 >
 > **前置**：[宏观认识 Claude Code](01-宏观认识Claude%20code.md)。约 20 分钟。

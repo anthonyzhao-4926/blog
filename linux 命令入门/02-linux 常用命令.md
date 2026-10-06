@@ -1,4 +1,5 @@
 ---
+flowix_key: 8dx0bbho
 title: linux 常用命令
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 2
 viewable: true
 ---
-
 > **读完这篇你能**：把日常最高频的目录、文件、权限、搜索命令用起来。
 >
 > **前置**：能敲命令就行；本篇也可以只当字典查。约 60 分钟。

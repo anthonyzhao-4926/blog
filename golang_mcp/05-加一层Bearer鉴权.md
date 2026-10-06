@@ -1,4 +1,5 @@
 ---
+flowix_key: cxrqx757
 title: 加一层 Bearer 鉴权
 date: 2026-03-30
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 5
 viewable: true
 ---
-
 > **读完这篇你能**：给 MCP 的 HTTP 端点套一层 Bearer Token 校验。
 >
 > **前置**：[跑成 HTTP 服务](03-跑成HTTP服务.md) 或 [挂到 gin 路由](04-挂到gin路由.md)。

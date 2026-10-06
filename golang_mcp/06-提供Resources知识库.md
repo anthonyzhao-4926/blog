@@ -1,4 +1,5 @@
 ---
+flowix_key: btwi93pi
 title: 提供 Resources 知识库
 date: 2026-03-29
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 6
 viewable: true
 ---
-
 > **读完这篇你能**：把一份说明文档注册成 Resource，让模型自己检索。
 >
 > **前置**：[工具的参数](02-工具的参数.md)。

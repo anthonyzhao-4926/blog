@@ -1,4 +1,5 @@
 ---
+flowix_key: 9kxluox5
 title: 宏观认识Claude code
 date: 2026-07-02
 tags: [ai, claude]
@@ -6,7 +7,6 @@ column: claude-code
 order: 1
 viewable: true
 ---
-
 > **读完这篇你能**：说出 Claude Code 有哪些组件，以及为什么上下文窗口是贯穿全篇的约束。
 >
 > **前置**：无。约 10 分钟。

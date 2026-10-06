@@ -1,4 +1,5 @@
 ---
+flowix_key: jkzg645i
 title: Agent 进度跟踪
 date: 2026-08-19
 tags:
@@ -8,7 +9,6 @@ column: claude-agent-sdk
 order: 5
 viewable: true
 ---
-
 > **读完这篇你能**：区分 subagent 消息的归属，把它的进度转发到前端。
 >
 > **前置**：[工具调用过程](04-工具调用过程.md)。约 25 分钟。

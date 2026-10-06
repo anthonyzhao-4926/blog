@@ -1,9 +1,9 @@
 ---
+flowix_key: 418vk2ee
 name: blog-publish
 description: 发布前检查单：核对本仓库一篇专栏文章是否满足发布条件。只由用户用 /blog-publish 唤起，模型不自动加载。
 disable-model-invocation: true
 ---
-
 # 发布前检查单
 
 用户唤起时会指定一篇文章（或默认检查最近改动的那篇）。逐项核对并汇报结果，任何一项不过都明确说出来：

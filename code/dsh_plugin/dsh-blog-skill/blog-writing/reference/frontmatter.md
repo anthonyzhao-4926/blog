@@ -1,3 +1,7 @@
+---
+flowix_key: 3vek6ngm
+---
+
 # frontmatter 字段规则
 
 每篇正文文章的 frontmatter 六个字段，一个不能少：

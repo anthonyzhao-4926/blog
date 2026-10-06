@@ -1,4 +1,5 @@
 ---
+flowix_key: bm8zlv6l
 title: linux 三剑客 grep sed awk
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 5
 viewable: true
 ---
-
 > **读完这篇你能**：用 grep 过滤、sed 替换、awk 按列统计。
 >
 > **前置**：[shell 基础](04-shell%20基础.md)。约 40 分钟。

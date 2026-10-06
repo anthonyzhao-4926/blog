@@ -1,11 +1,11 @@
 ---
+flowix_key: jxk1xs1t
 title: Transport 对照表
 date: 2026-03-25
 tags: [go, mcp, ai]
 column: golang-mcp
 viewable: true
 ---
-
 > 本文是知识卡，不用从头读到尾。要选传输方式时看第一节的表；要抄某个 transport 的写法时跳到对应小节。
 
 依赖 `github.com/modelcontextprotocol/go-sdk v1.4.1`（见 [pkg.go.dev/mcp](https://pkg.go.dev/github.com/modelcontextprotocol/go-sdk/mcp)）。下面各段代码都是可以独立编译的 main 骨架，按需挑一种场景。

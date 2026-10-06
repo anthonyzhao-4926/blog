@@ -1,4 +1,5 @@
 ---
+flowix_key: k88l1wvo
 title: golang-mcp
 date: 2026-09-08
 tags: [go, mcp, ai]
@@ -6,7 +7,6 @@ column: golang-mcp
 order: 0
 viewable: true
 ---
-
 ## golang-mcp
 
 > 官方规范：https://modelcontextprotocol.io

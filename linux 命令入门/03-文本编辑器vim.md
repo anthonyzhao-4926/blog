@@ -1,4 +1,5 @@
 ---
+flowix_key: z1sqm69d
 title: 文本编辑器 vim
 date: 2025-06-01
 tags:
@@ -7,7 +8,6 @@ column: linux-command
 order: 3
 viewable: true
 ---
-
 > **读完这篇你能**：用 vim 打开文件、编辑、保存退出、查找替换。
 >
 > **前置**：[linux 常用命令](02-linux%20常用命令.md)。约 15 分钟。

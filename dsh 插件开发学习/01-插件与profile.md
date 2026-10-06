@@ -1,4 +1,5 @@
 ---
+flowix_key: ns9o4gw8
 title: 插件与 profile
 date: 2026-08-25
 tags:
@@ -8,7 +9,6 @@ column: dsh-plugin
 order: 1
 viewable: true
 ---
-
 > **读完这篇你能**：说清 profile、bundle、插件三者的关系，并建好一个干净的 test profile。
 > 
 > **前置**：无。约 10 分钟。
