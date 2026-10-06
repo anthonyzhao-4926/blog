@@ -25,7 +25,7 @@ section{margin-bottom:26px}
 .ev{position:relative;display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--hair);
 font:inherit;color:inherit;cursor:pointer;padding:11px 16px;transition:background .12s}
 .ev:last-child{border-bottom:0}.ev:hover{background:#f8f8f6}
-.ev[aria-current=true]{background:#fdf3e3;box-shadow:inset 3px 0 0 #bc5f0c}
+.ev[aria-current=true]{background:#f3f8ff;box-shadow:inset 3px 0 0 #2f6fed}
 .ev[aria-current=true] .nt{color:var(--ink2)}
 .list:not(.chips) .ev{padding-left:calc(16px + var(--lv,0) * 22px)}
 .ev .lvl{position:absolute;left:6px;top:0;bottom:0;width:calc(var(--lv,0) * 22px);
@@ -40,8 +40,8 @@ background-image:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1
 .chips .ev code{font-size:12.5px;font-weight:500}
 .mode{font:400 10.5px/1.7 ui-monospace,Menlo,monospace;border:1px solid currentColor;border-radius:99px;padding:0 7px;font-style:normal;opacity:.9}
 .m-emit{color:var(--emit)}.m-waterfall{color:var(--waterfall)}.m-serial{color:var(--serial)}.m-parallel{color:var(--parallel)}.m-bail{color:var(--bail)}
-.chips .ev[aria-current=true]{background:#fdf3e3;border-color:#e3b97e}
-.chips .ev[aria-current=true] code{color:#7a3d06;font-weight:600}
+.chips .ev[aria-current=true]{background:#e8f1fe;border-color:#9dc0f7}
+.chips .ev[aria-current=true] code{color:#1d4ed8;font-weight:600}
 .chips .ev[aria-current=true] .ms{color:#a5a59f}
 .chips .ev[aria-current=true] .mode{color:var(--emit)}
 aside{position:sticky;top:24px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:23px}
@@ -51,6 +51,18 @@ dl{margin:0}dt{font-size:12px;color:var(--mut);margin-top:18px}dd{margin:5px 0 0
 dd pre{margin:0;padding:12px 14px;background:#fafaf8;border:1px solid var(--line);border-radius:9px;
 font:12px/1.68 ui-monospace,SFMono-Regular,Menlo,monospace;color:#3a3a3a;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4}
 footer{max-width:1560px;margin:0 auto;padding:0 40px 60px;color:var(--mut);font-size:12px;line-height:1.9}
+
+/* 事件 / 会话记录 徽标：固定在卡片右上角，不占正文行 */
+.ev{position:relative}
+.ev .kind{position:absolute;top:8px;right:10px;font-style:normal;font-size:10px;line-height:1.7;
+  padding:0 6px;border-radius:5px;background:#eef3fe;border:1px solid #d6e2fb;color:#2f6fed;
+  font-family:-apple-system,"PingFang SC",sans-serif;font-weight:600;letter-spacing:.2px}
+.ev.rec .kind{background:#f0f0ee;border-color:#dcdcd6;color:#74746e}
+.ev[aria-current=true] .kind{background:#fff;border-color:#bcd6fb;color:#1d4ed8}
+.ev.rec[aria-current=true] .kind{background:#fff;border-color:#d9d3c6;color:#74746e}
+.chips .ev[aria-current=true] .kind{background:rgba(255,255,255,.9)}
+.chips .ev{padding-right:46px}
+.ev:not(.rec):not(.chips .ev){padding-right:52px}
 </style></head><body>
 <header>
   <h1>DSH 事件生命周期</h1>
@@ -106,4 +118,16 @@ document.addEventListener('click', (e) => {
   }
 });
 paint('agent/pre-step', document.getElementById('detail0'));
+(function mark(){
+  document.querySelectorAll(".ev").forEach(function(el){
+    var d = DATA[el.dataset.ev];
+    if (!d) return;
+    var tag = document.createElement("em");
+    tag.className = "kind";
+    tag.textContent = d.rec ? "记录" : "事件";
+    el.appendChild(tag);
+    var ms = el.querySelector('.ms'); if (ms) ms.remove();   // 绝对定位在右上角，插哪儿都不影响排版
+  });
+})();
+
 </script></body></html>
