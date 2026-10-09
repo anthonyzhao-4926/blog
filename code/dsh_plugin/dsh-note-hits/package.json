@@ -1,0 +1,18 @@
+{
+    "name": "dsh-note-hits",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@deepseek-ai/cordis": "^4.0.1",
+        "@deepseek-ai/dsh-credentials": "^0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "^0.2.0-rc.2",
+        "@deepseek-ai/schemastery": "^3.18.2",
+        "zod": "^4.4.3"
+    },
+    "dsh": {
+        "bundle": {
+            "patch": "./patch.yaml"
+        }
+    }
+}

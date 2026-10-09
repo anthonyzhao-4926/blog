@@ -204,7 +204,7 @@ dsh-better-sidebar/
 
 - `bundle.patch`：CLI 读到这个声明，就把包名追加进 `dsh.profile.bundles`；启动时把这份 patch 合进插件树 —— **一条命令完成"安装 + 挂载"，不用改 profile 任何文件**。
 
-> **这个字段决定文件名，文件名本身没有约定。** 内核里写死的只有 profile 目录和 `~/.dsh/` 下的 `cordis.patch.yml`；插件包自带的补丁叫什么由 `bundle.patch` 指，可以是一个路径，也可以是**有序数组**（一个包多份补丁按序应用）。所以官方模板里叫 `cordis.patch.yml`、[02 篇](../02-第一个插件.md) 的示例叫 `patch.yaml`，两者身份完全相同 —— 都是被声明的 bundle 层，不是两种格式。
+> **这个字段决定文件名，文件名本身没有约定。** 内核里写死的只有 profile 目录和 `~/.dsh/` 下的 `cordis.patch.yml`；插件包自带的补丁叫什么由 `bundle.patch` 指，可以是一个路径，也可以是**有序数组**（一个包多份补丁按序应用）。所以官方模板里叫 `cordis.patch.yml`、[02 篇](../02-最小插件的结构与装配.md) 的示例叫 `patch.yaml`，两者身份完全相同 —— 都是被声明的 bundle 层，不是两种格式。
 
 - `client.platform` / `client.inject`：告诉宿主"这个包有浏览器端代码，需要注入哪些前端依赖（slot、locale 等）"。
 
@@ -266,7 +266,7 @@ dsh-better-sidebar/
 - `headless`、`sdk`、`acp` 组合包在各自 patch 里把这行 `disabled: true`；要在那边用，在自己的 profile patch 里写 `disabled: false`。
 - `ignored` 默认 `**/node_modules`、`**/.*`、`cache`、`data`；`debounce` 默认 100ms；配置监听还用 Chokidar 的写入稳定窗口（默认 2 秒）。
 - 旧 profile 里残留的 `dsh.profile.patchReload`（`live` / `startup`）新版不再读，写了也不报错。
-- 哪些改动接不住、改了没生效怎么查，见[改代码不想重启](../07-改代码不想重启.md)。
+- 哪些改动接不住、改了没生效怎么查，见[配置与源码的热重载](../07-配置与源码的热重载.md)。
 
 ## 文件维护速查表
 
@@ -301,6 +301,6 @@ ls -la node_modules/dsh-better-sidebar node_modules/.bin | head
 ## 要点
 
 - `profiles/web` = **装配清单**，不是代码仓库：四个手写文件 + 三个生成物。
-- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02 篇](../02-第一个插件.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
+- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02 篇](../02-最小插件的结构与装配.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
 - `dsh` 字段（`bundle.patch` / `client.platform`）让插件能"装完即挂载"，这是官方推荐的插件分发姿势；profile 里的手工挂载行是会被升级冲掉的旧姿势。
 - `.dsh-module-fallback` 解决"插件不在 profile 目录里也能解析依赖"的问题，属于运行期状态，断了 `pnpm install` 即可。

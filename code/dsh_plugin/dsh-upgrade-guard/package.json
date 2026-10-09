@@ -1,0 +1,31 @@
+{
+    "name": "dsh-upgrade-guard",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "dsh": "^0.2.0-rc.2",
+        "node": "^22.19.0 || >=24.0.0"
+    },
+    "dsh": {
+        "bundle": {
+            "patch": "./cordis.patch.yml"
+        }
+    },
+    "scripts": {
+        "build": "node build.mjs",
+        "prepare": "node build.mjs"
+    },
+    "peerDependencies": {
+        "@deepseek-ai/cordis": "^4.0.1",
+        "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2",
+        "@deepseek-ai/dsh-tools": "^0.2.0-rc.2"
+    },
+    "devDependencies": {
+        "@deepseek-ai/cordis": "^4.0.1",
+        "@deepseek-ai/dsh-invariants": "^0.2.0-rc.2",
+        "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+        "esbuild": "^0.25.0",
+        "typescript": "^5.6.0"
+    }
+}
