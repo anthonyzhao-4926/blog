@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-llm-ollama
+      name: '/绝对路径/dsh-llm-ollama/src/dsh-llm-ollama.ts'

@@ -1,0 +1,16 @@
+{
+    "name": "dsh-self-cordis",
+    "version": "0.1.0",
+    "description": "把 DSH 自带的自修改工具集装进一个 profile",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "@deepseek-ai/dsh-cordis-host-runner": "^0.2.0-rc.2",
+        "@deepseek-ai/dsh-tool-cordis": "^0.2.0-rc.2"
+    },
+    "dsh": {
+        "bundle": {
+            "patch": "./cordis.patch.yml"
+        }
+    }
+}

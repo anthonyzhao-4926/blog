@@ -1,6 +1,6 @@
 ---
 flowix_key: acsl50xv
-title: Streamable HTTP 配置与安全
+title: 09-Streamable HTTP 配置与安全
 date: 2026-03-25
 tags: [go, mcp, ai]
 column: golang-mcp

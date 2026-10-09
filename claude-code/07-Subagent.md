@@ -1,6 +1,6 @@
 ---
 flowix_key: oj1sm4p8
-title: Subagent
+title: 07-Subagent
 date: 2026-07-06
 tags:
   - ai

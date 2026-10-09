@@ -1,0 +1,21 @@
+# 本包贡献给 profile 的那一层。
+#
+# 这里按【包名】引用自己的插件行，不写绝对路径：包一旦被 pnpm 装进 profile，
+# Node 的模块解析就能按名字找到它。前几篇 demo 的 patch.yaml 里那种
+# `/绝对路径/.../src/xxx.ts` 只对"源码就在这台机器上"成立，发出去就废了。
+#
+# 覆盖内置行时只写要改的字段（disabled 是行级字段，不是 config 的一部分）。
+# 要改 config 就得重述整行 config——patch 是整块替换，不做深合并。
+
+# 自动起标题会额外花一次模型调用；团队里统一关掉，标题留给人写。
+- id: session-title-llm
+  disabled: true
+
+- insert:
+    - id: team-kit
+      name: 'dsh-team-kit'
+      config:
+        conventions: |
+          这个仓库的约定：
+          - 提交信息用中文写，一次提交只做一件事。
+          - 改动前先跑一遍相关测试，别把没验证的东西留在工作区。

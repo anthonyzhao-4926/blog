@@ -1,6 +1,6 @@
 ---
 flowix_key: w89hk8r7
-title: shell 基础
+title: 04-shell 基础
 date: 2025-06-01
 tags:
   - linux

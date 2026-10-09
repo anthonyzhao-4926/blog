@@ -1,6 +1,6 @@
 ---
 flowix_key: 8dx0bbho
-title: linux 常用命令
+title: 02-linux 常用命令
 date: 2025-06-01
 tags:
   - linux

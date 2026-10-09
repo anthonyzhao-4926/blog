@@ -1,6 +1,6 @@
 ---
 flowix_key: ksq1xoh2
-title: Skills
+title: 06-Skills
 date: 2026-06-16
 tags: [ai, claude]
 column: claude-code

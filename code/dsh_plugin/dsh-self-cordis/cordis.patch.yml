@@ -1,0 +1,15 @@
+# 把 DSH 自带的自修改工具集挂上。
+#
+# 这两个包都不是组合包（manifest 里没有 dsh 字段），所以 `dsh plugin add` 对它们
+# 只会给一条 "declares no dsh.bundle" 的警告——它们是依赖，装配靠这一层。
+# 本包自己是个组合包，作用就是把「依赖两个包 + 插两行」打包成一条安装命令。
+
+- insert:
+    - id: cordis-host-runner
+      name: '@deepseek-ai/dsh-cordis-host-runner'
+      config:
+        # 沙箱只对动态包函数体的同步部分计时，异步部分逃得出去。
+        vmTimeoutMs: 5000
+
+    - id: tool-cordis
+      name: '@deepseek-ai/dsh-tool-cordis'

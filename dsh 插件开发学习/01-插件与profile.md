@@ -1,6 +1,6 @@
 ---
 flowix_key: ns9o4gw8
-title: 插件与 profile
+title: 01-插件与 profile
 date: 2026-08-25
 tags:
   - ai

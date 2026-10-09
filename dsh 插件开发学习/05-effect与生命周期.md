@@ -1,6 +1,6 @@
 ---
 flowix_key: zhtxt3dg
-title: effect 与插件生命周期
+title: 05-effect 与插件生命周期
 date: 2026-09-01
 tags:
   - ai

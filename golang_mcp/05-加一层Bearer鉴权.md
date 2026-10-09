@@ -1,6 +1,6 @@
 ---
 flowix_key: cxrqx757
-title: 加一层 Bearer 鉴权
+title: 05-加一层 Bearer 鉴权
 date: 2026-03-30
 tags: [go, mcp, ai]
 column: golang-mcp

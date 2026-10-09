@@ -1,6 +1,6 @@
 ---
 flowix_key: fzhy1wvc
-title: 改掉 DSH 的默认装配
+title: 03-改掉 DSH 的默认装配
 date: 2026-09-12
 tags:
   - ai
