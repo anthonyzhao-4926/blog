@@ -1,0 +1,14 @@
+{
+    "name": "dsh-mcp-lab",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "dsh": {
+        "bundle": {
+            "patch": "./cordis.patch.yml"
+        }
+    },
+    "dependencies": {
+        "@deepseek-ai/dsh-mcp-client": "^0.2.0-rc.2"
+    }
+}

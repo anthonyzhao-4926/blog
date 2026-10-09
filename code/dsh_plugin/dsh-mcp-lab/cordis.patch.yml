@@ -1,0 +1,33 @@
+# dsh-mcp-lab：把两台 MCP 服务器接进模型。
+#
+# 每台服务器一条配置项，这就是全部设置。两行刻意用了两种传输：
+# 本地程序走 stdio，远端服务走 streamable-http。
+#
+# 凭据一律用 !!js 从环境变量取，不写死在文件里——注意只有 config 与
+# 行的 disabled 允许 !!js，其它元数据字段会保持静态。
+
+- id: mcp-github
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    # 工具会以 mcp__github__<工具名> 出现，所以这个名字要短、要稳。
+    # 它同时是工具名前缀，改名等于改工具名，会话历史与权限规则会跟着失效。
+    serverName: github
+    transport: stdio
+    command: npx
+    args: ['-y', '@modelcontextprotocol/server-github']
+    env:
+      GITHUB_TOKEN: !!js process.env.GITHUB_TOKEN
+    # 初始连不上时 harness 照常启动，只是这台服务器的工具不出现、日志里记一条错。
+    # 想让它反过来（连不上就别启动），把它改成 true。
+    failOnStartupError: false
+
+- id: mcp-web
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: web
+    transport: streamable-http
+    url: http://localhost:3000/mcp
+    headers:
+      Authorization: !!js '`Bearer ${process.env.MCP_TOKEN}`'
+    # 每次 tools/call 的超时，默认 60 秒。
+    toolCallTimeoutMs: 60000
