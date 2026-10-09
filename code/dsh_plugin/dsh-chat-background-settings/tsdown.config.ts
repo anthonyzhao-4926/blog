@@ -7,9 +7,14 @@
  *   window.__ModuleLoader__.load({ id: <包名>, factory: (require) => { ... } })
  * 页面里的模块表按 id 登记 factory，插件被激活时调用它。
  *
- * react 与 @deepseek-ai/cordis 保持外部引用：页面里的模块表已备好这两个
- * 模块（平台基线），factory 收到的 require 能直接答它们；其余依赖一律打包
- * 进产物——模块表答不上的 require 会在运行时直接抛错。
+ * neverBundle 列的就是页面的平台基线模块（packages/client/web/src/platform.ts
+ * 里那份 PLATFORM_MODULES 清单）：factory 收到的 require 能直接答它们，所以
+ * 一律保持外部引用。基线之外的依赖全部打包进产物——模块表答不上的 require
+ * 会在运行时直接抛错。
+ *
+ * react 那几条最硬：页面里多一份 React，hooks 与 context 立刻不工作。其余几条
+ * 是把页面已经共享给所有插件的那份实现再打一份进去，不会当场报错，但版本会
+ * 各自漂移。按清单整体处理，不要逐个判断该不该外部化。
  */
 import { defineConfig } from 'tsdown'
 
@@ -21,7 +26,17 @@ export default defineConfig({
     dts: false,
     sourcemap: true,
     deps: {
-        neverBundle: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/cordis'],
+        neverBundle: [
+            'react',
+            'react/jsx-runtime',
+            'react-dom',
+            'react-dom/client',
+            '@deepseek-ai/cordis',
+            '@deepseek-ai/dsh-client-store',
+            '@deepseek-ai/dsh-client-ui-slots',
+            '@deepseek-ai/dsh-client-ui-primitives',
+            '@deepseek-ai/dsh-client-ui-dockkit',
+        ],
     },
     outputOptions: {
         // 产物名固定为 lib/client.js：/plugins 路由的组合地址按 <包名>/client.js 拼。

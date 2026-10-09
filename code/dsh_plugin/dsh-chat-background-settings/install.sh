@@ -20,4 +20,4 @@ EOF
 # cordis.patch.yml 里还留着 08 篇的换源配置。
 dsh plugin --profile test add "link:$DIR"
 
-echo "装好了。启动 dsh --profile test --no-open，在侧边栏「插件」里打开 dsh-chat-background-settings 那一行的配置页。"
+echo "装好了。启动 dsh --profile test --no-open，在「设置 → 插件 → 插件配置」里找 dsh-chat-background-settings 那张卡片。"

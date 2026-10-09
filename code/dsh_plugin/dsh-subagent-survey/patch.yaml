@@ -1,0 +1,5 @@
+# dsh-subagent-survey 的 bundle 补丁：只插一行。
+# 子 agent 服务与它的提供方由 base 层装配，这里只加一个读能力矩阵的工具。
+- insert:
+    - id: dsh-subagent-survey
+      name: '/绝对路径/dsh-subagent-survey/src/dsh-subagent-survey.ts'

@@ -43,7 +43,7 @@ viewable: true
 10. [事件进阶](10-事件进阶.md)——DSH 的七十多个事件地图、Cordis 事件与会话记录的区别、一轮对话的完整生命周期
 11. [为模型注册自定义工具](11-为模型注册自定义工具.md)——`defineTool` 注册一个 `note_search`，参数描述、ToolResult、后台任务与卡片意图
 12. [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md)——工具执行管线的四个拦截点，用 `ctx.tools.guard()` 拦下危险调用
-13. [用 Skill 固化项目规矩](13-用 Skill 固化项目规矩.md)——把「配图放哪、命名怎么起」写成 skill，DSH 每次自己带上
+13. [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md)——把「配图放哪、命名怎么起」写成 skill，DSH 每次自己带上
 14. [把插件配置搬进设置页](14-把插件配置搬进设置页.md)——一个包两半（Host + client），配置项搬进设置页
 15. [把 Host 数据展示到界面](15-把 Host 数据展示到界面.md)——`/api` 路由暴露统计，客户端模块挂到侧边栏 slot
 16. [把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)——给 `note_search` 的结果做可点击的卡片，交互经 `followup` / `steer` 送回会话
@@ -94,9 +94,10 @@ viewable: true
 | 长任务不想堵会话 | [为模型注册自定义工具](11-为模型注册自定义工具.md) → 「长任务走后台」相关小节 |
 | 想在执行前拦下危险调用 | [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md) |
 | 搞清权限、沙箱、审批各挂在哪 | [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md) → 「权限、沙箱、审批的挂点」 |
-| 把项目规矩沉淀成 skill | [用 Skill 固化项目规矩](13-用 Skill 固化项目规矩.md) |
-| skill 写了没被模型用上 | [用 Skill 固化项目规矩](13-用 Skill 固化项目规矩.md) → 「扫描根与优先级」相关小节 |
+| 把项目规矩沉淀成 skill | [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md) |
+| skill 写了没被模型用上 | [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md) → 「扫描根与优先级」相关小节 |
 | 让插件使用者在界面上改配置，不碰 cordis.yml | [把插件配置搬进设置页](14-把插件配置搬进设置页.md) |
+| 自己插件注册了设置项，设置页上却没有卡片 | [设置项与卡片速查](参考/设置项与卡片速查.md) → 「浏览器侧：卡片槽位」 |
 | 在侧边栏 / 设置页展示自己的数据 | [把 Host 数据展示到界面](15-把 Host 数据展示到界面.md) |
 | 外部插件能不能用 `ctx.remote` | [把 Host 数据展示到界面](15-把 Host 数据展示到界面.md) |
 | 把工具结果渲染成可点击的卡片 | [把工具结果渲染成卡片](16-把工具结果渲染成卡片.md) |
@@ -125,6 +126,7 @@ viewable: true
 不是读物，查到才用：
 
 - [profile 与插件包结构](参考/profile与插件包结构.md)——profile 目录逐文件说明、patch 合成模型、插件包内部结构、维护速查表
+- [设置项与卡片速查](参考/设置项与卡片速查.md)——`installSection` 参数与 hooks、namespace 命名规则、`SettingsScope` 快照字段表、卡片槽位契约、落盘位置、两条生效路径对照
 
 ### 接下来的路
 
@@ -154,8 +156,8 @@ viewable: true
 
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
-| 13（已写） | `13-用 Skill 固化项目规矩.md` | 每次都要跟模型解释「配图放哪、命名怎么起」，烦 | skill：两种形态与扫描根优先级；frontmatter；目录与正文分离的按需加载（上下文成本）；`user-invocable` / `disable-model-invocation` |
-| 14（已写） | `14-把插件配置搬进设置页.md` | 插件给同事用，但路径和偏好每人不同，不想让他改 `cordis.yml` | 一个包两半（Host + `src/client`）；`dsh.client` 与 `./client` 导出；设置页按 settings namespace 自动配对；默认值 → 组合 base → 用户文档的层叠；热提交 |
+| 13（已写） | `13-用 Skill 固化提示词与规则.md` | 每次都要跟模型解释「配图放哪、命名怎么起」，烦 | skill：两种形态与扫描根优先级；frontmatter；目录与正文分离的按需加载（上下文成本）；`user-invocable` / `disable-model-invocation` |
+| 14（已写） | `14-把插件配置搬进设置页.md` | 插件给同事用，但路径和偏好每人不同，不想让他改 `cordis.yml` | 一个包两半（Host + `src/client`）；`dsh.client` 与 `./client` 导出；Host 侧 `installSection` 注册插件自起的 settings namespace（`setSource` / `onChange`）；浏览器侧卡片进 keyed 槽位 `settings.plugin.item`，key 就是那个 namespace，读写走 `ctx.settingsScope.bind(...)`；默认值 → 组合 base → 用户文档（`settings.yaml`）的层叠；两条生效路径（装载层重启 / 设置页不重启） |
 | 15（已写） | `15-把 Host 数据展示到界面.md` | 想在设置页或侧边栏看到「工作区有多少笔记、最近搜过什么」 | `ctx.remote` 五步与 `/api` 路由；失败词汇表；slot 的声明归属与 props 推导；客户端模块怎么注入 |
 | 16（已写） | `16-把工具结果渲染成卡片.md` | 工具结果只是一坨文本，想渲染成可点击的卡片 | 对话渲染：`ConversationNodeDefinition` + 按 key 的 Chat renderer；数据为什么从 `session/event` 来；`followup()` / `steer()` 怎么把交互送回去 |
 
@@ -243,10 +245,11 @@ viewable: true
 - **23 篇有两处对规划的更正**：① 全文检索出厂是关的（`session-query-sqlite` 配 `openAt: never`），给模型的 5 个检索工具也不在任何出厂装配里，所以「回查几天前聊过什么」要自己补两处配置；② 「checkpoint」在仓库里指四种不同的东西，正文点名区分，别当成一个词。
 - **24 篇有一处对规划的更正**：规划里的「失败几次」内置没有任何字段——`session-stats` 的八个字段里没有失败计数；失败信号散在 `tool/result` 的 `isError`、`turn/end` 的 `reason`、`llm/retry` 三处，24 篇的 demo 自己折了一个 `failureCounts` 单元。另外 `time-context` 出厂也不挂载。
 - **18 篇与 19 篇的接缝**：`dsh-cordis-host-runner` / `dsh-tool-cordis` 这类扩展包 manifest 里没有 `dsh` 字段，**不是组合包**——`dsh plugin add` 只会给一条 `declares no dsh.bundle` 警告，装配靠 patch 行。19 篇的 `dsh-self-cordis` 就是把这个「依赖 + 插行」打包成一个组合包。
-- 调研素材放在 `.dsh-column-research/`（按规划编号命名，与文件名有偏移：素材 20/21 对应文档 21/22，23/24/25 一致）。正文写完后这批素材不再需要，可以整目录删掉。
+- 调研素材曾放在 `.dsh-column-research/`（按规划编号命名，与文件名有偏移：素材 20/21 对应文档 21/22，23/24/25 一致）。17–25 全部落笔后该目录已整体删除，若要复查某条源码依据，按正文里的路径重新查。
+- **全栏已做过一次文件名重写**：25 篇的 `NN-xxx.md` 从「动词短语」改成了「名词短语」（例如 `14-让别人自己配插件.md` → `14-把插件配置搬进设置页.md`），frontmatter 的 `title` 与各篇之间的「前置 / 下一篇」链接文字同步改过。重写时漏改了一处目标名（`13-用 Skill 固化项目规矩.md` 实际不存在），已在 `12` 篇、`14` 篇与 README 里修正为 `13-用 Skill 固化提示词与规则.md`。以后再加篇目，文件名与标题都按名词短语起。
 - **10 / 14 / 15 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：10 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，15 的卡片从 `meta` 读——改一边必须改另一边。
-- **14 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。
-- **14 篇有一处需要按当前版本重核**：文中与 demo 用的 `loader/volatile-update` 事件、`_commitVolatile`、`Schema…volatile()` 在当前源码里全都查不到（`packages/`、`vendor/`、`apps/` 全仓 grep 零结果）；真实的 HMR 事件是 `hmr/change` / `hmr/reload` / `hmr/config-update-failed`。这一篇的机制描述与 demo 代码要回头核对。另外仓库内的 `clientBundle` tsdown 预设不发布，仓库外的包要自己带 `tsdown.config.ts` 复现输出契约（demo 里有最小复现）。
+- **15 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。
+- **14 篇已按当前版本改对**：原先写的 `Schema…volatile()`、`Volatile<T>`、`config.image.get()`、`loader/volatile-update`、`_commitVolatile` 在当前源码里全都不存在，整节删除。真实机制：Host 侧 `ctx.settings.installSection(owner, ns, schema, entry, { setSource, onChange })` 注册一个**插件自己起名**的 namespace（`^[a-z][a-z0-9-]*$`），`setSource` 给的是取值函数、值变了框架调 `onChange`；浏览器侧卡片注册进 keyed 槽位 **`settings.plugin.item`，key 就是那个 namespace**（不是 entry id，也不是 `<包名>#<行 id>`；`#` 不是合法 namespace 字符），设置页把「宿主已服务的 namespace」与「已注册的卡片 key」取交集后渲染；读写走 `ctx.settingsScope.bind({ namespace })`，**写被拒时是正常返回、要读回快照判断**。落盘是 `$DSH_HOME/settings.yaml`（顶层键 = namespace），不是 profile 的 `cordis.patch.yml`，也**不出现在 `--dump-config` 里**。原「更高层 patch 会盖住的写入保存时直接拒绝」查无此检查、已删（真实关系相反：用户层在组合 base 之上）。原「改完 `src/client/` 要重新构建并重启」已改：要重新 `pnpm run build`，但不用重启 DSH（客户端 HMR 盯 `lib/client.js`，首轮修订号是启动时分配的 nonce、热替换后是内容哈希）。原「`autoGenerate` / `ctx.settings.configure({ auto: false })`」一条全仓查无、已删。字段表与契约抽成知识卡 `参考/设置项与卡片速查.md`。demo 的 `@deepseek-ai/cordis-plugin-loader` 依赖、`@deepseek-ai/dsh-client-ui-plugin-manager`（仓库内不存在）与 `plugins.row.config` 槽位一并换掉。
 - **15 篇有一处对规划的澄清**：`followup()` / `steer()` 是 host 侧 `Agent` 的方法，浏览器端没有；卡片回送走 `session.prompt(content, 'queue' | 'steer')`，host 侧才映射到这两个动词。
 - 09 的演示代码在 `dsh_plugin/dsh-event-log/`（三个插件：lab 只监听、probe 只派发、stats 监听真实事件并挂计数路由）。它**不写 profile 覆盖层**——插件没有配置项，`install.sh` 不该去覆盖 08 篇留在 `cordis.patch.yml` 里的换源配置。
 - patch 篇原本排在 **07**（那版规划里 05 是 config、06 是 HMR），后来提前到 **03**：`patch.yaml` 在 02 就出现了，拖到 07 才解释太晚。原来的 03–06（背景、生命周期、config、HMR）依次后移成 04–07，`service` 仍是 08；文件名、`order` 与所有交叉引用都已同步改过。

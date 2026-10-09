@@ -5,7 +5,7 @@ date: "2026-09-12"
 tags:
   - "ai"
   - "dsh"
-column: "dsh-plugin"
+column: dsh-plugin
 order: 6
 viewable: true
 flowix_colors: []
