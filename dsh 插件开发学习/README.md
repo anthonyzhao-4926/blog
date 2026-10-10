@@ -63,8 +63,21 @@ viewable: true
 23. [会话上下文的压缩、裁剪与排水](23-会话上下文的压缩、裁剪与排水.md)——会话日志是唯一真相；压缩、裁剪、排水是三件不同的事
 24. [会话用量与成本的计量](24-会话用量与成本的计量.md)——可重放计量、它的精度边界，以及外发上报时脱敏该由谁做
 25. [插件的状态、密钥与配置存储](25-插件的状态、密钥与配置存储.md)——状态、密钥、用户配置各走哪条缝，「存引用不存明文」的准确含义
+26. [多 agent 的任务拆解](26-多 agent 的任务拆解.md)——subagent 的 provider 注册与 spawn / fork 的差别；agent team 的 lead / teammate 与共享任务 DAG
+27. [一批任务的并行编排](27-一批任务的并行编排.md)——workflow 的脚本编排、阶段与失败隔离；jobs 的后台作业与消费视图
+28. [定时任务与目标推进](28-定时任务与目标推进.md)——schedule 的会话内定时与持久化转换；goal 的身份与轮次归属；todo 的整表不变量
+29. [接入 MCP 服务](29-接入 MCP 服务.md)——把外部 MCP server 挂进来：工具怎么进 catalog、凭据怎么给、失败怎么呈现
+30. [外部事件触发会话](30-外部事件触发会话.md)——webhook 的鉴权投递与规则、创建 workspace session 的语义，以及 GitHub 的现成评审链路
+31. [把 DSH 嵌进自己的应用](31-把 DSH 嵌进自己的应用.md)——headless / sdk / sdk-minimal / acp 四个 profile 各适合什么；JSON-RPC 与 ACP
+32. [系统提示词的装配](32-系统提示词的装配.md)——agent-instructions 与 system-prompt 的协作式装配、`@` 文件引用、agent-presets 换人设
+33. [代码执行环境的接入](33-代码执行环境的接入.md)——PTC 的请求与执行规格边界、八个失败分类、绑定命名空间、子进程缝上的环境变量
+34. [长驻终端与代码导航](34-长驻终端与代码导航.md)——终端的会话与后端契约、就绪的四种结束原因、三层字节上界；LSP 的四种操作与 provider 契约
+35. [给团队加一条命令](35-给团队加一条命令.md)——命令注册表与 adapter、附件的身份与验证读、feedback 与 deliverables 为什么只给人看
+36. [给 DSH 提 PR](36-给DSH提PR.md)——门禁的权威在脚本里、测试的七层、生成物不许手改、能力缝与不变式、postmortem 当反面教材
+37. [复用 Claude Code 的 hooks](37-复用ClaudeCode的hooks.md)——协议 hook 与 native hook 两条路、两个桥各能承接什么、哪些 hook 从根上迁不过来
+38. [会话格式升级了](38-会话格式升级了.md)——会话在磁盘上的布局、写入器 / 已定稿 / 已发布三个数、迁移链的两条硬约束、插件该怎么读会话
 
-其余篇目见下面的[接下来的路](#接下来的路)。
+同一批篇目按主题分成九级，另外列在下面的[接下来的路](#接下来的路)；参考卡片另见[参考卡片](#参考卡片)。
 
 ### 只想找某一件事
 
@@ -138,7 +151,7 @@ viewable: true
 
 ### 接下来的路
 
-撰写文档同时要完成代码，代码放置在 `/Users/Shared/zhaoxin/blog/dsh_plugin`（只写代码，不在本机执行、不启动 dsh）
+撰写文档同时要完成代码，代码放在仓库内的 `code/dsh_plugin/`（与既有的三十多个 demo 同处一地；只写代码，不在本机执行、不启动 dsh）。
 
 #### 第一级：贴合我的环境（03，06–08）
 
@@ -211,15 +224,15 @@ viewable: true
 | 32（已写） | `32-系统提示词的装配.md` | 想让模型每次都知道项目规范、能引用具体文件 | agent-instructions 与 system-prompt 的协作式装配；file-reference 的 `@` 引用；agent-presets 怎么换一套人设与工具 |
 | 33（已写） | `33-代码执行环境的接入.md` | 想让模型写一段代码跑一下、看结果，而不是一个个来回调工具 | PTC（程序化工具调用）：请求与执行规格的边界；八个失败分类为什么必须分开；绑定命名空间与可移植名字；`ctx.ptcRuntime` 的服务定义与消费者；子进程缝上环境变量的归属 |
 | 34（已写） | `34-长驻终端与代码导航.md` | 想让模型多次操作同一个长驻终端；想让它会跳转定义、找引用 | terminal 的会话与后端契约、就绪判定、有界读取；tmux-context；lsp 的四种操作与 provider 契约 |
-| 35 | `35-给团队加一条命令.md` | 想把常用操作做成 `/xxx`；想贴截图让模型看图 | commands：注册、adapter 发现、解析与直接调用；attachment：图片身份、验证读、存储 seam；feedback 与 deliverables |
+| 35（已写） | `35-给团队加一条命令.md` | 想把常用操作做成 `/xxx`；想贴截图让模型看图 | commands：注册、adapter 发现、解析与直接调用；attachment：图片身份、验证读、存储 seam；feedback 与 deliverables |
 
 #### 第九级：改 DSH 与维护（36–38）
 
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
-| 36 | `36-给DSH提PR.md` | 想给 DSH 内核或内置包提一个改动 | architecture 与 capability-seams；module-graph / graph-atlas 怎么读；development 与三种测试；defensive-patterns；invariants；i18n 流程；postmortem 怎么当反面教材 |
-| 37 | `37-复用ClaudeCode的hooks.md` | 从 Claude Code / Codex 迁过来，已有的 hooks 不想重写 | hook-protocol 的通用协议；hooks-claude-code / hooks-codex 各自能承接什么；哪些是「native hook」（普通 Cordis 插件）不需要协议 |
-| 38 | `38-会话格式升级了.md` | DSH 升级后老会话数据打不开，或需要迁移 | session-format 的版本与迁移链；persistence-catalog 记录了什么；session-format-status 的当前状态 |
+| 36（已写） | `36-给DSH提PR.md` | 想给 DSH 内核或内置包提一个改动 | architecture 与 capability-seams；module-graph / graph-atlas 怎么读；development 与三种测试；defensive-patterns；invariants；i18n 流程；postmortem 怎么当反面教材 |
+| 37（已写） | `37-复用ClaudeCode的hooks.md` | 从 Claude Code / Codex 迁过来，已有的 hooks 不想重写 | hook-protocol 的通用协议；hooks-claude-code / hooks-codex 各自能承接什么；哪些是「native hook」（普通 Cordis 插件）不需要协议 |
+| 38（已写） | `38-会话格式升级了.md` | DSH 升级后老会话数据打不开，或需要迁移 | session-format 的版本与迁移链；persistence-catalog 记录了什么；session-format-status 的当前状态 |
 
 #### 参考型文档
 
@@ -246,14 +259,19 @@ viewable: true
 
 #### 写下一篇时的维护清单
 
-- **01–34 已经写好：34 现在是链路末篇**，篇尾挂着「**主线到此结束**」。写 35 时把 34 的终点标记换成指向 35 的「**下一篇**：」，终点标记继续往后传；同时把上面「一条主线」的有序列表补到 35，并把九级表里对应的行标上（已写）——九级表里 26–34 行已经按现文件名标好，35–38 仍是规划行。
+- **01–38 已经写好：38 现在是链路末篇**，篇尾挂着「**主线到此结束**」。终点标记从 34 一路传到 38；九级表里 26–38 行都标了「（已写）」，「一条主线」的有序列表也在本轮补全到 38（原先只到 25，靠一句「其余篇目见接下来的路」兜着）。
+- **35–38 的 demo 分两套构建形态，都是有意的**：35 `dsh-command-kit/`、38 `dsh-session-audit/` 走「`patch.yaml` + 插件行直接指 `src/*.ts`」（与 34 的 `dsh-nav-kit` 一致，省一次构建）；36 `dsh-kernel-map/`、37 `dsh-native-hook/` 走「`cordis.patch.yml` + `build.mjs` → `lib/index.js`」，更贴近内置包那种 JS 产物加载路径。
+- **36 篇有两处对规划的更正**：① 规划写「想给 DSH 内核或内置包提一个改动」，而 `CONTRIBUTING.md:9` 明说**当前不收外部 PR**——正文因此把这篇定位成「动手改内核之前要知道什么」，并如实分出「写仓库外插件」与「在 fork 里改内核」两条路；② 规划写的「三种测试」在快照里实际是**七层**（单测 / 覆盖率 / 真 API e2e / owner-local 期望 / 性能基准 / 会话快照 / Web 浏览器快照），正文按七层写。另记一条文档自身的漂移：`docs/AGENTS.md` 说 `testing.md` 上限 1300，而门禁真正读的 `scripts/doc-budgets.manifest.json` 里是 1350——权威是清单。
+- **37 篇有三处发现值得留在版面上**：① 规划里的「哪些是 native hook」在仓库里**有官方定义**（`docs/cookbook/extension-cookbook.md`：挂在拦截点上的普通 Cordis 插件，不需要外部协议）；② 两个桥包的 README 都写「`SessionStart` 是 detached 跑的、可能错过第一个请求」，而同版本代码在 `agent/created`（serial、监听器被 await）上跑它、桥自己的测试也断言第一个请求看得到——正文以代码为准，并把这处「文档与代码不一致」单独写成一节；③ demo `dsh-native-hook` 原本订阅了当前版本不存在的事件 `agent/session-start`（只存在于归档 Agent Note，当前源码里零命中），而 `build.mjs` 走 esbuild **不求值类型**，于是两处错误——事件名、以及注入消息的 source 没做声明（消息来源映射里**没有通用的 `plugin` kind**）——都会静默失效。现已改成 `agent/created` + `declare module '@deepseek-ai/dsh-llm'` 声明自己的 source，并给 demo 补了 `pnpm run typecheck`（`install.sh` 里先跑它）。
+- **38 篇有一处对规划的补充**：没有 `dsh doctor` / `dsh migrate` 这类产品入口，真实的迁移入口是检出目录里的一次性脚本 `pnpm run migrate:sessions-to-v4`。另补一条写作时确认的缺口：**公开 API 不暴露磁盘上的存储世代号**（`stat` / `list` 返回的是翻译过的逻辑头，恒为当前写入器版本），所以体检磁盘代际只能用官方的文件名解析器自己扫。
+- **`.dsh-column-research/` 里留了八份调研素材**：26 / 29 / 30 / 34 / 35 / 36 / 37 / 38（35 与 38 是本轮补写的，其余是前几轮留下的）。复查某一篇的源码依据可以先看对应编号的素材，但**36 / 37 那两份的行号依据的是当时那棵 `local/deepseek-harness/` 树，快照现已改名为 `local/deepseek-harness-dsh-v0.2.0-rc.2/`**；正文里引用路径一律用带版本后缀的那个。
 - **17–25 的 demo 对照**：17 `dsh-llm-ollama/`（Ollama adapter）、18 `dsh-team-kit/`（装配包，带 `prepare` 与给同事看的 README）、19 `dsh-live-greeter/`（内存插件）+ `dsh-self-cordis/`、20 `dsh-upgrade-guard/`（内核版本自检 + invariant companion + `doctor.sh`）、21 `dsh-fs-write-watch/`（沙箱三层的只读观察器）、22 `dsh-ask-before-bash/`（`tools/pre-execute` 返回 `ask`）、23 `dsh-session-digest/`（host-only 投影单元）、24 `dsh-turn-cost/`（读内置单元 + 自折失败计数）、25 `dsh-note-hits/`（storage domain + 凭据引用）。每篇开头的「示例代码」链接指到 GitHub 上的目录。
 - **21 篇有一处对规划的更正**：沙箱的「fs 观察策略」规划写的是三选一模式，实际是 `dsh-fs-observation-policy` 的「先读后写 + 版本 CAS」，是个 event-only 插件，不是模式开关。
 - **22 篇有一处对规划的更正**：plan mode 是**软约束**（`docs/subsystems/plan.md` 原话 `Plan mode is soft guidance`），它不禁任何工具，真正的硬边界来自审批与沙箱。另外 `ctx.approval.effectivePolicy` 在源码里是 private，子系统文档与代码不一致，外部插件读有效策略要自己折叠 `overrideOf ?? config.policy ?? 'ask'`。
 - **23 篇有两处对规划的更正**：① 全文检索出厂是关的（`session-query-sqlite` 配 `openAt: never`），给模型的 5 个检索工具也不在任何出厂装配里，所以「回查几天前聊过什么」要自己补两处配置；② 「checkpoint」在仓库里指四种不同的东西，正文点名区分，别当成一个词。
 - **24 篇有一处对规划的更正**：规划里的「失败几次」内置没有任何字段——`session-stats` 的八个字段里没有失败计数；失败信号散在 `tool/result` 的 `isError`、`turn/end` 的 `reason`、`llm/retry` 三处，24 篇的 demo 自己折了一个 `failureCounts` 单元。另外 `time-context` 出厂也不挂载。
 - **18 篇与 19 篇的接缝**：`dsh-cordis-host-runner` / `dsh-tool-cordis` 这类扩展包 manifest 里没有 `dsh` 字段，**不是组合包**——`dsh plugin add` 只会给一条 `declares no dsh.bundle` 警告，装配靠 patch 行。19 篇的 `dsh-self-cordis` 就是把这个「依赖 + 插行」打包成一个组合包。
-- 调研素材曾放在 `.dsh-column-research/`（按规划编号命名，与文件名有偏移：素材 20/21 对应文档 21/22，23/24/25 一致）。17–25 全部落笔后该目录已整体删除，若要复查某条源码依据，按正文里的路径重新查。
+- 调研素材放在 `.dsh-column-research/`（按规划编号命名，与文件名有偏移：素材 20/21 对应文档 21/22，23/24/25 一致）。17–25 落笔后清过一次，后来写 26–38 时又留了八份（见上面那条）；要复查某条源码依据，先按正文里的路径回快照查。
 - **全栏已做过一次文件名重写**：25 篇的 `NN-xxx.md` 从「动词短语」改成了「名词短语」（例如 `14-让别人自己配插件.md` → `14-把插件配置搬进设置页.md`），frontmatter 的 `title` 与各篇之间的「前置 / 下一篇」链接文字同步改过。重写时漏改了一处目标名（`13-用 Skill 固化项目规矩.md` 实际不存在），已在 `12` 篇、`14` 篇与 README 里修正为 `13-用 Skill 固化提示词与规则.md`。以后再加篇目，文件名与标题都按名词短语起。
 - **11 / 15 / 16 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：11 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，16 的卡片从 `meta` 读——改一边必须改另一边。
 - **15 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。

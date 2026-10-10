@@ -3,17 +3,28 @@
  *
  * 两个动作与桥接的 Claude Code hook 一一对照：
  *   1) `tools/pre-execute` 返回类型化 Decision，阻断危险 bash；
- *   2) `agent/session-start` 同步注入本会话的策略说明。
+ *   2) `agent/created` 同步注入本会话的策略说明。
  *
  * 桥能给的是「复用已有的 hooks.json」和一对 `hook/*` 审计记录；换来的是
  * 事件清单、matcher 语义、`exit 2` 那条线协议的限制。这个插件把两者摆在一起，
  * 让取舍可见：它不写任何 `hook/*` 记录。
  *
+ * 注意事件名：本版本里「会话创建」是 `agent/created`（serial，监听器会被 await），
+ * 不是旧文档里的 `agent/session-start`。
+ *
  * @module dsh-native-hook
  */
 import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
+
+declare module '@deepseek-ai/dsh-llm' {
+    interface MessageSourceMap {
+        /** 本插件注入的上下文来源。没有通用的 plugin kind，每个生产者自己声明一个。 */
+        'dsh-native-hook': { kind: 'dsh-native-hook' } & ContextFormed
+    }
+}
 
 /** Cordis 插件名 */
 export const name = 'dsh-native-hook'
@@ -60,16 +71,16 @@ export function apply(ctx: Context, config: Config): void {
         return { kind: 'deny', reason: config.denyReason }
     })
 
-    // 2) 会话开始：同步注入，所以第一个请求就带着它。
-    //    桥的 SessionStart 是 detached 跑的，一个慢 hook 可能错过第一个请求
-    //    （它的 README 把这条写进了已知限制，并留了一条 TODO）。
+    // 2) 会话创建：serial 事件，监听器会被 await，所以注入的内容第一个请求就带着。
+    //    桥的 SessionStart 挂在同一个事件上、同样 await，只是要多起一个进程、
+    //    把内容编码成 JSON 再解码回来。
     //    另外：native hook 不写 hook/invoked、hook/result —— 要审计就自己在
     //    session/event 上折一份。
-    ctx.on('agent/session-start', ({ agent }) => {
+    ctx.on('agent/created', ({ agent }) => {
         if (config.sessionNote === '') return
         agent.inject(createUserMessage({
             content: [{ type: 'text', text: config.sessionNote }],
-            source: { kind: 'plugin', plugin: name },
+            source: { kind: 'dsh-native-hook' },
         }))
     })
 

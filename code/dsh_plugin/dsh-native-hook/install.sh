@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 sed -i '' "s|__PLUGIN_DIR__|$PWD|g" cordis.patch.yml
 
 pnpm install
+pnpm run typecheck
 pnpm run build
 dsh plugin --profile test add link:.
 
@@ -21,5 +22,6 @@ echo "再 ./install.sh 一次，同一个 prompt 重跑。"
 echo "  1. dsh --profile test --dump-config | grep -A4 'id: hooks-claude-code'"
 echo "  2. 同样被拒，但会话日志里多了一对 hook/invoked + hook/result，"
 echo "     dialect 是 claude-code，exitCode 是 2，reason 来自 stderr。"
-echo "  3. 再看本会话的开头：CC 的 SessionStart 是 detached 跑的，"
-echo "     那段注入的上下文可能压根没赶上第一个请求。"
+echo "  3. 两个包的 README 都说 SessionStart 是 detached 跑的、可能错过第一个请求；"
+echo "     本版本的代码在 agent/created 上 await 它，桥自己的测试也断言第一个请求看得到。"
+echo "     自己的会话开头能验证哪一边说得对。"

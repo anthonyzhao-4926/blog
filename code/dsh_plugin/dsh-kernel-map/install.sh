@@ -7,8 +7,9 @@ cd "$(dirname "$0")"
 # 插件目录：插件行指 lib/index.js，所以这里填本目录。
 sed -i '' "s|__PLUGIN_DIR__|$PWD|g" cordis.patch.yml
 
-# 检出目录：默认取仓库里自带的检出；换成本机路径时改这一行。
-REPO_ROOT="${DSH_REPO_ROOT:-$(cd ../../../local/deepseek-harness 2>/dev/null && pwd || echo '')}"
+# 检出目录：默认取仓库里自带的快照；换成本机路径时改这一行或设 DSH_REPO_ROOT。
+# 快照目录名带版本后缀，换快照时这里要跟着改。
+REPO_ROOT="${DSH_REPO_ROOT:-$(cd ../../../local/deepseek-harness-dsh-v0.2.0-rc.2 2>/dev/null && pwd || echo '')}"
 if [ -z "$REPO_ROOT" ]; then
     echo "找不到 DSH 检出目录。设一下 DSH_REPO_ROOT，或手改 cordis.patch.yml 里的 repoRoot。" >&2
     exit 1

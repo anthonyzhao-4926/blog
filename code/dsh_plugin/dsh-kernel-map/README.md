@@ -13,7 +13,7 @@ Program 解析出来，每行带一个 `路径:行号` 指针和分发模式。�
 DSH_REPO_ROOT=/path/to/deepseek-harness ./install.sh
 ```
 
-不设 `DSH_REPO_ROOT` 时它去找仓库里自带的 `local/deepseek-harness`。
+不设 `DSH_REPO_ROOT` 时它去找仓库里自带的快照 `local/deepseek-harness-dsh-v0.2.0-rc.2`。
 
 ## 为什么不用 `tool-cordis`
 
