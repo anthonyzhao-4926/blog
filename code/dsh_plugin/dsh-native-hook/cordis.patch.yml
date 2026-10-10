@@ -1,0 +1,18 @@
+- insert:
+    # A：native hook —— 普通的 Cordis 插件，直接订阅扩展点。不经过任何协议。
+    - id: native-hook
+      name: '__PLUGIN_DIR__/lib/index.js'
+      config:
+        blockedCommands:
+          - '^(rm|dd|mkfs)\\b'
+        denyReason: '本仓库禁止破坏性命令（native hook 判定）。'
+        sessionNote: '本会话受 dsh-native-hook 的 pre-execute 策略约束：破坏性命令会被拒。'
+
+    # B：桥接同一条 Claude Code 配置，用来做 A/B 对照。
+    #    把上面那半注释掉、解开这半，同一个 prompt 再跑一次。
+    #    差异不在「能不能拒」，而在：SessionStart 变成 detached（可能错过第一个请求）、
+    #    多出一对 hook/invoked + hook/result 审计记录、以及能承接的事件只有 7 个。
+    # - id: hooks-claude-code
+    #   name: '@deepseek-ai/dsh-hooks-claude-code'
+    #   config:
+    #     configPath: '__PLUGIN_DIR__/claude-code-hooks.json'

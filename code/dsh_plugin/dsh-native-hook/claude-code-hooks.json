@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "bash",
+        "hooks": [
+          { "type": "command", "command": "echo '本仓库禁止破坏性命令（CC hook 判定）。' >&2; exit 2" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"本会话受 CC hook 约束：破坏性命令会被拒。\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
