@@ -216,6 +216,15 @@ ctx.inject(['connection'], (connCtx) => {
 
 一个 key 全局只有一个声明者。往没声明的槽注册、或者声明一个别人已声明的子槽，都在插件激活期直接失败。
 
+```mermaid
+flowchart TD
+    A["类型层：SlotMap 接口<br/>基数、作用域、owner props"] --> S["一个槽位 key"]
+    B["运行时层：owner 注册的 children 条目<br/>声明即授权"] --> S
+    S --> C["slots.inject 回调<br/>register 一条贡献"]
+    C -->|"owner 卸载、声明塌了"| D["贡献跟着撤销"]
+    D -->|"声明再出现"| C
+```
+
 以本篇要用的 `settings.section` 为例，两层分别在两个包里：
 
 - 类型在 `@deepseek-ai/dsh-client-ui-settings` 的契约里：`'settings.section': { kind: 'list'; scope: 'root'; owner: SettingsSectionOwnerProps }`——设置面板里一页一个条目，`id` 是导航 key，`order` 决定位置，`label` 是导航上的显示文本。

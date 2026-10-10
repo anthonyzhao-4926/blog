@@ -29,6 +29,15 @@ viewable: true
 
 它们的关系可以用一句话概括：**`web` / `headless` / `acp` / `sdk` 都以 `dsh-base` 为基础，只有 `sdk-minimal` 不是。**
 
+```mermaid
+flowchart TD
+    B["dsh-base<br/>共享核心的组合包"] --> W["web<br/>+ 浏览器应用层"]
+    B --> H["headless<br/>+ headless-runner"]
+    B --> S["sdk<br/>+ JSON-RPC stdio 服务器"]
+    B --> A["acp<br/>+ 仅面向自动化的 ACP stdio 服务器"]
+    M["sdk-minimal<br/>不用 base、不用 Web<br/>配置树由组合包完整给出"]
+```
+
 | profile | 适合什么 | 组成 |
 | --- | --- | --- |
 | `web` | 给人用 | `dsh-base` + 浏览器应用层 |
@@ -58,6 +67,14 @@ dsh --profile headless "看一遍当前仓库，列出三个最可能出问题�
 `headless` 的局限是它只有一问一答的形态。当你要的是"开着会话、看着它一步步做、中途还能插一句话"，就得自己拿协议：`--profile sdk`。
 
 SDK 家族让**另一进程**通过**按换行分帧的 JSON-RPC** 驱动完整的 DSH 运行时。三个包分工明确：
+
+```mermaid
+flowchart LR
+    A["你的程序"] -->|"启动子进程"| C["client<br/>管握手、把协议消息摊成高层 API"]
+    P["protocol<br/>按换行分帧的 JSON-RPC 与具名类型"] --> C
+    P --> S["server<br/>jsonrpc 插件，经 stdio 提供服务"]
+    C -->|"驱动另一进程里的运行时"| S
+```
 
 | 包 | 职责 |
 | --- | --- |
@@ -113,6 +130,14 @@ ACP 服务器让程序可以：**创建、列出、恢复、关闭会话；挂�
 ## 怎么选
 
 一句话版：
+
+```mermaid
+flowchart TD
+    Q["要接的需求"] -->|"只跑一件事、拿结果"| H["headless<br/>跑完就退，输出在 stdout"]
+    Q -->|"要自己控制多轮、拿结构化事件"| S["sdk<br/>TS 或 Python 客户端"]
+    Q -->|"对面已经会说 ACP"| A["acp<br/>无人参与的协议"]
+    Q -->|"嫌 dsh-base 装的东西太多"| M["sdk-minimal<br/>另起一树"]
+```
 
 - **只想跑一件事** → `headless`。别过早上协议。
 - **要自己控制多轮、要拿结构化事件** → `sdk`（TS 或 Python 客户端）。
