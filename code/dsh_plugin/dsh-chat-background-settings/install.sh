@@ -6,6 +6,10 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 pnpm install
 
+# 先过类型检查再打包：tsdown 只打包不做类型校验（剥离类型、不求值类型），
+# 依赖升到新一代 API 时只有这一步能把「符号已经不存在」拦在安装期。
+pnpm run typecheck
+
 # 浏览器半：产出 lib/client.js（dsh.client 声明的 ./client 导出指向它）。
 pnpm run build
 
@@ -20,4 +24,4 @@ EOF
 # cordis.patch.yml 里还留着 08 篇的换源配置。
 dsh plugin --profile test add "link:$DIR"
 
-echo "装好了。启动 dsh --profile test --no-open，在「设置 → 插件 → 插件配置」里找 dsh-chat-background-settings 那张卡片。"
+echo "装好了。启动 dsh --profile test --no-open，在侧边栏「插件」里打开 dsh-chat-background-settings 那一行的配置页。"

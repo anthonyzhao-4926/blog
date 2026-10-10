@@ -6,6 +6,9 @@
     "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
+    // 发布的 dsh 客户端包在自己的 .d.ts 里引用了未随包安装的类型（pnpm 严格
+    // 依赖树解析不到），不跳过就会淹掉我们自己代码里的真错误。
+    "skipLibCheck": true,
     "types": ["node"]
   },
   "include": ["src", "tsdown.config.ts"]

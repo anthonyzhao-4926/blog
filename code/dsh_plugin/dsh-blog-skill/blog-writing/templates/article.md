@@ -1,5 +1,4 @@
 ---
-flowix_key: n5cc8527
 title: <标题>
 date: <YYYY-MM-DD>
 tags:
@@ -8,6 +7,7 @@ column: <专栏 id>
 order: <NN 对应的整数>
 viewable: true
 ---
+
 > **读完这篇你能**：<可验证的结果>。
 >
 > **前置**：<上一篇篇名>（<上一篇文件.md>）。约 <N> 分钟。

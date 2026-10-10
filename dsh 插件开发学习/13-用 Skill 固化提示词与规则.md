@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 13
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：给仓库写一份 skill，让模型每次会话都知道「文章文件名怎么起、配图放哪」，不用你再讲一遍；并且分清 skill 的两种形态、扫描根的优先级和两个调用开关。

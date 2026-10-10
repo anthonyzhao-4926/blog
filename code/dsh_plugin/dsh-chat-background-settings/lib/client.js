@@ -5,74 +5,58 @@ window.__ModuleLoader__.load({
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
-		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region src/client/index.tsx
 		/**
-		* 聊天背景插件的浏览器半：在设置页「插件」的「插件配置」页签里，给 Host 半
-		* 注册的那个 settings namespace 挂一张卡片。
+		* 聊天背景插件的浏览器半：在 Plugins 页给本插件的那一行挂一个配置页。
 		*
 		* 这个文件不跑在 Node 里。它被打包成 lib/client.js，由客户端模块系统
-		* （dsh-client-modules）送进浏览器，在页面里的另一个 Cordis 上下文上再跑一次
-		* apply。两边唯一的约定是一个字符串：Host 半注册的 settings namespace 与这里
-		* 注册进 settings.plugin.item 槽位的 key 必须一字不差，插件页把两者对起来，
-		* 谁都不需要认识对方。
+		* （dsh-client-modules）送进浏览器，在页面里的另一个 Cordis 上下文上再跑
+		* 一次 apply。页面通过 Plugins 页声明的 plugins.row.config 槽位挂上去；
+		* Plugins 页按这一行的 entry id 找到设置服务里的同名 namespace，把该
+		* namespace 的表单（state + mutate）作为 prop 喂给我们的组件。
 		*
-		* 值从 ctx.settingsScope 绑定的 scope 上读，写也从它上面提交。组件拿不到 ctx，
-		* 快照源与写回调由注册时的 inject 工厂递进去。
+		* 基准版本：dsh 0.2.0-rc.2（源码快照 local/deepseek-harness-dsh-v0.2.0-rc.2/）。
 		*/
-		/** 槽位 key = Host 半注册的 settings namespace，必须一字不差。 */
-		const SETTINGS_NS = "dsh-chat-background-settings";
-		const inject = ["slots", "configForms"];
+		/** 槽位 key：<包名>#<行 id>，行 id 以 bundle 的 patch.yaml 声明为准。 */
+		const SLOT_KEY = "dsh-chat-background-settings#dsh-chat-background-settings";
+		const inject = ["slots"];
 		function apply(ctx) {
-			const form = ctx.configForms.get(SETTINGS_NS);
-			const store = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(form.getSnapshot());
-			ctx.effect(() => form.subscribe(() => {
-				store.set(form.getSnapshot());
-			}), "dsh-chat-background-settings: settings mirror");
-			ctx.slots.inject("settings.plugins.tab", () => ctx.slots.register({
-				name: "settings.plugins.tab",
-				id: SETTINGS_NS,
-				label: "背景图与透明度",
-				inject: () => ({
-					hooks: { backgroundConfig: store },
-					save: async (patch) => {
-						const entries = Object.entries(patch).filter(([, value]) => value !== void 0);
-						return (await Promise.all(entries.map(([field, value]) => form.set(field, value)))).every(Boolean);
-					},
-					reset: (field) => form.unset(field)
-				})
-			}, BackgroundCard));
+			ctx.effect(() => ctx.slots.inject("plugins.row.config", () => ctx.slots.register({
+				name: "plugins.row.config",
+				key: SLOT_KEY
+			}, BackgroundSettingsPage)));
 		}
-		/**
-		* 本插件那张卡片。页签把各家的卡片放进一个列表，所以最外层是 li。
-		* 输入全部来自 props：inject 里 hooks 的 backgroundConfig 被渲染器绑成
-		* useBackgroundConfig，两个回调直接是 inject 返回的成员。
-		* @param props - 快照选择器与写回调。
-		* @returns 卡片，或（Host 不再服务这个 namespace 时）什么都不渲染。
-		*/
-		function BackgroundCard(props) {
-			const state = props.useBackgroundConfig((snapshot) => snapshot);
+		/** 一行的配置页：view 是 'summary' 时渲染一句话，'page' 时渲染表单。 */
+		function BackgroundSettingsPage({ view, form }) {
+			if (view === "summary") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: "背景图与透明度" });
+			if (form === void 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(BackgroundForm, { form });
+		}
+		function BackgroundForm({ form }) {
 			const [message, setMessage] = (0, react.useState)("");
-			if (state.status === "loading") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: "正在读取当前配置…" });
-			if (state.status === "unavailable") return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: "背景图与透明度" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			const { state } = form;
+			if (state.status !== "ready" || state.value === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: "正在读取当前配置…" });
+			const value = state.value;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
 				onSubmit: (event) => {
 					event.preventDefault();
 					const data = new FormData(event.currentTarget);
-					const patch = {
-						image: String(data.get("image")),
-						opacity: Number(data.get("opacity"))
-					};
-					props.save(patch).then((ok) => {
-						setMessage(ok ? "已保存：刷新页面看新背景。" : "保存被拒绝：值不合法，或配置刚在别处被改过。");
-					});
+					form.mutate([{
+						op: "set",
+						path: ["image"],
+						value: String(data.get("image"))
+					}, {
+						op: "set",
+						path: ["opacity"],
+						value: Number(data.get("opacity"))
+					}], state.revision).then((ok) => setMessage(ok ? "已保存，刷新页面看新背景。" : "保存被拒绝：值不合法，或配置刚在别处被改过。"));
 				},
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", { children: ["背景图路径 ", /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 						name: "image",
 						size: 40,
-						defaultValue: state.value?.image
+						defaultValue: value.image
 					})] }) }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", { children: ["透明度（0–1） ", /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 						name: "opacity",
@@ -80,24 +64,16 @@ window.__ModuleLoader__.load({
 						min: 0,
 						max: 1,
 						step: .05,
-						defaultValue: state.value?.opacity
+						defaultValue: value.opacity
 					})] }) }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 						type: "submit",
 						disabled: !state.writable,
 						children: "保存"
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						type: "button",
-						disabled: !state.writable,
-						onClick: () => {
-							props.reset("opacity");
-						},
-						children: "重置透明度"
-					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: message })
 				]
-			}, String(state.revision))] });
+			}, state.revision);
 		}
 		//#endregion
 		exports.apply = apply;

@@ -15,6 +15,12 @@ viewable: true
 
 学写 DSH 插件：从最小的 `apply` 函数开始，做到能注册 HTTP 路由、能改页面外观、能调参数、能改掉 DSH 的默认装配，并且卸载时收拾干净。
 
+### 基准版本
+
+全栏（笔记、参考卡片、示例代码）都以 **dsh `0.2.0-rc.2`** 为准，依据是本仓库里的源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/`。写新篇、改旧篇、核对某个 API 到底存不存在时，读这份快照的 `packages/` 与 `docs/`——**不要拿本机安装的 `dsh`、别的版本、或记忆里的旧 API 当依据**。预发布期里两代之间会整段更名或删除（例如设置这条线：`ctx.settingsScope` + `installSection` + `settings.plugin.item` 在 0.2.0 里被 `ctx.configForms` + volatile 字段 + `plugins.row.config` 取代）。
+
+每篇 frontmatter 的 `dsh-version` 记的是这篇写作/校对时依据的版本。对不上的篇目，先按它标的版本读快照，再决定是改这篇还是标注差异。
+
 ### 读完能做到什么
 
 **能**：写出一个能被 `dsh plugin add` 自动装配的插件包；用 `ctx.inject` 拿到内部服务、注册 HTTP 路由；监听注入类事件往页面里塞样式；理解插件从加载到卸载的四个阶段，知道什么必须交给 `ctx.effect` 管理；把写死的参数抽成 `Config`，在 profile 里覆盖它；用 patch 关掉或改写 DSH 自带插件的装配，不动 `node_modules`；给某个能力写自己的提供方（比如让 `web_search` 查自己的源），消费者一行不用改；订阅 DSH 内部事件（工具调用、审批结果、会话记录）做统计，并在五种分发模式里挑对一种。
@@ -126,7 +132,7 @@ viewable: true
 不是读物，查到才用：
 
 - [profile 与插件包结构](参考/profile与插件包结构.md)——profile 目录逐文件说明、patch 合成模型、插件包内部结构、维护速查表
-- [设置项与卡片速查](参考/设置项与卡片速查.md)——`installSection` 参数与 hooks、namespace 命名规则、`SettingsScope` 快照字段表、卡片槽位契约、落盘位置、两条生效路径对照
+- [设置项与卡片速查](参考/设置项与卡片速查.md)——volatile 字段声明与读值、`ctx.settings`（`SettingsForms`）方法表、表单 namespace 的由来、`ctx.configForms` 与 `ConfigFormSnapshot` / `ConfigForm` 字段表、插件页三个配置挂载点与行 key 规则、落盘位置、两条生效路径对照
 
 ### 接下来的路
 
@@ -157,7 +163,7 @@ viewable: true
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
 | 13（已写） | `13-用 Skill 固化提示词与规则.md` | 每次都要跟模型解释「配图放哪、命名怎么起」，烦 | skill：两种形态与扫描根优先级；frontmatter；目录与正文分离的按需加载（上下文成本）；`user-invocable` / `disable-model-invocation` |
-| 14（已写） | `14-把插件配置搬进设置页.md` | 插件给同事用，但路径和偏好每人不同，不想让他改 `cordis.yml` | 一个包两半（Host + `src/client`）；`dsh.client` 与 `./client` 导出；Host 侧 `installSection` 注册插件自起的 settings namespace（`setSource` / `onChange`）；浏览器侧卡片进 keyed 槽位 `settings.plugin.item`，key 就是那个 namespace，读写走 `ctx.settingsScope.bind(...)`；默认值 → 组合 base → 用户文档（`settings.yaml`）的层叠；两条生效路径（装载层重启 / 设置页不重启） |
+| 14（已写） | `14-把插件配置搬进设置页.md` | 插件给同事用，但路径和偏好每人不同，不想让他改 `cordis.yml` | 一个包两半（Host + `src/client`）；`dsh.client` 与 `./client` 导出；Host 侧只把要现场改的字段声明 `.volatile()`（类型是 `Volatile<T>`，读值走 `.get()`），表单的 namespace 就是这一行在 profile 里的 entry id；浏览器侧把配置页注册进插件页的 keyed 槽位 `plugins.row.config`（key = `<包名>#<行 id>`），插件页把表单作为 `form`（`state` + `mutate`）prop 喂给组件；设置写进当前 profile 的 patch；两条生效路径（装载层重启 / 设置页 volatile 提交不重启） |
 | 15（已写） | `15-把 Host 数据展示到界面.md` | 想在设置页或侧边栏看到「工作区有多少笔记、最近搜过什么」 | `ctx.remote` 五步与 `/api` 路由；失败词汇表；slot 的声明归属与 props 推导；客户端模块怎么注入 |
 | 16（已写） | `16-把工具结果渲染成卡片.md` | 工具结果只是一坨文本，想渲染成可点击的卡片 | 对话渲染：`ConversationNodeDefinition` + 按 key 的 Chat renderer；数据为什么从 `session/event` 来；`followup()` / `steer()` 怎么把交互送回去 |
 
@@ -227,7 +233,7 @@ viewable: true
 
 #### 统一约束
 
-- **骨架**：对上 [`专栏写作规范.md`](../专栏写作规范.md)——开头三行（读完你能 / 前置 / 约 N 分钟），正文按「**目标** → 具体做法 → 完整代码 / 代码解释 → 注意事项」，结尾以 `**下一篇**：` 开头链到下一篇。
+- **骨架**：对上本栏的既有体例（`专栏写作规范.md` 在本仓库里已缺失，实际约定以本条为准）——开头三行（读完你能 / 前置 / 约 N 分钟），正文按「**目标** → 具体做法 → 完整代码 / 代码解释 → 注意事项」，结尾以 `**下一篇**：` 开头链到下一篇。
 - **两处本栏自己的取舍**：首节统一用「**目标**」（规范里叫「什么时候需要」）：先说清这篇改完是什么样，不适用的人自己会走；小节标题一律用**名词短语**，不写「第一步／第二步」，也不用问句。
 - **例子按需求挑**，不追求全栏一致：同一个例子被相邻几篇接着用，是因为它确实接得上。
 - **代码只给 delta**；字段表、错误码这类查阅内容进 `参考/`。
@@ -249,7 +255,7 @@ viewable: true
 - **全栏已做过一次文件名重写**：25 篇的 `NN-xxx.md` 从「动词短语」改成了「名词短语」（例如 `14-让别人自己配插件.md` → `14-把插件配置搬进设置页.md`），frontmatter 的 `title` 与各篇之间的「前置 / 下一篇」链接文字同步改过。重写时漏改了一处目标名（`13-用 Skill 固化项目规矩.md` 实际不存在），已在 `12` 篇、`14` 篇与 README 里修正为 `13-用 Skill 固化提示词与规则.md`。以后再加篇目，文件名与标题都按名词短语起。
 - **10 / 14 / 15 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：10 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，15 的卡片从 `meta` 读——改一边必须改另一边。
 - **15 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。
-- **14 篇已按当前版本改对**：原先写的 `Schema…volatile()`、`Volatile<T>`、`config.image.get()`、`loader/volatile-update`、`_commitVolatile` 在当前源码里全都不存在，整节删除。真实机制：Host 侧 `ctx.settings.installSection(owner, ns, schema, entry, { setSource, onChange })` 注册一个**插件自己起名**的 namespace（`^[a-z][a-z0-9-]*$`），`setSource` 给的是取值函数、值变了框架调 `onChange`；浏览器侧卡片注册进 keyed 槽位 **`settings.plugin.item`，key 就是那个 namespace**（不是 entry id，也不是 `<包名>#<行 id>`；`#` 不是合法 namespace 字符），设置页把「宿主已服务的 namespace」与「已注册的卡片 key」取交集后渲染；读写走 `ctx.settingsScope.bind({ namespace })`，**写被拒时是正常返回、要读回快照判断**。落盘是 `$DSH_HOME/settings.yaml`（顶层键 = namespace），不是 profile 的 `cordis.patch.yml`，也**不出现在 `--dump-config` 里**。原「更高层 patch 会盖住的写入保存时直接拒绝」查无此检查、已删（真实关系相反：用户层在组合 base 之上）。原「改完 `src/client/` 要重新构建并重启」已改：要重新 `pnpm run build`，但不用重启 DSH（客户端 HMR 盯 `lib/client.js`，首轮修订号是启动时分配的 nonce、热替换后是内容哈希）。原「`autoGenerate` / `ctx.settings.configure({ auto: false })`」一条全仓查无、已删。字段表与契约抽成知识卡 `参考/设置项与卡片速查.md`。demo 的 `@deepseek-ai/cordis-plugin-loader` 依赖、`@deepseek-ai/dsh-client-ui-plugin-manager`（仓库内不存在）与 `plugins.row.config` 槽位一并换掉。
+- **14 篇已改回 0.2.0 代写法**（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/`）：这篇曾在 10-09 被按一棵**过期源码树**（还停在 0.1.5-rc.2）「改对」过，结果把对的删了——`Schema…volatile()`、`Volatile<T>`、`config.image.get()`、`loader/volatile-update`、`autoGenerate` / `ctx.settings.configure({ auto: false })`、`plugins.row.config`、`dsh-client-ui-plugin-manager` 当时都被判为「查无此物」，而它们在 0.2.0-rc.2 里都在；反过来被换上来的 `ctx.settings.installSection` / `ctx.settingsScope` / `settings.plugin.item` / `$DSH_HOME/settings.yaml` 才是这个版本里不存在的。现在这篇与 demo 都按快照恢复：Host 侧两个字段声明 `.volatile()`、读值走 `.get()`、听 `loader/volatile-update`；浏览器侧注册进 keyed 槽位 `plugins.row.config`，key 是 `<包名>#<行 id>`；表单 namespace 就是这一行在 profile 里的 entry id（不是插件自起的字符串），插件页把表单作为 `form`（`state` + `mutate`）prop 喂给组件；自带页面的插件用 `ctx.settings.configure({ auto: false })` 关掉按 schema 自动生成的页面。教训：那次「改对」的判据是一棵 10-06 克隆、停在 0.1.5-rc.2 的树，而本机当时跑的已是 0.2.0-rc.2——**判据过期会得出「新 API 查无此物」的反向结论**。这也是 README 顶部要写「基准版本」的原因。另外 demo 补了 `pnpm run typecheck`（tsdown 只打包、不求值类型，这条错在安装期不会报），并修掉两个只有类型检查才看得见的错：浏览器半缺 `@deepseek-ai/dsh-client-ui-renderer/client` 的类型引入（`ctx.slots` 的 Context 合并在那里）、schema 常量上多余的 `: Schema<Config>` 标注（volatile 字段的序列化形态与接口里的 `Volatile<T>` 不同，标注与 `default` 签名冲突）。
 - **15 篇有一处对规划的澄清**：`followup()` / `steer()` 是 host 侧 `Agent` 的方法，浏览器端没有；卡片回送走 `session.prompt(content, 'queue' | 'steer')`，host 侧才映射到这两个动词。
 - 09 的演示代码在 `dsh_plugin/dsh-event-log/`（三个插件：lab 只监听、probe 只派发、stats 监听真实事件并挂计数路由）。它**不写 profile 覆盖层**——插件没有配置项，`install.sh` 不该去覆盖 08 篇留在 `cordis.patch.yml` 里的换源配置。
 - patch 篇原本排在 **07**（那版规划里 05 是 config、06 是 HMR），后来提前到 **03**：`patch.yaml` 在 02 就出现了，拖到 07 才解释太晚。原来的 03–06（背景、生命周期、config、HMR）依次后移成 04–07，`service` 仍是 08；文件名、`order` 与所有交叉引用都已同步改过。
