@@ -52,6 +52,17 @@ viewable: true
 
 两种传输对应两种部署形态：**服务器作为本地程序跑就用 `stdio`**（配 `command` / `args` / `env` / `cwd`），**作为服务跑就用 `streamable-http`**（配 `url` / `headers`）。
 
+```mermaid
+flowchart LR
+    C["配置行<br/>serverName + transport"] --> P["dsh-mcp-client"]
+    P -->|"transport: stdio"| L["本地程序<br/>command / args / env"]
+    P -->|"transport: streamable-http"| R["远端服务<br/>url / headers"]
+    L --> T["tools/list 收集工具"]
+    R --> T
+    T --> N["工具名<br/>mcp__serverName__rawName"]
+    N --> M["模型的工具列表"]
+```
+
 凭据一律用 `!!js` 从环境变量取，别写进文件——这也和 03 篇讲的规则一致：**只有行的 `config` 与 `disabled` 允许 `!!js`**，其它元数据字段会保持静态。
 
 如果你已经用别的客户端（比如 Claude Code 或 Codex）连过同一台 MCP 服务器，**同样的配置行在这里也能用**。
@@ -85,6 +96,14 @@ mcp__<serverName>__<rawName>
 
 而 `tools/list` 的变化被处理得很严格。有一条总原则：**宁可保持上一组工具可用，也不接受一份可疑的新列表。** 具体表现：
 
+```mermaid
+flowchart TD
+    A["同一工具被列出两次"] --> R["该列表被作为无效列表拒绝"]
+    B["续传游标重复<br/>含经过空页形成循环"] --> R
+    C["工具更新与已有工具名冲突"] --> R
+    R --> K["上一组工具保持可用<br/>不存在部分接受的中间态"]
+```
+
 - 服务器在工具列表里**两次列出同一工具** → 该列表被作为**无效列表拒绝**，上一组保持可用。
 - `tools/list` 返回**重复的非空续传游标** → 立即拒绝本次更新，**包括经过空页形成循环的情况**。
 - 工具更新与已有工具名**冲突** → 该更新**被整体拒绝**——**绝不会得到该服务器的部分工具集**。
@@ -109,6 +128,16 @@ mcp__<serverName>__<rawName>
 ## 连不上与断开
 
 两个阶段，两种默认行为。
+
+```mermaid
+flowchart TD
+    A["启动时连不上"] -->|"failOnStartupError: false"| A1["harness 照常启动<br/>工具不出现，日志里留下一条错误"]
+    A -->|"failOnStartupError: true"| A2["拒绝插件激活"]
+    B["运行中断开"] -->|"reconnect.enabled: true"| B1["500ms 起步、逐次翻倍、上限 30s 自动重连<br/>期间工具仍列出，调用失败"]
+    B -->|"reconnect.enabled: false"| B2["不再重连<br/>工具仍列出，调用失败"]
+    B1 -->|"连续失败 10 次"| B3["移除工具、停止重连<br/>直到重载配置或重启"]
+    B1 -->|"稳定连接一段时间"| B4["失败计数重置"]
+```
 
 **启动时连不上**：默认 `failOnStartupError: false`，也就是 **harness 照常启动**，只是这台服务器的工具不会出现，并记录一条错误。想让"连不上"变成"别启动"，把它设成 `true`。
 

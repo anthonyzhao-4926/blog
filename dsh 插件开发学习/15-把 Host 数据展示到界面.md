@@ -159,9 +159,28 @@ Host 侧倒是有个退路：从源码启动时（`node --import tsx/esm`），�
 
 所以结论很实际：**外部插件要往界面送数据，走 `/api` 下的 exact Fetch 路由。** 这正是它的设计用途——cookbook 里那句「需要 RPC 信封之外响应的功能，注册一条 exact Fetch 路由」。
 
+```mermaid
+flowchart TD
+    A["外部插件的需求<br/>把 Host 数据送到界面"] --> B["ctx.remote 第 3 步<br/>生成产物出自仓库构建管线"]
+    A --> C["ctx.remote 第 4 步<br/>挂载靠装配包显式选包"]
+    B --> D["Client 侧没有这个命名空间"]
+    C --> D
+    D --> E["从源码启动的 SRC fallback<br/>只解决 Host 分发"]
+    E --> F["走 /api 下的 exact Fetch 路由"]
+```
+
 ## `/api` 路由
 
 `/api` 这个路径属于 Connection（`@deepseek-ai/dsh-client-connection` 的 Host 半，服务名 `connection`）。Remote 调用也走它：`ctx.remote.noteStats.summary()` 在线上就是 `POST /api/noteStats/summary`。Connection 在分发之前先做两道检查：Host/Origin 信任检查（不过返 403），浏览器会话认证（不过返 401）——进程启动时铸一个随机 token，打开页面的 URL 带上它，换成一个签名 cookie 之后每次请求自动携带。
+
+```mermaid
+flowchart TD
+    R["请求进入 /api<br/>remote 调用与功能插件路由都走它"] --> T["Host 与 Origin 信任检查"]
+    T -->|"不过"| E1["403"]
+    T -->|"过"| S["浏览器会话认证<br/>签名 cookie"]
+    S -->|"不过"| E2["401<br/>终端 curl 的待遇"]
+    S -->|"过"| H["到达 exact Fetch 路由的 handler"]
+```
 
 功能插件往 `/api` 下挂自己的路由，用 `ctx.connection.fetch.register`：
 

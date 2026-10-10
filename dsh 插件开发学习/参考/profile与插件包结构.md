@@ -170,6 +170,13 @@ allowBuilds:
 >
 > 回退目录就是给这条查找路径"接一根管子"：在插件需要解析依赖的位置放一层 `node_modules`，把每个依赖软链回 profile 的依赖池。既不复制文件，也不会出现两份版本不同的同一个包。
 
+```mermaid
+flowchart LR
+    A["插件源码（真实路径在 profile 之外）"] -->|"向上逐级找 node_modules"| B["够不着 profile 的依赖池"]
+    A -->|"就近命中"| C[".dsh-module-fallback/node_modules"]
+    C -->|"每个依赖软链回依赖池"| D["profiles/web/node_modules"]
+```
+
 三个要点：
 
 1. 它是**运行期状态**，不是安装产物 —— DSH 启动 profile 时按 `node_modules` 内容生成，`pnpm install` 之后通常也会重建。所以它不该被当成"源码"去提交或备份。
@@ -218,6 +225,14 @@ dsh-better-sidebar/
 ```
 
 `!!js` 后面是一段**在加载时求值的表达式**：如果已经有**别的 entry**（比如某个聚合包）挂了同一个包，这一行就自动禁用自己。因为重复挂载会让 `/sidebar/api` 注册两次，直接 "duplicate prefix route" 把整棵树搞崩。这也解释了前面那句顺序要求：守卫只能看到**排在它前面**的行，所以聚合包必须排在它前面 —— 而 `dsh plugin add` 正好是往后追加，天然满足。
+
+```mermaid
+flowchart TD
+    A["dsh plugin add 把包名追加到 bundles 末尾"] --> B["patch 按 bundles 顺序逐层合入"]
+    B --> C["轮到这一行的 disabled 表达式求值"]
+    C -->|"前面已有别的 entry 挂同一包"| D["这一行自动禁用，不重复挂载"]
+    C -->|"前面没有"| E["挂上 better-sidebar"]
+```
 
 任何 DSH 插件都是这个结构：`package.json` 里声明 `dsh.bundle.patch`，自带的 `cordis.patch.yml` 里写一行 `insert: { id: ..., name: '<插件名>' }` 把自己挂上树；宿主端代码（`lib/index.js`）提供 HTTP 路由，客户端代码（`lib/client.js`）注册界面上的标签页或查看器。你自己写的插件只要照这个骨架填内容就能被自动装配。
 

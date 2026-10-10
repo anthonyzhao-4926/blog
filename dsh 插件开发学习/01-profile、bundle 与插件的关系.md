@@ -60,6 +60,15 @@ pnpm install
 
 bundle 如何理解，事实上这就是插件包，也就是我们理解的插件。一个插件包包含多种能力，例如 dsh-web-app 提供 HTTP 服务、路由、中间件等 Web 能力。
 
+```mermaid
+flowchart TD
+    P1["profile: web<br/>DSH 默认档案"] -->|"dsh.profile.bundles"| B1["@deepseek-ai/dsh-base<br/>基础核心包"]
+    P1 -->|"dsh.profile.bundles"| B2["@deepseek-ai/dsh-web-app<br/>Web 应用包"]
+    P2["profile: test<br/>自己新建的档案"] -->|"dsh.profile.bundles"| B1
+    P2 -->|"dsh.profile.bundles"| B2
+    B2 --> C["HTTP 服务、路由、中间件"]
+```
+
 现在我们打开 这个 profile 看一下
 ```sh
 dsh --profile test

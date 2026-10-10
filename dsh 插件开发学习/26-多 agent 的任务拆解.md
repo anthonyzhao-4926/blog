@@ -57,6 +57,16 @@ prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreat
 
 **方法存在即能力。** 服务在提供方没有这个方法时拒绝可继续的启动；有它的提供方仍然可以服务普通的一次性委派。
 
+```mermaid
+flowchart TD
+    Req["一次启动请求<br/>agentOptions / outputSchema / depthLimit / toolFilter / persona"] --> Cap["对照提供方的 capabilities<br/>五个布尔 flag"]
+    Req --> Cont["可继续子 agent 的启动<br/>只问 prepareContinuable 在不在"]
+    Cap -->|"请求依赖的能力都具备"| Acc["接受，交给提供方 start()"]
+    Cap -->|"依赖了不具备的能力"| Rej["明确拒绝<br/>UNSUPPORTED_CAPABILITY"]
+    Cont -->|"方法存在即能力"| Acc
+    Cont -->|"没有这个方法"| Rej
+```
+
 这个设计值得停一下：为什么不用第六个 flag？
 
 因为可继续子 agent 的**组合归继续执行管理器**，提供方在这件事上唯一的参与就是交出"这个孩子的初始状态要不要带父历史"。给一个只参与这么一点的路径加 flag，等于让描述符去描述它并不拥有的行为——不如让方法的类型本身说话。
@@ -79,6 +89,16 @@ prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreat
 也就是说这个字段是**给模型看的描述用的**，不是权限声明。子 agent 拿到的是**一个新的扁平作用域**，不是父级注册的副本。
 
 `start()` 的时序契约也值得记：服务已经校验过能力、也解析好了描述符，所以提供方在**返回之前**拥有设置过程，并且要在拒绝之前把自己没发布出去的部分清干净；**发布之后**所有权就转移了，后面无论是轮次失败还是基础设施故障，都通过返回的那个 run 结算。不同的启动可以重叠——取消、失败、结果结算和清理各自独立。
+
+```mermaid
+flowchart TD
+    A["服务：已校验能力、已解析描述符"] --> B["调用提供方 start(request)"]
+    B --> C["返回之前由提供方拥有设置过程"]
+    C -->|"拒绝"| D["清掉自己没发布的部分<br/>不发任何生命周期事件对"]
+    C -->|"发布"| E["交出 run，服务发 subagent/start<br/>所有权转移到 run"]
+    E --> F["轮次失败或基础设施故障<br/>都经这个 run 结算"]
+    F --> G["发配对的 subagent/end"]
+```
 
 ## 委派出去之后
 
@@ -114,6 +134,15 @@ interface SubagentRun {
 **持久 mailbox。** Lead 会话先存下完整的排队消息，只有目标的待处理收件条目或已记录的用户消息落盘之后，才写一条独立的确认事件——于是"已排队减去已投递"就构成了恢复用的邮箱。
 
 投递方式是固定的，调用方选不了：running 的目标在**最近的步骤边界**收到消息，idle 的目标**起一个轮次**，inactive 的成员则**冷恢复**。正因为调用方不能选，持久记录里干脆不存调度方式。
+
+```mermaid
+flowchart LR
+    L["Lead 会话"] --> M["持久 mailbox<br/>已排队减去已投递"]
+    R["roster 成员状态<br/>provisioning 只到 active 或 failed"] -->|"决定投递方式"| M
+    M -->|"目标 running"| A["在最近的步骤边界收到消息"]
+    M -->|"目标 idle"| B["起一个轮次"]
+    M -->|"成员 inactive"| C["冷恢复"]
+```
 
 **共享任务 DAG。** 每条任务事件都存完整快照，`revision` 是 compare-and-set 值、每次变更加一；`blockedBy` 边必须指向未删除的任务并维持无环。状态里 `pending` 表示还没开始或已被释放，`in_progress` 带着 owner，`completed` 满足阻塞关系，`deleted` 是保留的 tombstone。
 
