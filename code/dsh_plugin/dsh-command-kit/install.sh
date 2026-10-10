@@ -18,6 +18,6 @@ echo "     里面有主题与（若有）图片。"
 echo "  3. 敲 /kit-stats —— 它读的是日志里那几个计数，自身一个 token 都不花。"
 echo
 echo "两个反例："
-echo "  · 敲 /brief 时贴一张图再删掉主题 → 应该报「用法」，因为两边都空。"
-echo "  · 把 patch.yaml 里 brief 那行的 attachments 去掉（改成 input 只有 hint）后重装，"
+echo "  · 敲 /brief 后什么都不输入、也不贴图 → 应该报「用法」，因为主题与附件都空。"
+echo "  · 把 patch.yaml 里 brief 那行的 acceptAttachments 改成 false 后重装，"
 echo "     再贴图敲 /brief → executor 在 handler 之前就拒了，命令卡上是 error。"

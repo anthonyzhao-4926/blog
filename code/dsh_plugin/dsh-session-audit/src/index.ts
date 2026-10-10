@@ -17,6 +17,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import { parseSessionFormatLogFilename } from '@deepseek-ai/dsh-session-format'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
+import Schema from '@deepseek-ai/schemastery'
 
 /** Cordis 插件名 */
 export const name = 'dsh-session-audit'
@@ -29,6 +30,11 @@ export interface Config {
     /** 会话根；留空时取 `$DSH_HOME/sessions`。 */
     sessionsRoot: string
 }
+
+/** Schemastery 校验：默认值写在这里，写错类型在加载期就报。 */
+export const Config: Schema<Config> = Schema.object({
+    sessionsRoot: Schema.string().default(''),
+})
 
 /** 一个会话目录的体检结果。 */
 interface StoredSession {

@@ -63,7 +63,7 @@ export function apply(ctx: Context, config: Config): void {
     // 1) 危险命令：waterfall 返回类型化 Decision。
     //    走桥的同一个行为是「子进程 exit 2 + 往 stderr 写原因」；
     //    这里返回一个对象就完了，而且能换成 { kind: 'ask' } 去要一次审批。
-    ctx.on('tools/pre-execute', (exec, next): PreToolDecision => {
+    ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
         const command = bashCommandOf(exec)
         if (command === undefined) return next()
         if (!patterns.some(pattern => pattern.test(command))) return next()
@@ -76,7 +76,7 @@ export function apply(ctx: Context, config: Config): void {
     //    把内容编码成 JSON 再解码回来。
     //    另外：native hook 不写 hook/invoked、hook/result —— 要审计就自己在
     //    session/event 上折一份。
-    ctx.on('agent/created', ({ agent }) => {
+    ctx.on('agent/created', async ({ agent }) => {
         if (config.sessionNote === '') return
         agent.inject(createUserMessage({
             content: [{ type: 'text', text: config.sessionNote }],

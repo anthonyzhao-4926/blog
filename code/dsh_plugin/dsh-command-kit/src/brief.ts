@@ -14,6 +14,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { CommandDefinitionId } from '@deepseek-ai/dsh-commands'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import Schema from '@deepseek-ai/schemastery'
 
 /** Cordis 插件名 */
 export const name = 'command-kit-brief'
@@ -28,6 +29,14 @@ export interface Config {
     /** 是否接受输入框里贴的图片/文件。关掉之后附件会在 handler 之前被拒。 */
     acceptAttachments: boolean
 }
+
+/** Schemastery 校验：默认值写在这里，配置写错了在加载期就报，不等到第一次敲命令。 */
+export const Config: Schema<Config> = Schema.object({
+    instruction: Schema.string().default(
+        '写一份单页简报，markdown 格式，开头用一级标题点明主题。写完调用 present 把它交付出来。',
+    ),
+    acceptAttachments: Schema.boolean().default(true),
+})
 
 /**
  * 注册 `/brief`。

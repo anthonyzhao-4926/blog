@@ -14,7 +14,7 @@ echo "装好了。验证三步："
 echo "  1. dsh --profile test --dump-config | grep -A4 'id: session-audit'"
 echo "  2. 让模型调用 session_format_audit —— 它会给出写入器版本、磁盘上的会话数、"
 echo "     需要迁移的数量，以及正规 API 看到的会话数。"
-echo "  3. 手工看一眼会话根，对照输出："
+echo "  3. 手工看一眼会话根，对照输出（\$DSH_HOME 非默认时换成 \$DSH_HOME/sessions）："
 echo "       ls ~/.dsh/sessions/*/*/ | head"
 echo "     文件名里的 .vN 就是磁盘世代；正规 API 给的逻辑头永远是当前写入器版本。"
 echo

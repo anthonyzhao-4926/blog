@@ -88,7 +88,7 @@ matcher 的语义在两个方言里不一样，这是第二个容易踩的地方
 以"拦截 bash"为例，逐跳来看：
 
 1. **装载时读一次配置**。`JSON.parse(readFileSync(configPath))`，读或解析失败就记一条 warning 后返回——**一条 hook 都不注册，agent 照常启动**。
-2. **解析成"事件 → matcher 组"**。只认 `CLAUDE_EVENTS` 里那七个；组内只有 `type: 'command'` 的 hook 会留下，其余进 skipped；命令串在解析期做 `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PROJECT_DIR}` 替换；若某个要用的 matcher 正则非法，**抛 `SyntaxError`，整份配置被拒**。
+2. **解析成"事件 → matcher 组"**。只认 `CLAUDE_EVENTS` 里那七个；组内只有 `type: 'command'` 的 hook 会留下，其余进 skipped；命令字符串在解析期做 `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PROJECT_DIR}` 替换；若某个要用的 matcher 正则非法就抛 `SyntaxError`——它最终落到与上一步同一条 warn-and-return 路径上：整份配置被放弃，一条 hook 都不注册。
 3. **注册监听器**：`SessionStart` → `agent/created`，`UserPromptSubmit` → `agent/pre-step`，`PreToolUse` → `tools/pre-execute`，`PostToolUse` → `tools/post-execute`，`Stop` → `agent/turn-stopping`，还有 `subagent/start` 与 `subagent/end`。
 4. **构造 stdin 载荷**：基座是 `session_id`、`transcript_path`、`cwd`、`hook_event_name`，`PreToolUse` 再加 `tool_name` / `tool_input` / `tool_use_id`。
 5. **匹配 → 串行执行**，工作目录是 agent 的会话 workspace。
@@ -121,7 +121,8 @@ CC 桥的权威事件集合就是那七个常量；Codex 桥五个。把它们�
 native hook 不是包，就是**订阅扩展点的普通 Cordis 插件**。桥能做到的事它都能做到，而且更直接——没有序列化边界、拿得到完整的 `ctx`、返回的是类型化对象：
 
 ```ts
-ctx.on('tools/pre-execute', (exec, next): PreToolDecision => {
+// 这个监听器必须是 async：事件契约要求的返回类型是 Promise<PreToolDecision>。
+ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
     const command = bashCommandOf(exec)
     if (command === undefined) return next()
     if (!patterns.some(pattern => pattern.test(command))) return next()
@@ -196,9 +197,13 @@ ctx.on('tools/pre-execute', (exec, next): PreToolDecision => {
 
 两个包的 README 都在 Known Limitations 里写着：`SessionStart` **detached** 跑，所以它的上下文**可能错过第一个请求**。
 
-同版本的代码不是这样。CC 桥把 `SessionStart` 挂在 `agent/created` 上，而那个事件是 **serial、监听器会被 await** 的；桥在自己的监听器里 `await run(...)`，Codex 桥也一样。桥自己的测试名字就叫 "a SessionStart hook injects additionalContext the first request sees"，断言的是第一条请求里含那段文本。
+同版本的代码不是这样，两个桥都一样：`SessionStart` 的监听器挂在 `agent/created` 上，而且是 `async` 加 `await run(...)`；`agent/created` 是 **serial、监听器会被 await 之后创建才算完成**。所以那段上下文在第一个请求之前必然已经就绪。
 
-桥的 README 内部也是自相矛盾的：实现那节写"通过 awaited 的 `agent/created` 初始化、在第一个 turn 之前注入上下文"，紧接着的 Known Limitations 又写它 detached。
+桥的 README 内部就自相矛盾，而且不止一处：讲事件接线的那节写"`SessionStart` 通过 **awaited** 的 `agent/created` 初始化、在第一个 turn 之前注入上下文"；另一节把 `SessionStart`、`SubagentStart`、`SubagentStop` 三个并列为"detached 跑，没有任何扩展点 await 它们"；Known Limitations 里又说它 detached、可能错过第一个请求。
+
+源码解释了这处含混的来处：`SessionStart` 那次运行**既被登记进拆卸追踪**（`detached.track(run)`，为的是插件卸载时能排空还在跑的 hook 进程），**又被 `await`**。两个 subagent 事件才是真的不 await——它们挂在 emit 型的 `subagent/start` / `subagent/end` 上。把三者并列成一句话，这个差别就被抹掉了。
+
+桥自己的测试也分两种口径：一个用例先等注入落到待发件箱、再发第一条请求，然后断言它看得到那段文本；另一个用例专测"请求发得很快"时不崩不阻塞，注释里把这种情况描述成 best-effort、可能错过。后者证明的是容错，不是"一定会错过"。所以这一条以源码为准。
 
 真正剩下的、仍然成立的注意点是 `Agent.inject()` 自己的调度语义：**它可能错过一个 pre-step 已经认领了自己批次的请求**。这是注入这个动词的性质，不是桥的缺陷。
 
@@ -214,9 +219,9 @@ ctx.on('tools/pre-execute', (exec, next): PreToolDecision => {
 A 面的两个动作：
 
 ```ts
-ctx.on('tools/pre-execute', (exec, next): PreToolDecision => { /* 命中就 deny */ })
+ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => { /* 命中就 deny */ })
 
-ctx.on('agent/created', ({ agent }) => {
+ctx.on('agent/created', async ({ agent }) => {
     if (config.sessionNote === '') return
     agent.inject(createUserMessage({
         content: [{ type: 'text', text: config.sessionNote }],
@@ -237,7 +242,7 @@ declare module '@deepseek-ai/dsh-llm' {
 
 B 面就是那份 JSON 配置，一行命令靠 stderr 加 `exit 2` 拒绝 bash。
 
-这个 demo 的构建链也演示了一件事：`build.mjs` 走 esbuild，**只转译、不求值类型**，所以上面这两个错误在构建期一声不响。`install.sh` 里因此先跑 `pnpm run typecheck`——这条命令本身就是从一次静默失效里长出来的。
+这个 demo 的构建链也演示了一件事：`build.mjs` 走 esbuild，**只转译、不求值类型**。事件契约要的返回类型是 `Promise<PreToolDecision>`，写成同步箭头函数它一声不响，`lib/index.js` 照样产出、插件照样加载，只是类型是错的。`install.sh` 里因此先跑 `pnpm run typecheck`——这条命令本身就是从一次静默失效里长出来的。
 
 ## 验证
 

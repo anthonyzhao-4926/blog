@@ -61,7 +61,7 @@ viewable: true
 
 ## 一处一个事实
 
-DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制度。`docs/AGENTS.md` 里那张表逐层规定了"谁负责什么、什么不许写在那里"：
+DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制度。`docs/AGENTS.md` 里那张表逐层规定了"谁负责什么、什么不许写在那里"（下面是节选，原表还包含 persistence 历史、user 指南、development.md 与 Skills 四层）：
 
 | 层 | 职责 | 不该写的 |
 | --- | --- | --- |
@@ -76,7 +76,7 @@ DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制�
 
 放置规则一句话：bug → postmortem；理由 → Agent Note；流程 → cookbook；类型 → subsystems；包契约 → README；常驻命令 → 根 `AGENTS.md`。
 
-还有一条写作原则会直接影响你写 PR 说明与文档：**写当前状态，不写变更史**。文档里点名的是活着的机制，不是 PR、提交或"以前/现在"。这也是这个仓库没有 CHANGELOG 的原因。
+还有一条写作原则会直接影响你写 PR 说明与文档：**写当前状态，不写变更史**。文档里点名的是活着的机制，不是 PR、提交或"以前/现在"；变更史留在提交、PR、Agent Note 与 postmortem 里。这个仓库的根目录也确实没有 CHANGELOG。
 
 ## 门禁的权威在脚本里
 
@@ -88,12 +88,12 @@ DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制�
 
 | 命令 | 是什么 |
 | --- | --- |
-| `pnpm run check:all` | 本地全套近似，十几项串联 |
+| `pnpm run check:all` | 本地全套近似：字面十几项，展开后七十来个门禁 |
 | `pnpm run check:ci` | CI 主泳道：静态族 + 契约 + 覆盖率 + 冒烟 + 快照 + 文档 + 构建 |
-| `pnpm run doc-sync` | 文档门禁的合集（近三十条） |
+| `pnpm run doc-sync` | 文档门禁的合集（四十余条） |
 | `pnpm run test:docs` | 上面那些里带 `quick: true` 的子集，不构建、不重新生成 |
 
-**Git 钩子刻意很窄**：`pre-commit` 只做暂存区的配对记录校验、暂存 TS 的 lint 与一次有界修复、必要时重生成第三方声明文件、空白检查、vendor 清单守卫；`pre-push` 只跑一次增量 typecheck。测试、快照、文档检查、构建、hygiene 全都不在钩子里——那是 CI 的事。
+**Git 钩子刻意很窄**：`pre-commit` 只做暂存区的配对记录校验、归档 Agent Note 校验、暂存 TS 的 lint 与一次有界修复、必要时重生成第三方声明文件、空白检查、vendor 清单守卫；`pre-push` 只跑一次增量 typecheck。测试、快照、文档检查、构建、hygiene 全都不在钩子里——那是 CI 的事。
 
 文档漂过一处，正好是这套制度自己的例子：`docs/AGENTS.md` 那段文字里写 `testing.md` 的字数上限是 **1,300**，而门禁真正读的 `scripts/doc-budgets.manifest.json` 里是 **1350**。**权威是清单**，因为门禁读它。
 
@@ -126,11 +126,11 @@ DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制�
 | 生成物 | 生成器 | 新鲜度检查 |
 | --- | --- | --- |
 | `docs/module-graph.md` | `gen-module-graph.ts` | `verify-module-graph` |
-| `docs/capability-seams.md`、`docs/event-producer-consumer.md`、`docs/graph-atlas.md`、工具/事件/组合页 | `gen-doc-graphs.ts` | `verify-doc-graphs` |
+| `docs/graph-atlas.md`、`docs/capability-seams.md`、`docs/event-producer-consumer.md`、组合页、工具执行管线与 agent 生命周期页 | `gen-doc-graphs.ts` | `verify-doc-graphs` |
 | `docs/tool-catalog.md`、`docs/config-catalog.md` | 各自 `gen-*` | 各自 `verify-*` |
 | `docs/persistence-catalog.md` | `gen-persistence-catalog.ts` | `verify-persistence-catalog` |
 
-**`gen-*` 与 `verify-*` 不是两类脚本，而是同一个脚本的两种模式**——`verify-*` 就是 `gen-* --check`。所以看到"生成物过期"不要去改那份 md，要去改源码或生成器，再跑它提示的那条 `gen-*`。
+**多数 `verify-*` 不是独立脚本，而是同一个生成脚本的 `--check` 模式**——`gen-module-graph` / `gen-doc-graphs` / `gen-tool-catalog` / `gen-config-catalog` / `gen-persistence-catalog` 各有对应的 verify；也有天生没有生成器的（比如 `verify-md-wrap`、`verify-package-invariants`）。所以看到"生成物过期"不要去改那份 md，要去改源码或生成器，再跑它提示的那条 `gen-*`。
 
 两份图谱的分工有一处不对称：
 
@@ -145,7 +145,7 @@ DSH 的文档不是"一堆 md"，而是一套**一处一个事实**的分层制�
 
 ```text
 gen-module-graph: stale — <文件>. Run `pnpm run gen-module-graph` and commit the result.
-gen-config-catalog: <文件> is stale. Run `pnpm run gen-config-catalog` and commit <文件>.
+gen-config-catalog: stale — <文件>. Run `pnpm run gen-config-catalog` and commit the result.
 gen-session-format-catalog: <文件> is stale; run pnpm run gen-session-format-catalog
 ```
 
@@ -171,7 +171,9 @@ gen-session-format-catalog: <文件> is stale; run pnpm run gen-session-format-c
 
 也就是说，"检查 `ctx.tools` 在不在"不是不变式，那叫"我以为在自检"。真的不变式长这样：包把观察到的事件折成一份可变数据，companion 独立地重折同一条权威事件流，然后比对两者。
 
-每个 workspace 包都发布一个 `./invariant` 伴生插件，按**自己完整的 npm 包名**注册检查。没有可查关系的包必须导出一个空安装器，且开头注释以 `No runtime invariant:` 打头、逐包解释为什么没有——`pnpm run verify-package-invariants` 会机械地拒绝没有解释的空安装器。
+**不是每个包都发伴生插件。** 一个包只有在真的拥有"可独立观察的关系"时才发布 `./invariant` 子路径，并按自己完整的 npm 包名注册检查；没有这种关系的包**省略**这个子路径、导出、发布与构建条目，改成在包 README 里写一句它自己的原因。**空安装器会被门禁拒绝**——"源码不存在 + README 里那句解释"才是"决定过"的表达。
+
+这条规则换过一次代，正好是这一篇主题的又一个实例：`docs/subsystems/invariants.md` 那一节至今还写着"每个 workspace 包都拥有一个 companion，没有可查的就导出一个以 `No runtime invariant:` 打头的空安装器"，而 2026-08-28 的简化注记与 `scripts/package-invariants.ts` 已经改成"省略加 README 说明、空安装器被拒"。这份快照里实测是 38 个 `src/invariant.ts` 对 316 个 `package.json`。
 
 两个对外部插件开发者有用的结论：
 
@@ -198,7 +200,7 @@ gen-session-format-catalog: <文件> is stale; run pnpm run gen-session-format-c
 
 文档是双语的，一对文档 = 同一个目录下的三个兄弟文件：`foo.md`、`foo.zh.md`、`foo.i18n.yaml`。没有 locale 目录，也没有独立翻译仓，而且**一个 PR 不会只落一种语言**。
 
-`.i18n.yaml` 存的是两侧的 Git blob 哈希：每个仍含语言特定内容的标题段一条记录，值是 `{ en: <hash>, zh: <hash> }`。改了一侧的内容，就在同一个 PR 里按术语表更新另一侧，然后：
+`.i18n.yaml` 存的是两侧内容的 sha256：每个仍含语言特定内容的标题段一条记录，值是 `{ en: <hash>, zh: <hash> }`，取摘要的前 16 位。改了一侧的内容，就在同一个 PR 里按术语表更新另一侧，然后：
 
 ```sh
 pnpm run verify-translation-pairing --write <pair>
@@ -260,7 +262,7 @@ DSH_REPO_ROOT=/path/to/deepseek-harness ./install.sh
 dsh --profile test --dump-config | grep -A4 'id: kernel-map'
 
 # 2. 问模型「DSH 里有哪些 waterfall 事件」——它调 kernel_event_map，
-#    答案是「17 条」，每一条都带 路径:行号
+#    它会返回命中总数与前几条（默认 10 条），每一条都带 路径:行号；waterfall 一共 17 条
 
 # 3. 报告面（要开 web）
 curl -s http://127.0.0.1:3080/api/dsh-kernel-map/report

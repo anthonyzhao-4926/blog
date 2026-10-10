@@ -29,5 +29,6 @@ const version = parseSessionFormatLogFilename(withoutCompressionSuffix(file))
 
 - **沙箱**：体检要读 `$DSH_HOME`，它通常在会话工作区之外。受限模式下这一步可能被拒——
   那是一个真实的策略边界，不是插件的 bug。
-- **只读**：读打开从不发布后继；只有写打开才会在**旁边**新增一个 `session.vN+1.jsonl`，
-  前代文件按字节保留。所以"备份"这件事在 DSH 里的答案就是：前代文件还在那儿。
+- **只读**：读打开从不发布后继；只有写打开才会在**旁边**新增一个以当前写入器世代命名的
+  `session.v<writer>.jsonl[.zstd]`，前代文件按字节保留。所以"备份"这件事在 DSH 里的答案就是：
+  前代文件还在那儿。
