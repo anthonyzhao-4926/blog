@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 5
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：说清插件从加载到卸载的四个阶段，知道什么该交给 `ctx.effect` 管理。
@@ -104,7 +105,7 @@ ctx.effect(() => webServer.register({
 当时说了一句"不用 `ctx.effect` 也能注册进去"。没错，能注册，但后果是：
 
 1. 插件被禁用（卸载）时，路由还在；
-2. 下次再启用插件，`webServer.register` 对同一条 `(kind, path)` 直接抛 `duplicate route`——因为 DSH 把路由当"组合级契约"，撞了就是配置错误。
+2. 下次再启用插件，`webServer.register` 对同一条 `(kind, path)` 直接抛 `duplicate exact route`——因为 DSH 把路由当"组合级契约"，撞了就是配置错误。
 
 所以规律很朴素：凡是"你装上去的东西、卸下来时必须拆掉"的，就交给 `ctx.effect`。
 

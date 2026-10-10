@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 1
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：说清 profile、bundle、插件三者的关系，并建好一个干净的 test profile。

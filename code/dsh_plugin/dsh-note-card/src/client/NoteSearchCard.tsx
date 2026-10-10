@@ -7,7 +7,7 @@
  */
 import type { ToolCallPhaseProps, ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
 
-/** 一条命中：与 10 篇 note_search 的 output.presentationMeta 投影约定一致。 */
+/** 一条命中：与 11 篇 note_search 的 output.presentationMeta 投影约定一致。 */
 interface NoteSearchHit {
     readonly path: string
     readonly line: number

@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 15
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：把插件在 Host 进程里攒下的数据送到浏览器——仓库内插件走 `ctx.remote` 五步，外部插件走 `/api` 下的一条 Fetch 路由；并把展示挂进设置页的 `settings.section` 槽位。
@@ -15,9 +16,9 @@ viewable: true
 >
 > **示例代码**：[dsh-note-stats](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-note-stats)
 
-10 篇的 `note_search` 跑起来之后，我想知道的很朴素：工作区里现在有多少篇笔记、最近都搜过什么关键词。统计本身不难——09 篇订阅 `tools/result` 的手法原样搬过来就能攒出来。难的是另一半：数据在 Host 的 Node 进程里，页面在浏览器里，中间隔着一层 HTTP。
+11 篇的 `note_search` 跑起来之后，我想知道的很朴素：工作区里现在有多少篇笔记、最近都搜过什么关键词。统计本身不难——09 篇订阅 `tools/result` 的手法原样搬过来就能攒出来。难的是另一半：数据在 Host 的 Node 进程里，页面在浏览器里，中间隔着一层 HTTP。
 
-13 篇讲过「一个包两半」：Host 半跑在 Node 进程，浏览器半从 `exports['./client']` 进页面。这篇把两半之间的数据通道打通，并把展示挂到界面上。
+14 篇讲过「一个包两半」：Host 半跑在 Node 进程，浏览器半从 `exports['./client']` 进页面。这篇把两半之间的数据通道打通，并把展示挂到界面上。
 
 ## 目标
 
@@ -267,7 +268,7 @@ inject: () => ({ hooks: { noteStats: stats }, refresh })
 
 ## 客户端模块的注入
 
-浏览器那半怎么进页面，是 `dsh-client-modules` 这个服务的事（13 篇讲了「一个包两半」的前提，这里讲机制）：
+浏览器那半怎么进页面，是 `dsh-client-modules` 这个服务的事（14 篇讲了「一个包两半」的前提，这里讲机制）：
 
 1. **声明**：`package.json` 里写 `dsh.client: { platform: 'web' }`，并且 `exports['./client']` 指向打好的 bundle。
 2. **扫描**：client-modules 盯着 Host Loader 的条目，从条目文件的位置**向上找最近的 `package.json`**——所以我们的 patch.yaml 挂的是 `src/index.ts` 源码文件，也算这个包的条目，它旁边的 `package.json` 就是身份。
@@ -275,7 +276,7 @@ inject: () => ({ hooks: { noteStats: stats }, refresh })
 
 失败待遇分两档，都值得知道：启动期，已加载条目里有一个声明了 `dsh.client` 但 bundle 缺失或声明畸形，整个服务聚合成一个 `AggregateError` 直接 FAILED——页面起不来，错误里列全所有坏包；运行期（热重载途中）单个包坏了只记一条警告，不拖别人。
 
-bundle 的形态是「懒 CJS 工厂」：脚本执行只做一件事——把 `{ id, factory }` 登记进 `window.__ModuleLoader__`；`factory(require)` 在第一次被 import 时才运行，返回的对象就是浏览器侧 Loader 看到的插件导出（`apply`、`inject`）。`require` 能答的是平台模块表：`react`、`react-dom`、`@deepseek-ai/cordis`、`dsh-client-store`、`dsh-client-ui-slots`、`dsh-client-ui-primitives`、`dsh-client-ui-dockkit`；其余依赖必须打包进这份文件，否则运行即抛。
+bundle 的形态是「懒 CJS 工厂」：脚本执行只做一件事——把 `{ id, factory }` 登记进 `window.__ModuleLoader__`；`factory(require)` 在第一次被 import 时才运行，返回的对象就是浏览器侧 Loader 看到的插件导出（`apply`、`inject`）。`require` 能答的是平台模块表：`react`、`react-dom`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-slots`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-dockkit`；其余依赖必须打包进这份文件，否则运行即抛。
 
 真实插件的这份文件由打包器生成（DSH 仓库里是 tsdown 的 `clientBundle` 预设，顺带处理 CSS Modules 和 sourcemap）。demo 手写它的最小形态——不引入构建链，也让「bundle 长什么样」看得见。
 
@@ -315,7 +316,7 @@ import type {} from '@deepseek-ai/dsh-tools'
 export const name = 'dsh-note-stats'
 
 export interface Config {
-    /** 笔记目录的绝对路径（与 10 篇 dsh-note-search 的 root 看同一个地方）。 */
+    /** 笔记目录的绝对路径（与 11 篇 dsh-note-search 的 root 看同一个地方）。 */
     root: string
 }
 
@@ -389,14 +390,28 @@ async function countMarkdown(root: string): Promise<number> {
 `client.js` 全文（浏览器半，手写的最小 bundle）：
 
 ```js
+/**
+ * dsh-note-stats 的浏览器半。真实插件的这份文件由打包器生成（DSH 仓库里是
+ * tsdown 的 clientBundle 预设，顺带处理 CSS Modules 与 sourcemap）；这里手写
+ * 它的最小形态，好让「bundle 长什么样」看得见：
+ *
+ *   - 脚本执行只做一件事：把 { id, factory } 登记进 window.__ModuleLoader__；
+ *   - id 必须等于 package.json 的 name（启动图里这一行的名字）；
+ *   - factory 收到模块表的 require，第一次被 import 时才运行，返回插件导出；
+ *   - require 能答平台模块（react、@deepseek-ai/cordis、@deepseek-ai/dsh-client-ui-slots 等），
+ *     其余依赖必须打包进这份文件——本插件没有别的依赖。
+ */
 window.__ModuleLoader__.load({
-  id: 'dsh-note-stats',   // 必须等于 package.json 的 name
+  id: 'dsh-note-stats',
   factory: (require) => {
-    const React = require('react')   // 平台模块表里的共享 React
+    const React = require('react')
     const h = React.createElement
 
-    // 裸 observable：getSnapshot + subscribe。放进 inject 的 hooks 隔间，
-    // 渲染器把它绑成组件的 props.useNoteStats 选择器钩子。
+    /**
+     * 裸 observable：getSnapshot + subscribe。注册时把它放进 inject 返回值的
+     * hooks 隔间，渲染器就把它绑成组件的选择器钩子——noteStats 变成
+     * props.useNoteStats。snapshot 身份要稳：值没变就返回同一个引用。
+     */
     const createSource = (initial) => {
       let snapshot = initial
       const listeners = new Set()
@@ -415,7 +430,10 @@ window.__ModuleLoader__.load({
 
     const stats = createSource({ status: 'loading' })
 
-    // 页面与 /api 同源，浏览器会话 cookie 自动带上，不用管 token。
+    /**
+     * 页面与 /api 同源，浏览器会话 cookie 自动带上，不用管 token。
+     * 401/403 说明路由其实在、只是请求没过认证或信任检查。
+     */
     const refresh = async () => {
       try {
         const response = await fetch('/api/dsh-note-stats/stats')
@@ -429,8 +447,10 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // 设置页里的一节。props 里没有 ctx：useNoteStats 与 refresh 来自
-    // 注册时的 inject 工厂。
+    /**
+     * 设置页里的一节。props 里没有 ctx：close 来自槽位 owner，
+     * useNoteStats 与 refresh 来自注册时的 inject 工厂。
+     */
     const NoteStatsSection = (props) => {
       const view = props.useNoteStats((snapshot) => snapshot)
       React.useEffect(() => { void props.refresh() }, [])
@@ -512,6 +532,7 @@ window.__ModuleLoader__.load({
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+# 把插件目录的绝对路径填进 patch.yaml 的占位符
 sed -i '' "s|__PLUGIN_DIR__|$(pwd)|g" patch.yaml
 pnpm install
 dsh plugin --profile test add link:.

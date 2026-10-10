@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 3
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：用一份 patch 文件关掉不需要的内置插件、改掉内置插件的参数，不动 `node_modules` 里的一行源码。
@@ -216,15 +217,15 @@ patch 写错有两种结果：改错了地方只警告，文件本身写坏了�
     fallbackMaxWords: 3
 ```
 
-这个插件的 schema 里 `fallbackMaxBytes` 和 `maxTitleBytes` 是必填的，于是启动时直接失败：
+这个插件的 schema 里 `fallbackMaxBytes` 和 `maxTitleBytes` 是必填的，于是这一行在启动时校验不过、挂不上树：
 
 ```text
-Error: dsh: plugin tree failed to load: … failed to apply loader entry session-title
-  (@deepseek-ai/dsh-session-title): invalid config:
+dsh: warning: 1 entry did not activate
+session-title (@deepseek-ai/dsh-session-title): ValidationError: invalid config:
   - $.fallbackMaxBytes missing required value (at fallbackMaxBytes)
 ```
 
-反过来，别的插件不一定这么严格：像 `bash-sandbox`，必填键就只有 `timeoutMs`，`cwd`、`maxTimeoutMs` 这些都可选，只写要改的那个键也能起来。
+反过来，别的插件不一定这么严格：像 `bash-sandbox`，schema 里每个键都有默认值（`cwd` 也可以缺省），只写要改的那个键也能起来。
 ### 2. id 写错只警告
 
 ```text

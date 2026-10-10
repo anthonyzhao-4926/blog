@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 4
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：写一个插件，让浏览器能拿到你的图片，并把 DSH 页面背景换掉。
@@ -146,7 +147,7 @@ ctx.effect(() => webServer.register({ ... }))
 
 于是 `register` 返回的注销函数就有了归属：插件活着，路由在；插件卸载，路由自动消失。
 
-这里不使用 `ctx.effect` 包装 `webServer.register` 也是可以的，路由一样可以注册进去，只是卸载插件时不会执行清理动作，下次再启用插件时 `register` 就会抛"duplicate route"异常。
+这里不使用 `ctx.effect` 包装 `webServer.register` 也是可以的，路由一样可以注册进去，只是卸载插件时不会执行清理动作，下次再启用插件时 `register` 就会抛 `duplicate exact route` 异常。
 
 - 请求来了会发生什么
 
@@ -212,7 +213,10 @@ div:has(> [data-shell-overlay]) [data-slot='conversation'] > [data-phase] {
   "type": "module",
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-host-webserver": "^0.1.2-alpha.2"
+    "@deepseek-ai/dsh-host-webserver": "^0.2.0-rc.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
   },
   "dsh": {
     "bundle": {

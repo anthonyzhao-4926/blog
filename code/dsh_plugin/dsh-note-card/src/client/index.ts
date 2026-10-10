@@ -16,7 +16,7 @@ export const inject = ['slots', 'sessions']
 
 export function apply(ctx: Context): void {
     // ctx.slots.inject 等 ui-tool 把 tool.call.toolview 声明出来再执行回调；
-    // 它卸载时这次注册跟着撤（14 篇讲过的声明生命周期）。
+    // 它卸载时这次注册跟着撤（15 篇讲过的声明生命周期）。
     ctx.slots.inject('tool.call.toolview', () => ctx.slots.register({
         name: 'tool.call.toolview',
         key: 'note_search',

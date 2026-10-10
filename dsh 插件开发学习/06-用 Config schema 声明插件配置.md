@@ -7,6 +7,7 @@ tags:
   - "dsh"
 column: dsh-plugin
 order: 6
+dsh-version: 0.2.0-rc.2
 viewable: true
 flowix_colors: []
 flowix_favorited: false
@@ -88,7 +89,7 @@ export function apply(ctx: Context, config: Config): void {
 ```json
 "dependencies": {
   "@deepseek-ai/cordis": "^4.0.1",
-  "@deepseek-ai/dsh-host-webserver": "^0.1.2-alpha.2",
+  "@deepseek-ai/dsh-host-webserver": "^0.2.0-rc.2",
   "@deepseek-ai/schemastery": "^3.18.2"
 }
 ```
@@ -212,7 +213,8 @@ dsh --profile test --no-open       # 启动，web 端口 3080
 flowchart TD
     A["空根 cordis.yml"] --> B["bundles 里每个插件自带的 patch<br/>（含我们的 insert）"]
     B --> C["profile 自己的 cordis.patch.yml<br/>（你写 config 的地方）"]
-    C --> D["命令行 --patch 覆盖"]
+    C --> D["~/.dsh/cordis.patch.yml<br/>（机器级，跨 profile）"]
+    D --> E["命令行 --patch 覆盖"]
 ```
 
 后面一层按 `id` 覆盖前面一层。**而且覆盖是整块替换，不是逐字段合并**：你写 `config: { opacity: 0.5 }`，这一行原来整个 config（比如 `{ image: ..., opacity: 0.35 }`）都会被换掉，`image` 回落到 **schema 默认值**，而不是保留上一层的值。

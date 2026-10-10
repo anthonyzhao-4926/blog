@@ -6,7 +6,7 @@
  *   - 脚本执行只做一件事：把 { id, factory } 登记进 window.__ModuleLoader__；
  *   - id 必须等于 package.json 的 name（启动图里这一行的名字）；
  *   - factory 收到模块表的 require，第一次被 import 时才运行，返回插件导出；
- *   - require 能答平台模块（react、@deepseek-ai/cordis、ui-slots 等），
+ *   - require 能答平台模块（react、@deepseek-ai/cordis、@deepseek-ai/dsh-client-ui-slots 等），
  *     其余依赖必须打包进这份文件——本插件没有别的依赖。
  */
 window.__ModuleLoader__.load({

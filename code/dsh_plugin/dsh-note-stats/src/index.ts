@@ -18,7 +18,7 @@ import type {} from '@deepseek-ai/dsh-tools'
 export const name = 'dsh-note-stats'
 
 export interface Config {
-    /** 笔记目录的绝对路径（与 10 篇 dsh-note-search 的 root 看同一个地方）。 */
+    /** 笔记目录的绝对路径（与 11 篇 dsh-note-search 的 root 看同一个地方）。 */
     root: string
 }
 

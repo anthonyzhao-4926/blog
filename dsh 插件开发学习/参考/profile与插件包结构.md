@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 viewable: true
+dsh-version: 0.2.0-rc.2
 ---
 > 本文是知识卡，不用顺序读。装插件报错、想知道某个文件能不能手改、或者要弄清装配顺序时来查。
 
@@ -16,16 +17,15 @@ viewable: true
 
 ```
 ~/.dsh/profiles/
-├── node_modules/          # 所有 profile 共享的依赖池（639 个软链，含 dsh 内核包）
+├── node_modules/          # 解析拦截层的位置：0.2.0 由 launcher 在内存里应答，不落盘
 ├── dsh-tui/               # 另一个 profile（终端界面）
 └── web/                   # ← 本篇主角：网页版 profile
     ├── package.json       # 我是谁 + 我要装哪些插件     ← 手写
-    ├── cordis.yml         # 插件树根（空数组）          ← 别动
+    ├── cordis.yml         # 插件树根（空数组，每次启动重写）← 别动
     ├── cordis.patch.yml   # 我的覆盖层（空数组）        ← 手写
     ├── pnpm-workspace.yaml# 包管理器策略                ← 手写
     ├── pnpm-lock.yaml     # 依赖锁定快照                ← 生成
-    ├── node_modules/      # 已安装的依赖                ← 生成
-    └── .dsh-module-fallback/  # 运行期回退解析目录      ← 生成（启动时重建）
+    └── node_modules/      # 已安装的依赖                ← 生成
 ```
 
 一句话概括：**这个目录本身几乎没有业务代码，它全部的职责是"声明装配清单"**。真正的功能都在 `node_modules` 里的插件包中，由 DSH 启动时按顺序装配成一棵 Cordis 插件树。
@@ -75,21 +75,24 @@ viewable: true
 []
 ```
 
-它是"第 0 层"：一个**空的插件行列表**。所有插件都是通过 patch 一层层"贴"到这个空列表上的，而不是直接写在这里。文件里的注释已经把规则写明了，照做即可 —— **不要动这个文件**。
+它是"第 0 层"：一个**空的插件行列表**。所有插件都是通过 patch 一层层"贴"到这个空列表上的，而不是直接写在这里。文件里的注释已经把规则写明了，照做即可 —— **不要动这个文件**。它每次启动都会被 launcher 重写成上面这份空根：loader 需要磁盘上真有一个文件来锚定 profile 目录，而 loader 的写回（某个插件自行卸载时会把当前树落盘）可能把组合出来的行烙进这份文件，留着就会在下次启动时把各层的 `insert` 再叠一遍。
 
 ### `cordis.patch.yml`：profile 覆盖层
 
 当前是空的 `[]`，但它是 profile 里**最该由你动**的文件。完整的合成顺序是：
 
 ```
-空根（cordis.yml）
+空根（cordis.yml，每次启动改写）
   ├─ @deepseek-ai/dsh-base       的 cordis.patch.yml
   ├─ @deepseek-ai/dsh-web-app    的 cordis.patch.yml
   ├─ dsh-better-sidebar          的 cordis.patch.yml
   ├─ 其他插件                     的 cordis.patch.yml
   ├─ ← 本文件（profile 自己的补丁）
-  └─ 命令行 --patch 覆盖
+  ├─ ~/.dsh/cordis.patch.yml     （home 层，对所有 profile 生效，压在 profile 层之上）
+  └─ 命令行 --patch 覆盖（按 argv 顺序）
 ```
+
+`~/.dsh/cordis.patch.yml` 是机器级偏好，比 profile 自己的补丁更靠后，所以它能盖掉任何一个 profile 写的东西。启动器还会在这之后按环境追加补丁（例如 `DSH_TELEMETRY_DISABLED` 非空时关掉遥测那一行）。
 
 想给某个插件加参数、临时关掉某一行、或者插一条自己的 entry，写这里。
 
@@ -108,7 +111,7 @@ viewable: true
           - --no-rc
 ```
 
-⚠️ 一个常见的坑：**profile 自己的 `cordis.patch.yml` 属于"用户状态"，框架升级时可能被重写**。所以在这里手工写过的挂载行会莫名消失。正因如此，插件作者现在更推荐把挂载声明写进**插件包自带的 `cordis.patch.yml`**（见下文），让 `dsh plugin add / update` 自动补回来。如果两边都写了 `insert`，同一个插件会被挂载两次 —— 路由注册两遍，其中一份必然在竞争里失败，整棵树可能起不来。
+⚠️ 一个常见的坑：**profile 自己的 `cordis.patch.yml` 是"人和工具共写"的**。插件页（或 `plugin_manager` 工具）开关某个插件时改的就是这个文件——只改最后一处匹配覆盖的 `disabled`，一处都不匹配就追加一条；装新包时它改的是 `package.json` 的 `bundles`。所以手写的覆盖可能被工具再加一条，两处叠在一起，最后生效的是靠后的那条。也正因如此，插件作者现在更推荐把挂载声明写进**插件包自带的 `cordis.patch.yml`**（见下文），装包时自动启用。如果两边都写了 `insert`，同一个插件会被挂载两次 —— 路由注册两遍，其中一份必然在竞争里失败，整棵树可能起不来。
 
 ### `pnpm-workspace.yaml`：包管理器策略
 
@@ -135,7 +138,7 @@ allowBuilds:
 | `minimumReleaseAgeExclude` | 对指定包跳过"新版本冷静期"             | 刚发布的版本想立刻用                                                           |
 | `allowBuilds`              | 只放行这两个包的安装脚本               | pnpm 默认拦截依赖的 postinstall；`node-pty` 要编译原生模块（终端功能），`protobufjs` 要生成代码 |
 
-装插件时报 "Ignored build scripts"，八成就是这里没放行。
+装插件时报 "Ignored build scripts"，八成就是这里没放行。0.2.0 的插件页会把被 pnpm 拦下的包名列成待决定项（`pnpm-workspace.yaml` 里出现 `set this to true or false` 占位），点"允许这些脚本并重试"就会把它写成 `true`。
 
 ### `pnpm-lock.yaml`：依赖锁定快照
 
@@ -143,45 +146,35 @@ allowBuilds:
 
 ### `node_modules/`：依赖安装目录
 
-186 个顶层条目，但形态分三类，看懂了三类，排查问题会快很多：
+186 个顶层条目，但形态分两类，看懂了两类，排查问题会快很多：
 
 | 形态 | 例子 | 含义 |
 |---|---|---|
-| 真实目录 | `dsh-better-sidebar/` | 从 npm 装下来的包，源码 + `lib/` 编译产物都在里面 |
+| 真实目录 | `dsh-better-sidebar/` | 从 npm 装下来的包，源码 + `lib/` 编译产物都在里面（`nodeLinker: hoisted` 会把依赖平铺上来） |
 | 指向本地源码的软链 | `<插件名> -> ../../../../<你的源码目录>/<插件目录>` | 用 `link:` 装的插件，改源码直接作用于这个路径 |
-| 指向 fallback 的软链 | `zwitch -> .../.dsh-module-fallback/node_modules/zwitch` | 运行期回退解析，见下一节 |
 
 另外两个子目录：
 
 - `.pnpm/lock.yaml`：pnpm 自己的虚拟存储元数据（注意它和根目录的 `pnpm-lock.yaml` 是**两份不同的文件**）；
 - `.bin/`：随依赖带进来的命令行工具（20 个），比如 `katex`、`marked`、`modlens` —— 这些不是给你用的业务命令，是插件构建时调用的。
 
-### `.dsh-module-fallback/`：模块回退解析
+### `.dsh-module-fallback/`：0.1.5 的遗留目录
 
-先看现象：这个目录里的条目，**全部是指回本 profile `node_modules` 的软链**：
+0.1.5 的 link 后端会把组合包依赖的包**投影**到 profile 目录里，落成 `.dsh-module-fallback/node_modules/`；那时 `node_modules` 顶层很多条目不是真实目录，而是指回它的软链。
 
-```
-.dsh-module-fallback/node_modules/d3-format -> .../web/node_modules/d3-format
-```
-
-这不是自己指自己吗？不是，它解决的是一个很实际的问题：
-
-> **Node 的模块解析是"从当前文件所在目录一路往上找 `node_modules`"。** 当插件源码不在 profile 目录里时（用 `link:` 装的插件，真实路径在别处），从它出发往上找，永远找不到 `~/.dsh/profiles/web/node_modules`。
->
-> 回退目录就是给这条查找路径"接一根管子"：在插件需要解析依赖的位置放一层 `node_modules`，把每个依赖软链回 profile 的依赖池。既不复制文件，也不会出现两份版本不同的同一个包。
+0.2.0 不再落盘。launcher 读 profile 时算出一张**内存里的包表**：安装锚点（dsh 自己那套包，含 `cordis`）的依赖闭包 + profile 已装的依赖，再加上 profile `node_modules` 里指向 profile 之外真实目录的软链（也就是 `link:` 装的那些插件）。然后由这张表应答 Node 的 ESM/CJS 解析，拦截层就是 profile 目录**上一层**的 `node_modules` 位置：
 
 ```mermaid
 flowchart LR
-    A["插件源码（真实路径在 profile 之外）"] -->|"向上逐级找 node_modules"| B["够不着 profile 的依赖池"]
-    A -->|"就近命中"| C[".dsh-module-fallback/node_modules"]
-    C -->|"每个依赖软链回依赖池"| D["profiles/web/node_modules"]
+    A["插件源码（真实路径在 profile 之外）"] -->|"向上逐级找 node_modules"| B["profiles/node_modules（解析拦截层）"]
+    B -->|"launcher 按内存包表应答"| C["安装锚点 / profile 依赖里的那一份"]
 ```
 
 三个要点：
 
-1. 它是**运行期状态**，不是安装产物 —— DSH 启动 profile 时按 `node_modules` 内容生成，`pnpm install` 之后通常也会重建。所以它不该被当成"源码"去提交或备份。
-2. 它会**连带影响 `node_modules` 的形态**：很多包在顶层不是真实目录，而是指向 fallback 的软链。如果 fallback 目录被清掉、软链还留在原地，这些包就会变成断链（`ls` 报 `No such file or directory`）。我排查时就撞上过这个状态：当时 `web/node_modules` 顶层 77 个软链中有 100 个（含深层）指向已不存在的 `.dsh-module-fallback`，父级 `profiles/node_modules` 的 639 个软链里有 157 个同样断链。
-3. 修复方式很简单：回到 profile 目录 `pnpm install`；下次 `dsh web` 启动时也会自动补齐。
+1. `.dsh-module-fallback/` 是**旧版本的残留**。0.2.0 启动读 profile 时会把它连同 `node_modules` 里所有指进它的软链一起清掉（`loadProfile` 里的 `removeLinkProjections`）。看到它，说明这个 profile 被 0.1.5 启动过。
+2. 它不会再被重建，所以"断了就 `pnpm install`"这条老经验对它不适用：它该消失，指进它的断链会被启动时一并清掉。
+3. 解析能命中的只有两类东西——安装锚点的依赖闭包和 profile 已装的依赖。`node_modules` 里除这两类之外的残留目录都不会参与解析。
 
 ## 插件包内部结构
 
@@ -290,10 +283,10 @@ flowchart TD
 | `package.json`                       | ✅ 可以 | 但优先用 `dsh plugin add`          |
 | `cordis.patch.yml`                   | ✅ 推荐 | 覆盖配置、临时禁用、自定义 entry 都写这里       |
 | `pnpm-workspace.yaml`                | ✅ 可以 | 装插件报错时才需要动                     |
-| `cordis.yml`                         | ❌ 别动 | 空根，动了会破坏 patch 合成模型            |
+| `cordis.yml`                         | ❌ 别动 | 空根；每次启动都被 launcher 重写，手改的内容会丢   |
 | `pnpm-lock.yaml` / `.pnpm/lock.yaml` | ❌ 别动 | 由 pnpm 维护                      |
 | `node_modules/`                      | ❌ 别动 | 由 pnpm 维护；软链断了就 `pnpm install` |
-| `.dsh-module-fallback/`              | ❌ 别动 | 运行期自动生成                        |
+| `.dsh-module-fallback/`              | ❌ 别动 | 0.1.5 的遗留目录；下次启动会被自动清掉        |
 
 ## 常用命令
 
@@ -315,7 +308,7 @@ ls -la node_modules/dsh-better-sidebar node_modules/.bin | head
 
 ## 要点
 
-- `profiles/web` = **装配清单**，不是代码仓库：四个手写文件 + 三个生成物。
-- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02 篇](../02-最小插件的结构与装配.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → 命令行 `--patch`。
-- `dsh` 字段（`bundle.patch` / `client.platform`）让插件能"装完即挂载"，这是官方推荐的插件分发姿势；profile 里的手工挂载行是会被升级冲掉的旧姿势。
-- `.dsh-module-fallback` 解决"插件不在 profile 目录里也能解析依赖"的问题，属于运行期状态，断了 `pnpm install` 即可。
+- `profiles/web` = **装配清单**，不是代码仓库：三个手写文件（`package.json`、`cordis.patch.yml`、`pnpm-workspace.yaml`）+ launcher 每次重写的空根 `cordis.yml` + 两个生成物（`pnpm-lock.yaml`、`node_modules`）。
+- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02 篇](../02-最小插件的结构与装配.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → `~/.dsh/cordis.patch.yml` → 命令行 `--patch`。
+- `dsh` 字段（`bundle.patch` / `client.platform`）让插件能"装完即挂载"，这是官方推荐的插件分发姿势；手写在 profile 里的挂载行会和插件自带的 `insert` 打架，重复挂载同一行。
+- 插件源码不在 profile 目录里也能解析依赖，靠的是 launcher 启动时的那张内存包表（拦截层在 profile 目录上一层的 `node_modules` 位置），不是磁盘上的 `.dsh-module-fallback`；后者是 0.1.5 的遗留物，会被启动时清掉。

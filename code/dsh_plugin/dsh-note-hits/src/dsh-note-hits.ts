@@ -6,13 +6,16 @@
  *
  * 密钥只存引用：配置里写的是环境变量名，值由 ctx.credentials 的凭据库
  * （$DSH_HOME/.credentials.yaml）或进程环境提供；本插件从不把明文写进
- * 任何配置文件。
+ * 任何配置文件。引用字段声明成 .volatile()，所以设置页上能现场改，
+ * 改完由 Loader 热提交（loader/volatile-update），不重启本插件。
  *
  * 07 篇说过 ctx.logger 不往终端打，所以这里用 console 留证据。
  *
  * @module dsh-note-hits
  */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
+// 只引入类型声明：loader/volatile-update 的事件类型由 loader 包合并进来。
+import type {} from '@deepseek-ai/cordis-plugin-loader'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { defineDomain } from '@deepseek-ai/dsh-storage-domain'
 import Schema from '@deepseek-ai/schemastery'
@@ -20,7 +23,7 @@ import { z } from 'zod'
 
 export const name = 'dsh-note-hits'
 
-/** domain 数据面是必需的；设置服务是可选依赖，用 ctx.inject 等它出现。 */
+/** domain 数据面是必需的；凭据服务是可选依赖，用 ctx.get 取。 */
 export const inject = ['storageDomain']
 
 /** 全局单例槽：从没写过时读 initial，第一次 set 才落到介质上。 */
@@ -46,17 +49,19 @@ const bootDomainSpec = defineDomain({
 /** 可配置项：密钥只放引用，不放明文。 */
 export interface Config {
     /** 取密钥用的凭据引用（环境变量名）。 */
-    apiKeyEnv: string
+    apiKeyEnv: Volatile<string>
 }
 
-export const Config: Schema<Config> = Schema.object({
+// 不写 `: Schema<Config>` 标注：volatile 字段的序列化形态与接口里的
+// Volatile<T> 引用不同，标注会与 schemastery 的 default 签名冲突。
+export const Config = Schema.object({
     // role('credential-ref') 让设置页把它渲染成引用选择器，而不是密码框。
-    apiKeyEnv: Schema.string().role('credential-ref').default('DEEPSEEK_API_KEY'),
+    apiKeyEnv: Schema.string().role('credential-ref').default('DEEPSEEK_API_KEY').volatile(),
 })
 
 /**
  * @param ctx - 插件上下文，必须已注入 storageDomain。
- * @param config - 已校验的配置。
+ * @param config - 已校验的配置；volatile 字段是稳定引用，读值走 .get()。
  */
 export async function apply(ctx: Context, config: Config): Promise<void> {
     const domain = await ctx.storageDomain.open(bootDomainSpec)
@@ -67,11 +72,9 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     await domain.global.set({ boots: state.boots + 1, lastAt: new Date().toISOString() })
     console.log(`note-hits: 第 ${state.boots + 1} 次启动，状态落在 $DSH_HOME/storages/note_hits.json`)
 
-    let current: () => Config = () => config
-
     /** 按引用取密钥：只打来源层和长度，永不打值。 */
     const reportCredential = async (): Promise<void> => {
-        const ref = credentialRef(current().apiKeyEnv)
+        const ref = credentialRef(config.apiKeyEnv.get())
         const credentials = ctx.get('credentials')
         if (credentials === undefined) {
             console.warn(`note-hits: 没有凭据服务，${ref} 只能靠进程环境`)
@@ -89,15 +92,9 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         )
     }
 
-    // 设置服务在，就挂一个同名 namespace：页面改完引用，这里立刻重报一次。
-    ctx.inject(['settings'], (settingsCtx) => {
-        settingsCtx.settings.installSection(ctx, 'note-hits', Config, config, {
-            setSource: (source) => {
-                current = source
-            },
-            onChange: () => void reportCredential(),
-        })
-    })
+    // volatile 提交成功时 Loader 向本插件派发这个事件，参数是变了的字段路径。
+    // 设置页改完引用，这里立刻重报一次。
+    ctx.on('loader/volatile-update', () => void reportCredential())
 
     await reportCredential()
 }

@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 26
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：分清「子 agent」和「多 agent 协作」是两件事；知道一个子 agent 提供方要满足什么契约、能力又是怎么被发现和校验的；会先看清手上这台机器到底能接什么活，再决定委派。
@@ -129,26 +130,26 @@ interface SubagentRun {
 
 三块共享状态：
 
-**身份与 roster。** `TeamId` 是带独立品牌的 Root 会话 id。每个成员从 `provisioning` 开始，只到达一个终态：`active` 或 `failed`。运行时的 `running` / `idle` / `inactive` 是**另外派生**的，绝不会回写那条记录。
+**身份与 roster。** `TeamId` 是带独立品牌的 Root 会话 id。每个成员从 `provisioning` 开始，只到达一个终态：`active` 或 `failed`。运行时的 `running` / `inactive` 是**另外派生**的（`provisioning` / `failed` 直接来自持久阶段），绝不会回写那条记录。
 
 **持久 mailbox。** Lead 会话先存下完整的排队消息，只有目标的待处理收件条目或已记录的用户消息落盘之后，才写一条独立的确认事件——于是"已排队减去已投递"就构成了恢复用的邮箱。
 
-投递方式是固定的，调用方选不了：running 的目标在**最近的步骤边界**收到消息，idle 的目标**起一个轮次**，inactive 的成员则**冷恢复**。正因为调用方不能选，持久记录里干脆不存调度方式。
+投递方式是固定的，调用方选不了：running 的目标在**最近的步骤边界**收到消息，inactive 的目标在**已加载时起一个轮次**，否则**冷恢复**。正因为调用方不能选，持久记录里干脆不存调度方式。
 
 ```mermaid
 flowchart LR
     L["Lead 会话"] --> M["持久 mailbox<br/>已排队减去已投递"]
     R["roster 成员状态<br/>provisioning 只到 active 或 failed"] -->|"决定投递方式"| M
     M -->|"目标 running"| A["在最近的步骤边界收到消息"]
-    M -->|"目标 idle"| B["起一个轮次"]
-    M -->|"成员 inactive"| C["冷恢复"]
+    M -->|"目标 inactive 且已加载"| B["起一个轮次"]
+    M -->|"目标 inactive 且未加载"| C["冷恢复"]
 ```
 
 **共享任务 DAG。** 每条任务事件都存完整快照，`revision` 是 compare-and-set 值、每次变更加一；`blockedBy` 边必须指向未删除的任务并维持无环。状态里 `pending` 表示还没开始或已被释放，`in_progress` 带着 owner，`completed` 满足阻塞关系，`deleted` 是保留的 tombstone。
 
 有一个字段名特别容易误读：**`writeScopes` 是规范化的、提示性的路径前缀，不是锁**。它是给人和模型看"这几件事可能会撞"的警告，不提供任何互斥保证。视图层会补上 owner 名、就绪状态和写作用域重叠警告，但**不会改变持久快照**。
 
-回放靠 `foldTeam()`：把一个 Root 会话折成 roster、任务板和"已排队减去已投递"的邮箱。它按 `TeamId` 挑记录，所以普通 fork 继承来的事件保留祖先 id、**不会进到新 Root 的状态里**。顺序和时间继续由会话事件自己的 `seq` 与 `time` 负责，Team 快照不重复存。
+回放靠 `agentTeam` 这个 Session 投影（`teamProjectionDefinition` 的 fold）：把一个 Root 会话折成 roster、任务板和"已排队减去已投递"的邮箱。它按 `TeamId` 挑记录，所以普通 fork 继承来的事件保留祖先 id、**不会进到新 Root 的状态里**。顺序和时间继续由会话事件自己的 `seq` 与 `time` 负责，Team 快照不重复存。
 
 ## 侦察当前能力
 
