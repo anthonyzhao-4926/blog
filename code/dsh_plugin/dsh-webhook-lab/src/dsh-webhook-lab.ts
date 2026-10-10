@@ -11,8 +11,9 @@
  * @module dsh-webhook-lab
  */
 import type { Context } from '@deepseek-ai/cordis'
-// 只引入类型声明：ctx.webhookRuntime 的 Context 合并，以及交付与请求类型。
-import type {} from '@deepseek-ai/dsh-webhook'
+// WebhookRuleId 是运行时的品牌工厂：规则 id 是不透明字符串，不能直接写裸字符串。
+import { WebhookRuleId } from '@deepseek-ai/dsh-webhook'
+// 只引入类型声明：GitHub 适配器规范化后的事件类型（WebhookEventMap 的合并）。
 import type {} from '@deepseek-ai/dsh-webhook-github'
 
 export const name = 'dsh-webhook-lab'
@@ -21,7 +22,7 @@ export const name = 'dsh-webhook-lab'
 export const inject = ['webhookRuntime']
 
 /** 这条规则的唯一 id。 */
-const RULE_ID = 'lab-issue-opened'
+const RULE_ID = WebhookRuleId('lab-issue-opened')
 
 /**
  * 判断这是不是一个「新开了 issue」的交付。
@@ -29,17 +30,20 @@ const RULE_ID = 'lab-issue-opened'
  * @returns 事件编号与标题；不是我们要的事件时返回 undefined。
  */
 function readIssueOpened(delivery: { event: unknown }): { number: number, title: string } | undefined {
-    const event = delivery.event as {
-        action?: unknown
-        issue?: { number?: unknown, title?: unknown }
+    // GitHub 适配器把事件规范化成 { name, payload }：name 是 X-GitHub-Event 的名字，
+    // payload 是验签后的原始 JSON 对象。具体字段的校验是规则的活。
+    const { name, payload } = delivery.event as {
+        name?: unknown
+        payload?: { action?: unknown, issue?: { number?: unknown, title?: unknown } }
     }
     // 规则负责校验自己消费的事件特定字段——runtime 只保证它是无损 JSON。
-    if (event.action !== 'opened') return undefined
-    if (typeof event.issue?.number !== 'number' || typeof event.issue.title !== 'string') return undefined
+    if (name !== 'issues') return undefined
+    if (payload === undefined || payload.action !== 'opened') return undefined
+    if (typeof payload.issue?.number !== 'number' || typeof payload.issue.title !== 'string') return undefined
     // 标题是人写的，掏空它是为了只留一句可读的提示词素材。
-    const title = event.issue.title.trim()
+    const title = payload.issue.title.trim()
     if (title === '') return undefined
-    return { number: event.issue.number, title }
+    return { number: payload.issue.number, title }
 }
 
 export function apply(ctx: Context): void {
@@ -57,12 +61,13 @@ export function apply(ctx: Context): void {
             if (signal.aborted) return null
 
             // 非 null 的结果 = 请 runtime 开一个会话去处理它。
+            // agentPreset / permissionPreset 必须是这个 profile 里真实注册过的 id。
             return {
                 workspacePath: process.cwd(),
                 title: `Issue #${issue.number}: ${issue.title}`,
                 prompt: `仓库里新开了一个 issue：${issue.title}。去看一眼相关代码，给出处理建议。`,
-                agentPreset: 'default',
-                permissionPreset: 'default',
+                agentPreset: 'standard',
+                permissionPreset: 'read-only',
             }
         },
     }), 'dsh-webhook-lab: rule')

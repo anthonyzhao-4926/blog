@@ -2,7 +2,7 @@
 # 装 dsh-llm-ollama：填绝对路径 → 装依赖 → 挂进 test profile。
 #
 # 装完还没完：这个插件只是把 provider 路由挂上，会话用哪条路由是
-# agent-default-model 的配置。照着文章「让会话用上它」一节，在 profile 的
+# agent-default-model 的配置。照着文章「provider 路由与会话选型」一节，在 profile 的
 # cordis.patch.yml 里把 agent-default-model 指到 ollama。
 set -euo pipefail
 

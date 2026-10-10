@@ -158,7 +158,7 @@ dsh --profile test --dump-config
 
 ### id：覆盖字段
 
-**改一行**要用 `id` 指名目标。`id` 是 dump 里那个 `id:`（不是包名，也不是插件自己的 `name`），别背，去 dump 里抄。一条 patch 里能写的字段有四个：`id`（必写，定位用）、`name`（可选，校验用）、`disabled`、`config`。
+**改一行**要用 `id` 指名目标。`id` 是 dump 里那个 `id:`（不是包名，也不是插件自己的 `name`），别背，去 dump 里抄。patch 条目里只有三个键有结构含义：`id`（必写，定位用）、`name`（可选，校验用——与目标行的 `name` 不一致就跳过并告警）、`insert`（往 group 里塞行；没有 `id` 时往顶层塞）。**其余键会被原样覆写到目标行上**，所以能写哪些取决于目标行有哪些字段：最常用的是 `config` 和 `disabled`，`inject`、`isolate`、`intercept`、`group` 一样能覆写。
 
 想停用一行，就只写 `disabled`：
 
@@ -172,7 +172,7 @@ dsh --profile test --dump-config
 
 `id` 找不到时也只警告、继续跑。这是故意的：同一份 patch 可能同时喂给不同的 profile，web 和 tui 装的行本来就不一样，对不上是常态。
 
-`config` 是这四个字段里唯一一个**不逐个**的：它会整块替换掉目标行的 `config`（见易错点 1）。
+`config` 是这些键里唯一一个**不逐个**的：它会整块替换掉目标行的 `config`（见易错点 1）。
 
 ### `!!js` 表达式
 

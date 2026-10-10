@@ -149,7 +149,7 @@ flowchart LR
 
 有一个字段名特别容易误读：**`writeScopes` 是规范化的、提示性的路径前缀，不是锁**。它是给人和模型看"这几件事可能会撞"的警告，不提供任何互斥保证。视图层会补上 owner 名、就绪状态和写作用域重叠警告，但**不会改变持久快照**。
 
-回放靠 `agentTeam` 这个 Session 投影（`teamProjectionDefinition` 的 fold）：把一个 Root 会话折成 roster、任务板和"已排队减去已投递"的邮箱。它按 `TeamId` 挑记录，所以普通 fork 继承来的事件保留祖先 id、**不会进到新 Root 的状态里**。顺序和时间继续由会话事件自己的 `seq` 与 `time` 负责，Team 快照不重复存。
+回放靠 `agentTeam` 这个 Session 投影：把一个 Root 会话折成 roster、任务板和"已排队减去已投递"的邮箱。它按 `TeamId` 挑记录，所以普通 fork 继承来的事件保留祖先 id、**不会进到新 Root 的状态里**。顺序和时间继续由会话事件自己的 `seq` 与 `time` 负责，Team 快照不重复存。
 
 ## 侦察当前能力
 

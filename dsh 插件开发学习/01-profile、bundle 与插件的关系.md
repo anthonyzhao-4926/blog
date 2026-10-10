@@ -25,7 +25,7 @@ dsh plugin --profile <档案名> add <插件来源>
 她在她的 wife_profile 下安装 A， B， C插件。我在我的 husband_profile 下安装 A， E， F插件。
 现在是不是就好理解了，其实 profile 就是一个插件集合隔离。
 
-DSH 默认的 profile 名字叫做web, 所以你会看到很多插件的安装命令都是用web，例如： `dsh plugin --profile web add dsh-better-sidebar`
+DSH 不自带默认 profile——`--profile` 必须点名。自带的几个表面模板（`web`、`headless`、`sdk`、`acp` 等）同时也是 CLI 子命令，`dsh web` 用的就是 `web` 那一套，所以插件文档里的安装命令常写成 `dsh plugin --profile web add dsh-better-sidebar` 这样。
 DSH 快速启动执行的命令也是 `dsh web`。 所以，可以理解了 这里的 web 原来是指定 profile 启动呀。
 
 dsh profile 的存放路径是 `~/.dsh/profiles`。 可以看到这个目录下有个web文件夹，这个web文件夹就是web profile。
@@ -39,14 +39,14 @@ cd ~/.dsh/profiles
 mkdir test
 cd test
 touch package.json
-echo '{"name":"dhs-profile-test","private":true,"dsh":{"profile":{"bundles":["@deepseek-ai/dsh-base","@deepseek-ai/dsh-web-app"]}}}' >> package.json
+echo '{"name":"dsh-profile-test","private":true,"dsh":{"profile":{"bundles":["@deepseek-ai/dsh-base","@deepseek-ai/dsh-web-app"]}}}' >> package.json
 pnpm install
 ```
 
 我们向 package.json 中写入的内容如下
 ```json
 {
-	"name": "dhs-profile-test",  // 项目名称，用于标识和日志
+	"name": "dsh-profile-test",  // 项目名称，用于标识和日志
 	"private": true, // 设为私有，不发布到 NPM 仓库
 	"dsh": {
 	  "profile": {

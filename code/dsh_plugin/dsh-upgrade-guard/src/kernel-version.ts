@@ -1,8 +1,8 @@
 /**
  * 找出「我这个插件实际拿到的内核是哪一版」。
  *
- * dsh 自己没有任何服务或事件暴露内核版本（`dsh --version` 只是运行时读
- * CLI 包的 package.json），所以只能从「解析到的包清单」推：插件解析到
+ * dsh 自己没有任何服务或事件暴露内核版本（`dsh --version` 也只是运行时读
+ * app-boot 自己那份包清单），所以只能从「解析到的包清单」推：插件解析到
  * 哪一份 `@deepseek-ai/dsh-*`，就是它接下来要按哪一套 API 说话。
  *
  * @module dsh-upgrade-guard/kernel-version

@@ -25,7 +25,7 @@ for PROFILE in test headless; do
   if ! grep -q 'id: dsh-note-search' "$PATCH_FILE"; then
     cat >> "$PATCH_FILE" <<EOF
 
-# dsh-note-search：演示用笔记目录（10 篇）
+# dsh-note-search：演示用笔记目录（11 篇）
 - id: dsh-note-search
   config:
     root: '$DIR/notes'

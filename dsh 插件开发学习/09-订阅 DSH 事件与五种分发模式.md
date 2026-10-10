@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 9
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：订阅 DSH 内部的事件（工具调用、审批结果、会话记录），把计数挂到一条 HTTP 路由上；并且知道五种分发模式各自该用在什么地方。
@@ -62,7 +63,7 @@ flowchart LR
  *
  * 一个事件名只属于一种分发模式，所以五个模式各有自己的名字——这不是为了
  * 演示而拆的，harness 里的事件就是这么定的（`tools/result` 永远是广播，
- * `agent/pre-step` 永远是管道 / `waterfall`）。
+ * `agent/pre-step` 永远是管道）。
  *
  * `declare module '@deepseek-ai/cordis'` 是类型层面的登记：Cordis 把所有
  * 插件声明的事件合并成一张总表，`ctx.emit` / `ctx.on` 的名字与参数才有类型。
@@ -573,10 +574,10 @@ dsh-event-log/                    ← 插件包（bundle）
 ```json
 "dependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-host-webserver": "^0.1.7-rc.1",
-    "@deepseek-ai/dsh-session": "^0.1.7-rc.1",
-    "@deepseek-ai/dsh-tools": "^0.1.7-rc.1",
-    "@deepseek-ai/dsh-user-approval": "^0.1.7-rc.1"
+    "@deepseek-ai/dsh-host-webserver": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-session": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-user-approval": "^0.2.0-rc.2"
 }
 ```
 
@@ -729,6 +730,6 @@ curl -s 'http://127.0.0.1:3099/dsh-event-log/stats'
 
 ---
 
-**下一篇**：[事件进阶](10-事件进阶.md)——09 篇只用了三个事件；DSH 一共有七十多个，先把它们按生命周期摆成一张地图，再挑该听哪一个。
+**下一篇**：[事件进阶](10-事件进阶.md)——09 篇只用了三个事件；DSH 有一百多个，先把它们按生命周期摆成一张地图，再挑该听哪一个。
 
 profile 目录里哪些文件能改、patch 怎么合成，见[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有哪些能力，见 [Cordis API 文档](../dsh/cordis_api.md)。

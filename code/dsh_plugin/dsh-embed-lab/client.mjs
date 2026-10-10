@@ -11,6 +11,10 @@ import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 
 const prompt = process.argv[2] ?? '用一句话说明你现在跑在哪个 profile 上。'
+// initialize 只保存路由：provider / model / 可选的 reasoningEffort 与 maxTokens。
+// deepseek-official 这条路由没有别的适配器负责时，服务器会挂上 DeepSeek 适配器。
+const provider = process.env.DSH_DEMO_PROVIDER ?? 'deepseek-official'
+const model = process.env.DSH_DEMO_MODEL ?? 'deepseek-flash'
 
 // sdk profile = base 组合 + SDK 的 JSON-RPC stdio 服务器。
 // 换成 headless 就是一次性任务应用，换成 acp 就是 ACP 服务器。
@@ -60,14 +64,22 @@ function request(method, params) {
 }
 
 try {
-    const opened = await request('session/open', {})
-    const sessionId = opened?.sessionId ?? opened?.id
+    // 先握手：initialize 是运行时就绪边界，握手完成之前 session/prompt 会被拒绝。
+    const ready = await request('initialize', { cwd: process.cwd(), provider, model })
+    console.log('[已握手]', ready?.serverInfo?.name)
+
+    // 会话 id 由客户端这边起；服务器在第一次收到未知 id 的提示词时才懒创建 agent + 会话。
+    const sessionId = `lab-${Date.now().toString(36)}`
     console.log('[已开会话]', sessionId)
 
-    await request('session/prompt', { sessionId, content: [{ type: 'text', text: prompt }] })
-    console.log('[提示词已发送，等事件…]')
+    // 参数名是 contentBlocks；服务器把用户消息排队后立即返回 { messageId }，不等轮次结束。
+    const queued = await request('session/prompt', {
+        sessionId,
+        contentBlocks: [{ type: 'text', text: prompt }],
+    })
+    console.log('[提示词已发送，等事件…]', queued?.messageId ?? '')
 
-    // 真实客户端会在这里等一个「轮次结束」的通知再收尾；这个最小版本给一段观察窗口。
+    // 真实客户端会在这里等一个 session.status 变成 idle 再收尾；这个最小版本给一段观察窗口。
     await new Promise((resolve) => setTimeout(resolve, 15000))
 } catch (error) {
     console.error('[出错]', error.message)

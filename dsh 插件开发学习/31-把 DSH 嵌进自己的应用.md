@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 31
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：知道五个 profile 各自适合什么、`sdk-minimal` 和另外四个差在哪；会在「跑一件事」「自己控制多轮」「对面已经会说 ACP」这三种需求之间选对路。
@@ -95,7 +96,7 @@ function send(message) {
 }
 ```
 
-整个对话只有两种消息：
+整个对话里的消息只有两种：
 
 ```js
 lines.on('line', (line) => {
@@ -108,6 +109,8 @@ lines.on('line', (line) => {
 ```
 
 **带 `id` 的是响应，不带 `id` 的是通知。** 这一条分清了，后面就都好办：你要等的答案是响应，你想观察的过程是通知。
+
+这条协议只有三个请求：`initialize`、`session/prompt`、`shutdown`。`initialize` 是运行时就绪边界——握手成功之前 `session/prompt` 会被拒绝；排队一条提示词只返回一个已入队的消息 id，真正的进展全部走通知，所以别等它的响应来代表"做完了"。
 
 服务器主动推的东西里，比较有用的有会话事件、agent 状态变化、以及**子 agent 完成事件**——最后这个正好接上第 26 篇：从外面也能看见委派出去的活干完没有。
 

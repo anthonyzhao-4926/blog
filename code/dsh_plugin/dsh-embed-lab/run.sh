@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 把 DSH 当成一个组件跑一遍：先看四个 profile 各是什么，再手写一次协议对话。
+# 把 DSH 当成一个组件跑一遍：先看五个 profile 各是什么，再手写一次协议对话。
 set -euo pipefail
 
 cd "$(dirname "$0")"

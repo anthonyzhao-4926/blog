@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 17
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：写一个自己的模型提供方——把 DSH 的消息与流协议翻译成某个 HTTP 接口能听懂的格式——并且知道错误、重试、空补全这些边界该由谁负责。
@@ -58,7 +59,7 @@ declare abstract class LlmAdapter {
 
 其余几个都有默认实现：`providerInfo` 默认返回路由名本身，`listModels` 默认返回空数组，`resolveModel` 默认只回显 provider 和模型名。这些默认值都是"我没什么额外信息可提供"的意思，够用一个最小 adapter。**唯一的硬要求是实现 `stream()`**。
 
-注册也是同步一行（`ctx.llm.registerAdapter(providers, adapter)`）：传一组路由名和一个 adapter 实例。路由名是 DSH 内部的名字，跟真实端点无关——你完全可以注册 `ollama`、`lab-gateway`、`office-proxy` 三条路由指向同一个 adapter 实例，只要端口不同。重复注册同一个路由名会抛 `DUPLICATE_ADAPTER`（整批都不生效，不会注册一半）；注册随插件卸载一起消失，跟 05 篇的 effect 规矩一样。
+注册也是同步一行（`ctx.llm.registerAdapter(providers, adapter)`）：传一组路由名和一个 adapter 实例。路由名是 DSH 内部的名字，跟真实端点无关——你完全可以注册 `ollama`、`lab-gateway`、`office-proxy` 三条路由指向同一个 adapter 实例——`stream(options)` 里的 `options.provider` 就是这次走的那条路由名，端点差异由 adapter 自己按它挑。重复注册同一个路由名会抛 `DUPLICATE_ADAPTER`（整批都不生效，不会注册一半）；注册随插件卸载一起消失，跟 05 篇的 effect 规矩一样。
 
 ## 流协议 `StreamChunk`
 
@@ -232,9 +233,9 @@ function toWireMessages(options: GenerateOptions): WireMessage[] {
             if (text !== '') wire.push({ role: 'system', content: text })
             continue
         }
-        for (const block of message.content) {
-            if (block.type !== 'tool-result') continue
-            wire.push({ role: 'tool', tool_call_id: String(block.toolCallId), content: textOf(block.content) })
+        if (message.role === 'tool') {
+            wire.push({ role: 'tool', tool_call_id: String(message.toolCallId), content: text })
+            continue
         }
         if (text !== '') wire.push({ role: 'user', content: text })
     }
@@ -242,7 +243,7 @@ function toWireMessages(options: GenerateOptions): WireMessage[] {
 }
 ```
 
-DSH 里一条助手消息能同时装文本和多个工具调用，这与 OpenAI 格式一致；但 DSH 里工具结果是**用户角色消息里的一个内容块**，OpenAI 要的是独立的 `tool` 角色消息——所以一条带 N 个 `tool-result` 的用户消息会拆成 N 条 wire 消息。工具调用 id 用 `String(block.toolCallId)` 转回普通字符串，这个 id 是 11 篇里工具调用的那条身份线，两边必须对上，否则 provider 会拒绝结果。
+DSH 里一条助手消息能同时装文本和多个工具调用，这与 OpenAI 格式一致；工具结果在 DSH 里则是**独立的 `tool` 角色消息**（`role: 'tool'` + `toolCallId`），正好也用得上 OpenAI 的 `tool` 角色——所以一条结果一条 wire 消息，`tool_call_id` 用 `String(message.toolCallId)` 转回普通字符串。这个 id 是 11 篇里工具调用的那条身份线，两边必须对上，否则 provider 会拒绝结果。
 
 流翻译是本篇最长的一段，核心是块编号与收尾顺序：
 
@@ -379,12 +380,13 @@ adapter 能做的贡献是**声明这条路由的重试策略**，覆盖 `provid
 
 ```ts
 export interface Config {
-  provider: string
-  model: string
+  // 两个字段在 schema 里声明为 .volatile()：可现场改（14 篇那条线）
+  provider: Volatile<string>
+  model: Volatile<string>
 }
 ```
 
-它同时挂了一个 settings 命名空间 `agent-default-model`，网页版的 Models 页写的就是它——写进 `$DSH_HOME/settings.yaml`，热生效。命令行这边最直接的改法是在 profile 的 `cordis.patch.yml` 里按 id 覆盖（03 篇的写法）：
+它同时把按 schema 自动生成的表单页面关掉（`ctx.settings.configure({ auto: false })`），网页版的 Models 页改的就是它；改完的值由 `configEditor` 写回当前 profile 的 `cordis.patch.yml` 里这一行的 `config`，热生效。命令行这边最直接的改法也是在同一个文件里按 id 覆盖（03 篇的写法）：
 
 ```yaml
 - id: agent-default-model
@@ -395,7 +397,7 @@ export interface Config {
 
 保存即生效，不需要重启（配置热重载默认开着，07 篇）。**改这一行之前先确认路由已经挂上**：`provider` 写了一个没人注册的名字时，请求会在选 adapter 那一步以 `NO_ADAPTER` 失败——不是启动失败，是每次请求失败，日志里能看到。
 
-那 `agent-loop` 的 `agents[].provider` 又是什么？那是**在 profile 里预先声明好的会话**。两者是"新会话的默认值"与"这个会话就用这个"的关系：默认值可以随时被 settings 覆盖，声明过的会话以声明为准。
+那 `agent-loop` 的 `agents[].provider` 又是什么？那是**在 profile 里预先声明好的会话**。两者是"新会话的默认值"与"这个会话就用这个"的关系：默认值可以随时被界面上的选择改掉，声明过的会话以声明为准。
 
 ## 装配
 

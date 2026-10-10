@@ -505,7 +505,7 @@ window.__ModuleLoader__.load({
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/schemastery": "^3.18.2",
     "@deepseek-ai/dsh-client-connection": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-tools": "^0.1.7-rc.1"
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2"
   },
   "dsh": {
     "bundle": {

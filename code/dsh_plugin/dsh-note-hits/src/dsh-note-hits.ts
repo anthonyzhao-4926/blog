@@ -55,7 +55,7 @@ export interface Config {
 // 不写 `: Schema<Config>` 标注：volatile 字段的序列化形态与接口里的
 // Volatile<T> 引用不同，标注会与 schemastery 的 default 签名冲突。
 export const Config = Schema.object({
-    // role('credential-ref') 让设置页把它渲染成引用选择器，而不是密码框。
+    // role('credential-ref') 标明这个字段是凭据引用（环境变量名），不是密文本身。
     apiKeyEnv: Schema.string().role('credential-ref').default('DEEPSEEK_API_KEY').volatile(),
 })
 

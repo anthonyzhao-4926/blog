@@ -1,7 +1,7 @@
 {
     "name": "dsh-self-cordis",
     "version": "0.1.0",
-    "description": "把 DSH 自带的自修改工具集装进一个 profile",
+    "description": "把 DSH 自带的运行期检查工具集装进一个 profile",
     "type": "module",
     "private": true,
     "dependencies": {

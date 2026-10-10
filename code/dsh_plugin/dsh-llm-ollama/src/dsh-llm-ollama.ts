@@ -148,9 +148,10 @@ const FINISH_REASONS: Record<string, FinishReason> = {
 /**
  * 把 DSH 的消息翻译成 wire 消息。
  *
- * 一处不对称：助手消息能把多个工具调用装在同一条消息里，工具结果却必须一条
- * 结果一条消息——所以一条带 N 个 tool-result 的用户消息会拆成 N 条。图片块与
- * 文件块本篇不翻译，直接跳过（见「注意事项」）。
+ * 一处不对称：助手消息能把多个工具调用装在同一条消息里，工具结果却是独立的
+ * `tool` 角色消息——一条结果一条 wire 消息，`tool_call_id` 用 `message.toolCallId`
+ * 转回普通字符串，对上发起它的那次调用。图片块与文件块本篇不翻译，直接跳过
+ * （见「注意事项」）。
  */
 function toWireMessages(options: GenerateOptions): WireMessage[] {
     const wire: WireMessage[] = []
@@ -179,9 +180,9 @@ function toWireMessages(options: GenerateOptions): WireMessage[] {
             if (text !== '') wire.push({ role: 'system', content: text })
             continue
         }
-        for (const block of message.content) {
-            if (block.type !== 'tool-result') continue
-            wire.push({ role: 'tool', tool_call_id: String(block.toolCallId), content: textOf(block.content) })
+        if (message.role === 'tool') {
+            wire.push({ role: 'tool', tool_call_id: String(message.toolCallId), content: text })
+            continue
         }
         if (text !== '') wire.push({ role: 'user', content: text })
     }

@@ -7,5 +7,14 @@
       name: '@deepseek-ai/dsh-webhook'
     - id: webhook-lab-github
       name: '@deepseek-ai/dsh-webhook-github'
+      config:
+        # 交给规则的适配器实例名（规则可以据此区分同一 kind 的多条入口）。
+        source: lab-github
+        # 精确路由：不带尾随斜杠、查询或片段。挂在这个 profile 的 WebServer 上。
+        path: /github
+        # 凭据引用（环境变量名），每次请求重新解析，所以轮换密钥不必重载插件。
+        secretEnv: DSH_GITHUB_WEBHOOK_SECRET
+        # 未改动 body 的字节上限。
+        maxBodyBytes: 1048576
     - id: webhook-lab
       name: '/绝对路径/dsh-webhook-lab/src/dsh-webhook-lab.ts'

@@ -28,27 +28,28 @@ viewable: true
 
 ## 一条配置项接一台服务器
 
-**每台服务器一条配置项，这就是全部设置。** 给它一个简短的唯一名称和一种传输方式，它的工具就会出现在模型的工具列表里：
+**每台服务器一条配置项，这就是全部设置。** 给它一个简短的唯一名称和一种传输方式，它的工具就会出现在模型的工具列表里。这些行是**新增**的，所以要放进 patch 的 `insert` 列表里（03 篇讲过：没有 `insert` 的行是「按 id 覆盖已有行」，id 不存在会被跳过）：
 
 ```yaml
-- id: mcp-github
-  name: '@deepseek-ai/dsh-mcp-client'
-  config:
-    serverName: github
-    transport: stdio
-    command: npx
-    args: ['-y', '@modelcontextprotocol/server-github']
-    env:
-      GITHUB_TOKEN: !!js process.env.GITHUB_TOKEN
+- insert:
+    - id: mcp-github
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: github
+        transport: stdio
+        command: npx
+        args: ['-y', '@modelcontextprotocol/server-github']
+        env:
+          GITHUB_TOKEN: !!js process.env.GITHUB_TOKEN
 
-- id: mcp-web
-  name: '@deepseek-ai/dsh-mcp-client'
-  config:
-    serverName: web
-    transport: streamable-http
-    url: http://localhost:3000/mcp
-    headers:
-      Authorization: !!js '`Bearer ${process.env.MCP_TOKEN}`'
+    - id: mcp-web
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: web
+        transport: streamable-http
+        url: http://localhost:3000/mcp
+        headers:
+          Authorization: !!js '`Bearer ${process.env.MCP_TOKEN}`'
 ```
 
 两种传输对应两种部署形态：**服务器作为本地程序跑就用 `stdio`**（配 `command` / `args` / `env` / `cwd`），**作为服务跑就用 `streamable-http`**（配 `url` / `headers`）。
@@ -66,17 +67,15 @@ flowchart LR
 
 凭据一律用 `!!js` 从环境变量取，别写进文件——这也和 03 篇讲的规则一致：**只有行的 `config` 与 `disabled` 允许 `!!js`**，其它元数据字段会保持静态。
 
-工具名的那套前缀形态（`mcp__<serverName>__<rawName>`）与 Claude Code、Codex 用的是同一套，所以从别的客户端迁过来时，你熟悉的是命名习惯，不是配置文件格式——配置行要按上面的字段自己写。
-
 几个值得先知道其默认值的字段：
 
 | 字段 | 默认值 | 含义 |
 | --- | --- | --- |
-| `toolCallTimeoutMs` | `60,000` | 每次 `tools/call` 的超时 |
+| `toolCallTimeoutMs` | `60,000` | 每次 `tools/call` 或资源请求的超时 |
 | `failOnStartupError` | `false` | 初始连接或工具同步失败时，是否拒绝插件激活 |
 | `reconnect.enabled` | `true` | 连接丢失后是否自动重连 |
 | `reconnect.initialDelayMs` | `500` | 首次重连延迟，每次连续失败尝试翻倍 |
-| `reconnect.maxDelayMs` | `30,000` | 退避上限 |
+| `reconnect.maxDelayMs` | `30,000` | 退避上限；同时是重置尝试预算所需的正常运行时长 |
 | `reconnect.maxAttempts` | `10` | 每次中断内连续失败尝试上限，超出后放弃 |
 
 `failOnStartupError` 默认是 `false`，这个默认值有讲究，下面会讲。
@@ -100,13 +99,13 @@ mcp__<serverName>__<rawName>
 ```mermaid
 flowchart TD
     A["同一工具被列出两次"] --> R["该列表被作为无效列表拒绝"]
-    B["续传游标重复<br/>含经过空页形成循环"] --> R
     C["工具更新与已有工具名冲突"] --> R
+    B["发现过程失败<br/>含分页游标链异常"] --> K
     R --> K["上一组工具保持可用<br/>不存在部分接受的中间态"]
 ```
 
 - 服务器在工具列表里**两次列出同一工具** → 该列表被作为**无效列表拒绝**，上一组保持可用。
-- `tools/list` 返回**重复的非空续传游标** → 立即拒绝本次更新，**包括经过空页形成循环的情况**。
+- **发现分页由官方 SDK 负责**，页数也有上限；发现失败会保留上一组工具，格式错误的游标链按 SDK 的行为处理——这一层没有插件自己的判定。
 - 工具更新与已有工具名**冲突** → 该更新**被整体拒绝**——**绝不会得到该服务器的部分工具集**。
 
 最后一条是重点：它不做"能加的加上、冲突的跳过"这种部分接受。一份工具列表要么整体生效，要么整体不生效。
@@ -137,7 +136,7 @@ flowchart TD
     B["运行中断开"] -->|"reconnect.enabled: true"| B1["500ms 起步、逐次翻倍、上限 30s 自动重连<br/>期间工具仍列出，调用失败"]
     B -->|"reconnect.enabled: false"| B2["不再重连<br/>工具仍列出，调用失败"]
     B1 -->|"连续失败 10 次"| B3["移除工具、停止重连<br/>直到重载配置或重启"]
-    B1 -->|"稳定连接一段时间"| B4["失败计数重置"]
+    B1 -->|"连接稳定超过 maxDelayMs"| B4["失败计数重置"]
 ```
 
 **启动时连不上**：默认 `failOnStartupError: false`，也就是 **harness 照常启动**，只是这台服务器的工具不会出现，并记录一条错误。想让"连不上"变成"别启动"，把它设成 `true`。
@@ -150,7 +149,7 @@ flowchart TD
 
 为什么留着这些工具而不是立刻摘掉？因为服务器往往是短暂重启——留着能让模型看到"这能力本来存在"，调用失败的具体报错也能说明问题；立刻摘掉反而让模型以为"这台服务器从来没接过"。
 
-连续失败十次后，该服务器的工具会被移除、重连停止，直到你**重载配置或重启 harness**。而**服务器持续连接一段时间之后，这个计数会重置**——所以偶发的抖动不会累积成"永久放弃"。
+连续失败十次后，该服务器的工具会被移除、重连停止，直到你**重载配置或重启 harness**。而**连接持续超过 `maxDelayMs`（默认 30 秒）之后，这个计数会重置**——所以偶发的抖动不会累积成"永久放弃"。
 
 另外，`reconnect.enabled: false` 可以关掉自动重连，此时工具在断开后仍然列出、调用失败，直到你重载。
 
@@ -161,18 +160,19 @@ flowchart TD
 demo `dsh-mcp-lab` 是一个**装配包**——注意它没有 `src/`，因为这件事真的不需要写代码。包里的两行配置刻意用了两种传输：
 
 ```yaml
-- id: mcp-github
-  name: '@deepseek-ai/dsh-mcp-client'
-  config:
-    # 工具会以 mcp__github__<工具名> 出现，所以这个名字要短、要稳。
-    # 它同时是工具名前缀，改名等于改工具名，会话历史与权限规则会跟着失效。
-    serverName: github
-    transport: stdio
-    command: npx
-    args: ['-y', '@modelcontextprotocol/server-github']
-    env:
-      GITHUB_TOKEN: !!js process.env.GITHUB_TOKEN
-    failOnStartupError: false
+- insert:
+    - id: mcp-github
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        # 工具会以 mcp__github__<工具名> 出现，所以这个名字要短、要稳。
+        # 它同时是工具名前缀，改名等于改工具名，会话历史与权限规则会跟着失效。
+        serverName: github
+        transport: stdio
+        command: npx
+        args: ['-y', '@modelcontextprotocol/server-github']
+        env:
+          GITHUB_TOKEN: !!js process.env.GITHUB_TOKEN
+        failOnStartupError: false
 ```
 
 换成你自己的服务器，要动的就是这几个字段：`serverName`（工具名前缀，短且稳）、`transport`（本地程序 `stdio` / 远端服务 `streamable-http`）、以及对应的 `command`+`args`+`env` 或 `url`+`headers`。
@@ -208,7 +208,7 @@ dsh --profile test "用 mcp__github__ 开头的工具查一下某条 issue"
 - **工具会在首个轮次之前出现。** 服务器工具不是"用到才加载"，harness 开始对话前它就已经在列表里了。
 - **调用失败不会被伪装成成功。** 服务器报错就是明确失败。这条对模型的行为影响很大，别去绕过它。
 - **图片支持是有条件的。** 模型得接受图片输入、harness 得启用附件；条件不满足时给的是诊断消息。音频与嵌入资源同理——有提示，不会静默丢弃。
-- **断开后工具还列着，但调用会失败。** 这是"服务器通常在短暂重启"的场景优化，不是 bug。连续失败十次才摘掉，且稳定连接一段时间后计数重置。
+- **断开后工具还列着，但调用会失败。** 这是"服务器通常在短暂重启"的场景优化，不是 bug。连续失败十次才摘掉，且连接稳定超过 `maxDelayMs` 后计数重置。
 - **`failOnStartupError: false` 意味着工具可能静默消失。** 只有一条错误日志。定期看一眼日志，比事后奇怪"怎么没有那个工具"划算。
 - **改配置项是原地重载。** 换凭据、换 URL、调 `args` 都不必重启 harness，未变的工具名保持不变。
 - **凭据走 `!!js` 从环境变量取。** 只有 `config` 与行的 `disabled` 允许 `!!js`；别把它当成可以到处写的模板语言。

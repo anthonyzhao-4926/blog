@@ -7,6 +7,7 @@ tags:
   - dsh
 column: dsh-plugin
 order: 0
+dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 ## dsh 插件开发学习
@@ -46,10 +47,10 @@ viewable: true
 7. [配置与源码的热重载](07-配置与源码的热重载.md)——patch 与源码的热重载，哪些改动必须重启
 8. [替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)——服务定义 / 提供方 / 消费者三件套，把某个能力换成自己的实现
 9. [订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)——订阅工具调用、审批结果与会话记录，把计数挂到 HTTP 路由上
-10. [事件进阶](10-事件进阶.md)——DSH 的七十多个事件地图、Cordis 事件与会话记录的区别、一轮对话的完整生命周期
+10. [事件进阶](10-事件进阶.md)——DSH 的一百多个事件地图、Cordis 事件与会话记录的区别、一轮对话的完整生命周期
 11. [为模型注册自定义工具](11-为模型注册自定义工具.md)——`defineTool` 注册一个 `note_search`，参数描述、ToolResult、后台任务与卡片意图
 12. [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md)——工具执行管线的四个拦截点，用 `ctx.tools.guard()` 拦下危险调用
-13. [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md)——把「配图放哪、命名怎么起」写成 skill，DSH 每次自己带上
+13. [用 Skill 固化提示词与规则](13-用 Skill 固化提示词与规则.md)——把「配图放哪、命名怎么起」写成 skill，DSH 每次自己带上
 14. [把插件配置搬进设置页](14-把插件配置搬进设置页.md)——一个包两半（Host + client），配置项搬进设置页
 15. [把 Host 数据展示到界面](15-把 Host 数据展示到界面.md)——`/api` 路由暴露统计，客户端模块挂到侧边栏 slot
 16. [把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)——给 `note_search` 的结果做可点击的卡片，交互经 `followup` / `steer` 送回会话
@@ -100,8 +101,8 @@ viewable: true
 | 长任务不想堵会话 | [为模型注册自定义工具](11-为模型注册自定义工具.md) → 「长任务走后台」相关小节 |
 | 想在执行前拦下危险调用 | [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md) |
 | 搞清权限、沙箱、审批各挂在哪 | [在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md) → 「权限、沙箱、审批的挂点」 |
-| 把项目规矩沉淀成 skill | [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md) |
-| skill 写了没被模型用上 | [用 Skill 固化项目规矩](13-用 Skill 固化提示词与规则.md) → 「扫描根与优先级」相关小节 |
+| 把项目规矩沉淀成 skill | [用 Skill 固化提示词与规则](13-用 Skill 固化提示词与规则.md) |
+| skill 写了没被模型用上 | [用 Skill 固化提示词与规则](13-用 Skill 固化提示词与规则.md) → 「扫描根与优先级」相关小节 |
 | 让插件使用者在界面上改配置，不碰 cordis.yml | [把插件配置搬进设置页](14-把插件配置搬进设置页.md) |
 | 自己插件注册了设置项，设置页上却没有卡片 | [设置项与卡片速查](参考/设置项与卡片速查.md) → 「浏览器侧：卡片槽位」 |
 | 在侧边栏 / 设置页展示自己的数据 | [把 Host 数据展示到界面](15-把 Host 数据展示到界面.md) |
@@ -133,6 +134,7 @@ viewable: true
 
 - [profile 与插件包结构](参考/profile与插件包结构.md)——profile 目录逐文件说明、patch 合成模型、插件包内部结构、维护速查表
 - [设置项与卡片速查](参考/设置项与卡片速查.md)——volatile 字段声明与读值、`ctx.settings`（`SettingsForms`）方法表、表单 namespace 的由来、`ctx.configForms` 与 `ConfigFormSnapshot` / `ConfigForm` 字段表、插件页三个配置挂载点与行 key 规则、落盘位置、两条生效路径对照
+- [事件生命周期](参考/事件生命周期.html)——可交互的事件全表（按发生时机分区、带分发模式徽标），以及一轮对话从 `agent/created` 到收尾的主干顺序；来源是快照里所有事件的 `@mode` 注解
 
 ### 接下来的路
 
@@ -190,25 +192,25 @@ viewable: true
 
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
-| 26 | `26-一个任务拆给多个agent.md` | 一个任务太大，想拆给多个 agent；或想把跑腿活挪出主上下文 | subagent：provider 注册、spawn 与 fork 的差别、启动期与运行期的能力分割；agent team：lead / teammate、共享任务 DAG、对等邮箱 |
-| 27 | `27-一批任务并行跑.md` | 一批互不依赖的任务想并行跑，且失败不互相拖累 | workflow：脚本编排、阶段、每项失败隔离、结构化结果；jobs：后台作业、`JobId`、生产者契约与消费视图 |
-| 28 | `28-让事情定时发生.md` | 想让某件事定时发生，或给会话一个目标让它自动往前推进 | schedule 的会话内定时与持久化转换；goal 的持久化身份与轮次归属；todo 的整表不变量 |
+| 26（已写） | `26-多 agent 的任务拆解.md` | 一个任务太大，想拆给多个 agent；或想把跑腿活挪出主上下文 | subagent：provider 注册、spawn 与 fork 的差别、启动期与运行期的能力分割；agent team：lead / teammate、共享任务 DAG、对等邮箱 |
+| 27（已写） | `27-一批任务的并行编排.md` | 一批互不依赖的任务想并行跑，且失败不互相拖累 | workflow：脚本编排、阶段、每项失败隔离、结构化结果；jobs：后台作业、`JobId`、生产者契约与消费视图 |
+| 28（已写） | `28-定时任务与目标推进.md` | 想让某件事定时发生，或给会话一个目标让它自动往前推进 | schedule 的会话内定时与持久化转换；goal 的持久化身份与轮次归属；todo 的整表不变量 |
 
 #### 第七级：接入外部世界（29–31）
 
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
-| 29 | `29-接上公司内部系统.md` | 公司内部的日志、工单系统想让模型直接查 | MCP 客户端：怎么挂 MCP server、工具怎么进 catalog、鉴权与凭据怎么给、失败怎么呈现；正好接上 [`golang_mcp`](../golang_mcp/README.md) 专栏 |
-| 30 | `30-外部事件触发会话.md` | PR 打开、告警来了，想自动触发一次分析 | webhook：鉴权投递、规则、创建 workspace session 的语义；webhook-github 的现成 PR 评审链路 |
-| 31 | `31-把DSH嵌进我的应用.md` | 想在流水线或自己的 App 里驱动 DSH，而不是开界面 | headless / sdk / sdk-minimal / acp 四个 profile 各适合什么；JSON-RPC 与 ACP；api-gateway 与 Typert remote；python-sdk；network-proxy |
+| 29（已写） | `29-接入 MCP 服务.md` | 公司内部的日志、工单系统想让模型直接查 | MCP 客户端：怎么挂 MCP server、工具怎么进 catalog、鉴权与凭据怎么给、失败怎么呈现；正好接上 [`golang_mcp`](../golang_mcp/README.md) 专栏 |
+| 30（已写） | `30-外部事件触发会话.md` | PR 打开、告警来了，想自动触发一次分析 | webhook：鉴权投递、规则、创建 workspace session 的语义；webhook-github 的现成 PR 评审链路 |
+| 31（已写） | `31-把 DSH 嵌进自己的应用.md` | 想在流水线或自己的 App 里驱动 DSH，而不是开界面 | headless / sdk / sdk-minimal / acp 四个 profile 各适合什么；JSON-RPC 与 ACP；api-gateway 与 Typert remote；python-sdk；network-proxy |
 
 #### 第八级：定制模型上下文与执行环境（32–35）
 
 | 编号 | 文件 | 需求（什么场景下看这篇） | 讲清 DSH 的什么 |
 | --- | --- | --- | --- |
-| 32 | `32-让模型知道我的规矩.md` | 想让模型每次都知道项目规范、能引用具体文件 | agent-instructions 与 system-prompt 的协作式装配；file-reference 的 `@` 引用；agent-presets 怎么换一套人设与工具 |
-| 33 | `33-让模型跑代码.md` | 想让模型跑代码做数据分析，或在远程机器上跑命令 | code-runtime 的请求 / 结果、绑定命名空间、日志捕获与失败分类；subprocess 的显式 spawn；e2b 远程执行 |
-| 34 | `34-长驻终端与代码导航.md` | 想让模型多次操作同一个长驻终端；想让它会跳转定义、找引用 | terminal 的会话与后端契约、就绪判定、有界读取；tmux-context；lsp 的四种操作与 provider 契约 |
+| 32（已写） | `32-系统提示词的装配.md` | 想让模型每次都知道项目规范、能引用具体文件 | agent-instructions 与 system-prompt 的协作式装配；file-reference 的 `@` 引用；agent-presets 怎么换一套人设与工具 |
+| 33（已写） | `33-代码执行环境的接入.md` | 想让模型写一段代码跑一下、看结果，而不是一个个来回调工具 | PTC（程序化工具调用）：请求与执行规格的边界；八个失败分类为什么必须分开；绑定命名空间与可移植名字；`ctx.ptcRuntime` 的服务定义与消费者；子进程缝上环境变量的归属 |
+| 34（已写） | `34-长驻终端与代码导航.md` | 想让模型多次操作同一个长驻终端；想让它会跳转定义、找引用 | terminal 的会话与后端契约、就绪判定、有界读取；tmux-context；lsp 的四种操作与 provider 契约 |
 | 35 | `35-给团队加一条命令.md` | 想把常用操作做成 `/xxx`；想贴截图让模型看图 | commands：注册、adapter 发现、解析与直接调用；attachment：图片身份、验证读、存储 seam；feedback 与 deliverables |
 
 #### 第九级：改 DSH 与维护（36–38）
@@ -244,7 +246,7 @@ viewable: true
 
 #### 写下一篇时的维护清单
 
-- 01–25 已经写好：**25 现在是链路末篇**，挂着终点标记；写 26 时把它换成指向 26 的「**下一篇**：」，终点标记继续往后传。同时把上面「一条主线」的有序列表补上 26，并把九级表里对应的行标上（已写）。
+- **01–34 已经写好：34 现在是链路末篇**，篇尾挂着「**主线到此结束**」。写 35 时把 34 的终点标记换成指向 35 的「**下一篇**：」，终点标记继续往后传；同时把上面「一条主线」的有序列表补到 35，并把九级表里对应的行标上（已写）——九级表里 26–34 行已经按现文件名标好，35–38 仍是规划行。
 - **17–25 的 demo 对照**：17 `dsh-llm-ollama/`（Ollama adapter）、18 `dsh-team-kit/`（装配包，带 `prepare` 与给同事看的 README）、19 `dsh-live-greeter/`（内存插件）+ `dsh-self-cordis/`、20 `dsh-upgrade-guard/`（内核版本自检 + invariant companion + `doctor.sh`）、21 `dsh-fs-write-watch/`（沙箱三层的只读观察器）、22 `dsh-ask-before-bash/`（`tools/pre-execute` 返回 `ask`）、23 `dsh-session-digest/`（host-only 投影单元）、24 `dsh-turn-cost/`（读内置单元 + 自折失败计数）、25 `dsh-note-hits/`（storage domain + 凭据引用）。每篇开头的「示例代码」链接指到 GitHub 上的目录。
 - **21 篇有一处对规划的更正**：沙箱的「fs 观察策略」规划写的是三选一模式，实际是 `dsh-fs-observation-policy` 的「先读后写 + 版本 CAS」，是个 event-only 插件，不是模式开关。
 - **22 篇有一处对规划的更正**：plan mode 是**软约束**（`docs/subsystems/plan.md` 原话 `Plan mode is soft guidance`），它不禁任何工具，真正的硬边界来自审批与沙箱。另外 `ctx.approval.effectivePolicy` 在源码里是 private，子系统文档与代码不一致，外部插件读有效策略要自己折叠 `overrideOf ?? config.policy ?? 'ask'`。
@@ -253,7 +255,7 @@ viewable: true
 - **18 篇与 19 篇的接缝**：`dsh-cordis-host-runner` / `dsh-tool-cordis` 这类扩展包 manifest 里没有 `dsh` 字段，**不是组合包**——`dsh plugin add` 只会给一条 `declares no dsh.bundle` 警告，装配靠 patch 行。19 篇的 `dsh-self-cordis` 就是把这个「依赖 + 插行」打包成一个组合包。
 - 调研素材曾放在 `.dsh-column-research/`（按规划编号命名，与文件名有偏移：素材 20/21 对应文档 21/22，23/24/25 一致）。17–25 全部落笔后该目录已整体删除，若要复查某条源码依据，按正文里的路径重新查。
 - **全栏已做过一次文件名重写**：25 篇的 `NN-xxx.md` 从「动词短语」改成了「名词短语」（例如 `14-让别人自己配插件.md` → `14-把插件配置搬进设置页.md`），frontmatter 的 `title` 与各篇之间的「前置 / 下一篇」链接文字同步改过。重写时漏改了一处目标名（`13-用 Skill 固化项目规矩.md` 实际不存在），已在 `12` 篇、`14` 篇与 README 里修正为 `13-用 Skill 固化提示词与规则.md`。以后再加篇目，文件名与标题都按名词短语起。
-- **10 / 14 / 15 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：10 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，15 的卡片从 `meta` 读——改一边必须改另一边。
+- **11 / 15 / 16 三篇共用一个例子**（笔记搜索）：工具名 `note_search`，参数 `{ query, limit? }`，规范值 `{ hits: [{ path, line, snippet }], total }`（`line: 0` 表示文件名命中）；demo 分别是 `dsh_plugin/dsh-note-search/`、`dsh-note-stats/`、`dsh-note-card/`。跨篇契约：11 的工具用 `output.presentationMeta` 把 `{ hits }` 投影进 `tool/result` 的 `meta`，16 的卡片从 `meta` 读——改一边必须改另一边。
 - **15 篇有一处对规划的偏差**：外部插件走不通 `ctx.remote` 全链路（Client 侧类型来自仓库内部构建管线，`dsh-api-remotes` 只装配清单内的包），demo 改走 `ctx.connection.fetch.register` 的 `/api` exact 路由；文章把 `ctx.remote` 当「读懂内置插件的正规路」讲、`/api` 路由当「外部插件能走的路」讲。
 - **14 篇已改回 0.2.0 代写法**（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/`）：这篇曾在 10-09 被按一棵**过期源码树**（还停在 0.1.5-rc.2）「改对」过，结果把对的删了——`Schema…volatile()`、`Volatile<T>`、`config.image.get()`、`loader/volatile-update`、`autoGenerate` / `ctx.settings.configure({ auto: false })`、`plugins.row.config`、`dsh-client-ui-plugin-manager` 当时都被判为「查无此物」，而它们在 0.2.0-rc.2 里都在；反过来被换上来的 `ctx.settings.installSection` / `ctx.settingsScope` / `settings.plugin.item` / `$DSH_HOME/settings.yaml` 才是这个版本里不存在的。现在这篇与 demo 都按快照恢复：Host 侧两个字段声明 `.volatile()`、读值走 `.get()`、听 `loader/volatile-update`；浏览器侧注册进 keyed 槽位 `plugins.row.config`，key 是 `<包名>#<行 id>`；表单 namespace 就是这一行在 profile 里的 entry id（不是插件自起的字符串），插件页把表单作为 `form`（`state` + `mutate`）prop 喂给组件；自带页面的插件用 `ctx.settings.configure({ auto: false })` 关掉按 schema 自动生成的页面。教训：那次「改对」的判据是一棵 10-06 克隆、停在 0.1.5-rc.2 的树，而本机当时跑的已是 0.2.0-rc.2——**判据过期会得出「新 API 查无此物」的反向结论**。这也是 README 顶部要写「基准版本」的原因。另外 demo 补了 `pnpm run typecheck`（tsdown 只打包、不求值类型，这条错在安装期不会报），并修掉两个只有类型检查才看得见的错：浏览器半缺 `@deepseek-ai/dsh-client-ui-renderer/client` 的类型引入（`ctx.slots` 的 Context 合并在那里）、schema 常量上多余的 `: Schema<Config>` 标注（volatile 字段的序列化形态与接口里的 `Volatile<T>` 不同，标注与 `default` 签名冲突）。
 - **15 篇有一处对规划的澄清**：`followup()` / `steer()` 是 host 侧 `Agent` 的方法，浏览器端没有；卡片回送走 `session.prompt(content, 'queue' | 'steer')`，host 侧才映射到这两个动词。

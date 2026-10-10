@@ -132,7 +132,7 @@ export function apply(ctx: Context, config: Config): void {
                 },
             },
             render: (_args, value) => [{ type: 'text', text: formatHits(value) }],
-            // 把命中列表投影进 tool/result 的 meta 落盘：结果卡片（第 15 篇）从 meta 取回它。
+            // 把命中列表投影进 tool/result 的 meta 落盘：结果卡片（第 16 篇）从 meta 取回它。
             presentationMeta: (_args, value) => ({ hits: value.hits }),
         },
         // 只读检索，不改任何共享状态：允许和同一批里的其他工具调用并行。
