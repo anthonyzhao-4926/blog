@@ -70,10 +70,11 @@ for f in files:
     order = m.group(1) if m and m.group(1) else None
     rows.append((f, s, order))
 
-# 1. 内部 .md 链接
+# 1. 内部笔记链接（.md 文章互链 + .html/.htm 参考文档直链，两种都要能在磁盘上找到，
+#    否则站点构建脚本无法把相对路径改写成部署地址，发布后点开就是 404）
 for f, s, _ in rows:
     d = os.path.dirname(f)
-    for link in set(re.findall(r"\]\(([^)h][^)]*?\.md)(?:#[^)]*)?\)", s)):
+    for link in set(re.findall(r"\]\(([^)h][^)]*?\.(?:md|markdown|html?))(?:#[^)]*)?\)", s)):
         target = os.path.normpath(os.path.join(d, urllib.parse.unquote(link)))
         if not os.path.exists(target):
             problems.append(f"链接失效  {f}  ->  {link}")
