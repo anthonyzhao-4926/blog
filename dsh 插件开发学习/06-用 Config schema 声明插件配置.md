@@ -151,9 +151,13 @@ ctx.inject(['webServer'], (serverCtx) => {
 function buildStyle(config: Config): string {
     // 透明度的实现：在图片上盖一层与页面底色同色的遮罩，越不透明遮得越多
     const veilPercent = Math.round((1 - config.opacity) * 100)
-    const veil = `color-mix(in srgb, var(--dsw-alias-bg-base) ${veilPercent}%, transparent)`
+    // var() 的兜底不能省：自定义属性的 var() 替换发生在「声明它的那个元素」上，
+    // 变量解析不出来时，用到它的整条 background-image 会一起失效（背景图消失）
+    const veil = `color-mix(in srgb, var(--dsw-alias-bg-base, transparent) ${veilPercent}%, transparent)`
     const styleSheet = readFileSync(new URL('./style.css', import.meta.url), 'utf8')
-    return `:root { --dsh-chat-background-veil: ${veil}; }\n${styleSheet}`
+    // 变量定义在 body 上，不能放在 :root：--dsw-alias-bg-base 由主题插件定义在
+    // body，html 上取不到它，定义在 :root 会变成非法值，连带背景图整条不生效
+    return `body { --dsh-chat-background-veil: ${veil}; }\n${styleSheet}`
 }
 ```
 

@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-chat-background-settings
+      name: '/Users/anthonyzhao/anthonyzhao/blog/blog/code/dsh_plugin/dsh-chat-background-settings/src/dsh-chat-background.ts'
