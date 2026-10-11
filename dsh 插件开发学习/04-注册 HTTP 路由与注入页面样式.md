@@ -196,7 +196,15 @@ div:has(> [data-shell-overlay]) > div:first-child {
   --dsw-specific-sidebar-fill: transparent;
 }
 
-/* 聊天列根：背景置透明，透出布局根背景 */
+/* 聊天列容器（AppFrame 里含 main 槽位的那一列，自身背景是底色）：
+   用 :has 定位那一列，不绑 CSS module 的哈希类名 */
+div:has(> [data-shell-overlay]) > div:has([data-slot='main']) {
+  background: transparent;
+}
+
+/* 会话根（ConversationMainPanel，自身带 data-phase）；conversation 那条
+   留着兼容旧版槽位名 */
+div:has(> [data-shell-overlay]) [data-slot='main'] > [data-phase],
 div:has(> [data-shell-overlay]) [data-slot='conversation'] > [data-phase] {
   background: transparent;
 }
