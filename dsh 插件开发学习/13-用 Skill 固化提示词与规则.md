@@ -106,14 +106,14 @@ custom 根走配置，写法是 06 篇的惯例——entry 的 `id` 是 `skill-f
 
 `SKILL.md`（或平铺的 `.md`）开头的 YAML 块里，本地提供方认这些字段：
 
-| 字段 | 必填 | 作用 |
-| --- | --- | --- |
-| `name` | 是 | skill 的名字，kebab-case（小写字母、数字、连字符，如 `blog-writing`） |
-| `description` | 是 | 一句话描述，进目录，是模型决定「要不要加载」的唯一依据 |
-| `whenToUse` | 否 | 补充的选用提示 |
-| `disable-model-invocation` | 否 | `true` 则模型侧看不到它（下节细讲） |
-| `user-invocable` | 否 | `false` 则人不能用 `/名字` 唤起它（下节细讲） |
-| `metadata` | 否 | 任意对象，给别的消费方用，模型看不到 |
+| 字段                         | 必填  | 作用                                                 |
+| -------------------------- | --- | -------------------------------------------------- |
+| `name`                     | 是   | skill 的名字，kebab-case（小写字母、数字、连字符，如 `blog-writing`） |
+| `description`              | 是   | 一句话描述，进目录，是模型决定「要不要加载」的唯一依据                        |
+| `whenToUse`                | 否   | 补充的选用提示                                            |
+| `disable-model-invocation` | 否   | `true` 则模型侧看不到它（下节细讲）                              |
+| `user-invocable`           | 否   | `false` 则人不能用 `/名字` 唤起它（下节细讲）                      |
+| `metadata`                 | 否   | 任意对象，给别的消费方用，模型看不到                                 |
 
 写坏的待遇是**忽略，不炸**：缺 `name` 或 `description`、`name` 不合 kebab-case、YAML 解析失败，都是日志里一条 warn，这个文件被跳过，同根的其他 skill 不受影响。所以「装了但没出现」的第一站是日志。
 
