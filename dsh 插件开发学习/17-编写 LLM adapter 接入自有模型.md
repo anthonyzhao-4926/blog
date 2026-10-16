@@ -422,7 +422,7 @@ export interface Config {
 }
 ```
 
-它同时把按 schema 自动生成的表单页面关掉（`ctx.settings.configure({ auto: false })`），网页版的 Models 页改的就是它；改完的值由 `configEditor` 写回当前 profile 的 `cordis.patch.yml` 里这一行的 `config`，热生效。命令行这边最直接的改法也是在同一个文件里按 id 覆盖（[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)的写法）：
+它同时把按 schema 自动生成的表单页面关掉（`ctx.settings.configure({ auto: false })`），网页版的 Models 页改的就是它；改完的值由 `configEditor` 写回当前 profile 的 `cordis.patch.yml` 里这一行的 `config`，热生效。命令行这边最直接的改法也是在同一个文件里按 id 覆盖（[03-用 patch 覆盖 DSH 的默认配置](03-用 patch 覆盖 DSH 的默认配置.md)的写法）：
 
 ```yaml
 - id: agent-default-model
@@ -435,7 +435,7 @@ export interface Config {
 
 那 `agent-loop` 的 `agents[].provider` 又是什么？那是**在 profile 里预先声明好的会话**。两者是"新会话的默认值"与"这个会话就用这个"的关系：默认值可以随时被界面上的选择改掉，声明过的会话以声明为准。
 
-## 装配
+## 配置
 
 ```text
 dsh-llm-ollama/                   ← 插件包（bundle）
@@ -496,7 +496,7 @@ dsh --profile headless "用一句话说明你是谁"
 
 工具往返要单独验一次，它是 adapter 最容易写错的地方：让模型去读一个文件（`read` 工具），看会话里工具调用与结果能不能对上。工具结果插回 wire 时 `tool_call_id` 错了的话，Ollama 会直接返回 400，比在会话里看半天卡片快得多。
 
-停用验证还是 [03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)的写法：
+停用验证还是 [03-用 patch 覆盖 DSH 的默认配置](03-用 patch 覆盖 DSH 的默认配置.md)的写法：
 
 ```yaml
 - id: dsh-llm-ollama
@@ -515,5 +515,3 @@ dsh --profile headless "用一句话说明你是谁"
 - **要密钥的话走凭据服务，不要读 `process.env`。** Ollama 在本机不需要密钥，公司网关几乎一定需要。[25-插件的状态、密钥与配置存储](25-插件的状态、密钥与配置存储.md)讲凭据的分层解析与"存引用不存明文"；本篇的 `Config` 里刻意没有 `apiKey` 字段。
 
 ---
-
-[18-把插件打包成装配包](18-把插件打包成装配包.md)——把插件包从自己机器上搬出去，让同事一条命令装上，并且知道 bundle 与 profile 各自负责哪一半。

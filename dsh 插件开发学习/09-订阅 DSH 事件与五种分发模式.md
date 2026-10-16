@@ -582,7 +582,7 @@ async function 执行一次工具调用() {
 
 
 
-## 装配
+## 配置
 
 ```text
 dsh-event-log/                    ← 插件包（bundle）
@@ -633,7 +633,7 @@ cd <你的插件包目录>/dsh-event-log && ./install.sh
 
 ## 验证
 
-装配看起来对：
+配置看起来对：
 
 ```bash
 dsh --profile test --dump-config | tail -10
@@ -757,7 +757,3 @@ curl -s 'http://127.0.0.1:3099/dsh-event-log/stats'
 - **有些通知不是记录。** `session/created`、`tools/change`、`llm/adapters-updated` 这类只用于"状态变了"的广播，不会出现在会话文件里——`recorded` 里没有它们，是正常的。
 
 ---
-
-[10-事件进阶](10-事件进阶.md)——[09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)只用了三个事件；DSH 有一百多个，先把它们按生命周期摆成一张地图，再挑该听哪一个。
-
-profile 目录里哪些文件能改、patch 怎么合成，见[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有哪些能力，见 [Cordis API 文档](../dsh/cordis_api.md)。

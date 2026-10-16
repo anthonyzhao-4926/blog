@@ -9,7 +9,7 @@ column: dsh-plugin
 viewable: true
 dsh-version: 0.2.0-rc.2
 ---
-> 本文是知识卡，不用顺序读。装插件报错、想知道某个文件能不能手改、或者要弄清装配顺序时来查。
+> 本文是知识卡，不用顺序读。装插件报错、想知道某个文件能不能手改、或者要弄清配置顺序时来查。
 
 `~/.dsh/profiles/web` 是 web profile 的全部配置所在。本文按文件逐个说明：它是什么、由谁维护、什么情况下需要改、以及它们如何组合成一棵 Cordis 插件树。
 
@@ -28,11 +28,11 @@ dsh-version: 0.2.0-rc.2
     └── node_modules/      # 已安装的依赖                ← 生成
 ```
 
-一句话概括：**这个目录本身几乎没有业务代码，它全部的职责是"声明装配清单"**。真正的功能都在 `node_modules` 里的插件包中，由 DSH 启动时按顺序装配成一棵 Cordis 插件树。
+一句话概括：**这个目录本身几乎没有业务代码，它全部的职责是"声明配置清单"**。真正的功能都在 `node_modules` 里的插件包中，由 DSH 启动时按顺序配置成一棵 Cordis 插件树。
 
 ## 逐文件说明
 
-### `package.json`：装配清单
+### `package.json`：配置清单
 
 ```json
 {
@@ -62,7 +62,7 @@ dsh-version: 0.2.0-rc.2
 - `dependencies`：**物理上装哪些包**。这里有两种来源，要区分开：
   - `"dsh-better-sidebar": "^0.19.0"` —— 从 npm 仓库拉下来的第三方插件；
   - `"link:..."` —— 链到你自己的本地源码目录（所以改完插件源码，通常要重装或重启才生效）。
-- `dsh.profile.bundles`：**逻辑上按什么顺序装配**。数组顺序 = patch 叠加顺序：先 `dsh-base`（内核：配置、生命周期、Agent 循环），再 `dsh-web-app`（HTTP 服务、前端静态资源、Web 会话外壳），然后才是业务插件。顺序很重要，后面讲守卫时会看到为什么。每装一个新插件，这个数组就长一项。
+- `dsh.profile.bundles`：**逻辑上按什么顺序配置**。数组顺序 = patch 叠加顺序：先 `dsh-base`（内核：配置、生命周期、Agent 循环），再 `dsh-web-app`（HTTP 服务、前端静态资源、Web 会话外壳），然后才是业务插件。顺序很重要，后面讲守卫时会看到为什么。每装一个新插件，这个数组就长一项。
 
 > 小技巧：加插件优先用 `dsh plugin --profile web add <插件来源>`，而不是手改这个文件。CLI 会同时维护 `dependencies` 和 `bundles` 两边；手工只改一边，就会出现"装了但没挂载"或"声明了但找不到包"。
 
@@ -190,7 +190,7 @@ dsh-better-sidebar/
 └── README.md           # 中文说明 94KB，功能文档很全
 ```
 
-它的 `package.json` 里有 DSH 专属的 `dsh` 字段，这是插件能被"自动装配"的秘密：
+它的 `package.json` 里有 DSH 专属的 `dsh` 字段，这是插件能被"自动配置"的秘密：
 
 ```json
 "dsh": {
@@ -204,7 +204,7 @@ dsh-better-sidebar/
 
 - `bundle.patch`：CLI 读到这个声明，就把包名追加进 `dsh.profile.bundles`；启动时把这份 patch 合进插件树 —— **一条命令完成"安装 + 挂载"，不用改 profile 任何文件**。
 
-> **这个字段决定文件名，文件名本身没有约定。** 内核里写死的只有 profile 目录和 `~/.dsh/` 下的 `cordis.patch.yml`；插件包自带的补丁叫什么由 `bundle.patch` 指，可以是一个路径，也可以是**有序数组**（一个包多份补丁按序应用）。所以官方模板里叫 `cordis.patch.yml`、[02-最小插件的结构与装配](../02-最小插件的结构与装配.md) 的示例叫 `patch.yaml`，两者身份完全相同 —— 都是被声明的 bundle 层，不是两种格式。
+> **这个字段决定文件名，文件名本身没有约定。** 内核里写死的只有 profile 目录和 `~/.dsh/` 下的 `cordis.patch.yml`；插件包自带的补丁叫什么由 `bundle.patch` 指，可以是一个路径，也可以是**有序数组**（一个包多份补丁按序应用）。所以官方模板里叫 `cordis.patch.yml`、[02-最小插件的结构与配置](../02-最小插件的结构与配置.md)的示例叫 `patch.yaml`，两者身份完全相同 —— 都是被声明的 bundle 层，不是两种格式。
 
 - `client.platform` / `client.inject`：告诉宿主"这个包有浏览器端代码，需要注入哪些前端依赖（slot、locale 等）"。
 
@@ -227,7 +227,7 @@ flowchart TD
     C -->|"前面没有"| E["挂上 better-sidebar"]
 ```
 
-任何 DSH 插件都是这个结构：`package.json` 里声明 `dsh.bundle.patch`，自带的 `cordis.patch.yml` 里写一行 `insert: { id: ..., name: '<插件名>' }` 把自己挂上树；宿主端代码（`lib/index.js`）提供 HTTP 路由，客户端代码（`lib/client.js`）注册界面上的标签页或查看器。你自己写的插件只要照这个骨架填内容就能被自动装配。
+任何 DSH 插件都是这个结构：`package.json` 里声明 `dsh.bundle.patch`，自带的 `cordis.patch.yml` 里写一行 `insert: { id: ..., name: '<插件名>' }` 把自己挂上树；宿主端代码（`lib/index.js`）提供 HTTP 路由，客户端代码（`lib/client.js`）注册界面上的标签页或查看器。你自己写的插件只要照这个骨架填内容就能被自动配置。
 
 ## dsh-tui profile 对照
 
@@ -267,7 +267,7 @@ flowchart TD
 
 | 部分 | 默认 | 怎么开 |
 | --- | --- | --- |
-| 配置热重载 | 开 | 盯 profile 的 `cordis.patch.yml`、`~/.dsh/cordis.patch.yml` 和 profile 的 `package.json`，变化就重新组合装配 |
+| 配置热重载 | 开 | 盯 profile 的 `cordis.patch.yml`、`~/.dsh/cordis.patch.yml` 和 profile 的 `package.json`，变化就重新组合配置 |
 | 源码热重载 | 关（`root: []`） | 在 profile patch 里给这行配 `root`，列出要监视的目录 |
 
 - `disabled` 是条表达式：dsh 启动的 profile 有 `profileContext`，所以启用；嵌入式宿主没有这个上下文就关掉。
@@ -299,7 +299,7 @@ pnpm install
 # 2. 谁挂了哪个插件（看 bundle 顺序）
 node -e "console.log(require('./package.json').dsh.profile.bundles)"
 
-# 3. 启动 web profile，观察插件树装配日志
+# 3. 启动 web profile，观察插件树配置日志
 dsh web          # 等价于 dsh --profile web
 
 # 4. 某个包到底是真目录还是软链
@@ -308,7 +308,7 @@ ls -la node_modules/dsh-better-sidebar node_modules/.bin | head
 
 ## 要点
 
-- `profiles/web` = **装配清单**，不是代码仓库：三个手写文件（`package.json`、`cordis.patch.yml`、`pnpm-workspace.yaml`）+ launcher 每次重写的空根 `cordis.yml` + 两个生成物（`pnpm-lock.yaml`、`node_modules`）。
-- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02-最小插件的结构与装配](../02-最小插件的结构与装配.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → `~/.dsh/cordis.patch.yml` → 命令行 `--patch`。
+- `profiles/web` = **配置清单**，不是代码仓库：三个手写文件（`package.json`、`cordis.patch.yml`、`pnpm-workspace.yaml`）+ launcher 每次重写的空根 `cordis.yml` + 两个生成物（`pnpm-lock.yaml`、`node_modules`）。
+- 合成模型是"**空根 + 多层 patch**"：bundles 里每个插件**被 `dsh.bundle.patch` 声明的那份补丁文件**（例子里叫 `cordis.patch.yml`，[02-最小插件的结构与配置](../02-最小插件的结构与配置.md)的例子叫 `patch.yaml`）→ profile 自己的 `cordis.patch.yml` → `~/.dsh/cordis.patch.yml` → 命令行 `--patch`。
 - `dsh` 字段（`bundle.patch` / `client.platform`）让插件能"装完即挂载"，这是官方推荐的插件分发姿势；手写在 profile 里的挂载行会和插件自带的 `insert` 打架，重复挂载同一行。
 - 插件源码不在 profile 目录里也能解析依赖，靠的是 launcher 启动时的那张内存包表（拦截层在 profile 目录上一层的 `node_modules` 位置），不是磁盘上的 `.dsh-module-fallback`；后者是 0.1.5 的遗留物，会被启动时清掉。

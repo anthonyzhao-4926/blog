@@ -303,7 +303,7 @@ dsh --profile test --dump-config | grep -A4 'id: hooks-claude-code'
 ## 注意事项
 
 - **桥是兼容适配器，不是插件机制的升级版。** 两个包的 README 都主动写着"自己的行为请写在 native 插件里"。
-- **桥不在任何出厂装配里。** 全仓 `packages/bundle/*` 与 CLI 配置都没有挂它；它只出现在测试固件与快照的 `cordis.yml` 里。要用得自己插一行。
+- **桥不在任何出厂配置里。** 全仓 `packages/bundle/*` 与 CLI 配置都没有挂它；它只出现在测试固件与快照的 `cordis.yml` 里。要用得自己插一行。
 - **`configPath` 是进程级的**：装载时读一次，相对路径按**启动目录**解析，不是每个会话各读一份。多个项目共用一个进程时这是个坑。
 - **CC 的分层发现没有实现。** 只读你指的那一个文件，多层配置要自己合成。
 - **`exit 2` + stderr 是唯一阻断通道**，其它退出码都是非阻断失败。配置读不到也只是 warning，agent 照常起。
@@ -321,5 +321,3 @@ dsh --profile test --dump-config | grep -A4 'id: hooks-claude-code'
 - **构建不 typecheck。** 走 esbuild 的项目记得自己跑一次 `tsc --noEmit`。
 
 ---
-
-[38-会话格式升级了](38-会话格式升级了.md)——升级之后老会话打不开是怎么回事，迁移链长什么样。

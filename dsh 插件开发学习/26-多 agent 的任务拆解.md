@@ -244,7 +244,7 @@ cd code/dsh_plugin/dsh-subagent-survey && ./install.sh
 三步：
 
 ```bash
-# 1. 装配对不对
+# 1. 配置对不对
 dsh --profile test --dump-config | grep -A3 'id: dsh-subagent-survey'
 
 # 2. 看能力矩阵
@@ -269,5 +269,3 @@ dsh --profile test "再跑一次 subagent_survey"
 - **`writeScopes` 不是锁。** 它是提示性的路径前缀，用来提醒"这几件事可能撞车"，不提供互斥。要真正防撞，得自己在任务编排里串行化。
 
 ---
-
-[27-一批任务的并行编排](27-一批任务的并行编排.md)——一个子 agent 是委派，一批子 agent 就是编排：怎么让它们同时跑、各自的结果怎么收、其中一个失败时别人怎么办。

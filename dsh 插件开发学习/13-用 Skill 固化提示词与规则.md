@@ -259,7 +259,7 @@ viewable: true
 
 ## 文章骨架
 
-新文章从 `templates/article.md` 复制骨架：开头三行（读完你能 / 前置 / 约 N 分钟）→ `## 目标` → 正文 → `## 注意事项` → `---` → 结尾指向下一篇的完整文件名链接。小节标题一律用名词短语。
+新文章从 `templates/article.md` 复制骨架：开头三行（读完你能 / 前置 / 约 N 分钟）→ `## 目标` → 正文 → `## 注意事项` → `---`。小节标题一律用名词短语。
 
 ## 写完之后
 
@@ -334,8 +334,6 @@ viewable: true
 - <坑与边界。>
 
 ---
-
-[<下一篇文件名>](<下一篇文件名>.md)——<一句话>。
 ```
 
 `blog-publish.md` 全文——平铺形态，一份文件装得下就不开目录；`disable-model-invocation: true` 让它不进模型的目录：
@@ -353,7 +351,7 @@ disable-model-invocation: true
 
 1. 文件名 `NN-描述.md` 的 `NN` 与 frontmatter 的 `order` 一致；
 2. frontmatter 六个字段（`title` / `date` / `tags` / `column` / `order` / `viewable`）齐全，`column` 在根目录 `config.yml` 的 `columns:` 里注册过；
-3. 开头三行（读完你能 / 前置 / 约 N 分钟）与结尾指向下一篇的完整文件名链接都在；
+3. 开头三行（读完你能 / 前置 / 约 N 分钟）都在；
 4. 正文引用的图片文件真实存在于本专栏的 `assets/` 目录；
 5. 运行 `tool/check-columns.sh <专栏目录名>` 无报错。
 ```
@@ -384,7 +382,7 @@ echo "  blog-publish.md        平铺形态（仅 /blog-publish 唤起）"
 echo "扫描根有被监视，新会话的 skill 目录里就能看到，不用重启。"
 ```
 
-## 装配与验证
+## 配置与验证
 
 ```bash
 cd dsh_plugin/dsh-blog-skill && ./install.sh
@@ -412,5 +410,3 @@ cd dsh_plugin/dsh-blog-skill && ./install.sh
 - **项目根靠 `.git` 认定。** 在仓库子目录里开会话，命中的仍是仓库根的 `.dsh/skills/`；在没有 `.git` 的目录里，当前工作目录自己就是「项目根」。
 
 ---
-
-[14-把插件配置搬进设置页](14-把插件配置搬进设置页.md)——把插件的偏好搬进设置页，同事在界面上自己配，不用碰 `cordis.yml`。

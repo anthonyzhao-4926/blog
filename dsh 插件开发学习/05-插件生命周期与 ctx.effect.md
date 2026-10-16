@@ -141,7 +141,3 @@ ctx.effect(() => webServer.register({
 所以规律很朴素：凡是"你装上去的东西、卸下来时必须拆掉"的，就交给 `ctx.effect`。
 
 ---
-
-[06-用 Config schema 声明插件配置](06-用 Config schema 声明插件配置.md)——把写死的图片路径和透明度挪进 `Config`，换图改配置就行。
-
-排障和查阅去[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有 `inject`、`on`、`plugin` 等能力，见 [Cordis API 文档](../dsh/cordis_api.md)。
