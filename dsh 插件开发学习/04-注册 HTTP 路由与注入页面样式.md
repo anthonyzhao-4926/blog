@@ -39,13 +39,9 @@ flowchart TD
     Q -->|"3. 都不命中"| H3["回退席位（仅一席）<br/>dsh-host-frontend-static：返回构建好的页面文件"]
 ```
 
-**回退席位由 `@deepseek-ai/dsh-host-frontend-static` 认领。** 它把 Web 壳构建产物（dist 目录）端给浏览器，官方文档叫它 SPA dist 服务器：dist 根目录和配置的 index 路径渲染 `index.html`，其余已有文件按 MIME 类型直接给，路径遍历返回 403、缺失返回 404、非 GET/HEAD 返回 405。认领手段和其他插件毫无区别，就是 `ctx.webServer.registerFallback(handler)`，用 `ctx.effect` 包着注册，插件卸载时席位释放、未命中请求回到 404。
+**回退席位由 `@deepseek-ai/dsh-host-frontend-static` 认领。** 它把 Web 壳构建产物（dist 目录）端给浏览器，官方文档叫它 SPA dist 服务器。认领手段和其他插件毫无区别，就是 `ctx.webServer.registerFallback(handler)`，用 `ctx.effect` 包着注册，插件卸载时席位释放、未命中请求回到 404。
 
-**路由之外，webServer 还提供一个事件面：页面注入表。** 路由是「有请求时谁来应答」，注入表是「交付页面前谁能往 HTML 里加东西」，它每次交付前重新采集一遍。想往页面里塞 `<style>`、`<script>` 这类启动所需的东西，正规通道不是改 HTML 文件，而是订阅 `webserver/index-inject`：webServer 新建一张空表并广播这个事件，每个订阅者把自己当前的行 push 进去，最后按行自带的定位渲染进 HTML——该进 head 的插在 `<head>` 开标签后，该进 body 的插在 `<body>` 开标签后。关键在于行是**推到那一刻现读的**：主题偏好、模块图当场取值，所以运行期主题切换、插件装卸，下一次刷新就跟着变，不存在表里数据过期这回事；插件卸载时订阅随 fiber 销毁，它推过的行也一起消失。
-
-**为什么用按次拉取，而不是让插件注册一次、登记进常驻清单。** 官方笔记里权衡过（`.agents/notes/archived/architecture/2026-08-19-web-index-injection-table.zh.md`）：登记式的行数据在主题或模块图变化后会过期，除非每个生产者都记得重新登记，还要各自背一个注销器；按次广播的拉取式则免费拿到新鲜度和 fiber 级清理。这个设计同时要喂两种部署形态——服务器形态直接把行渲染进 HTML，静态 worker 形态只把同一张表当数据载荷下发、由页面侧小解释器逐行执行，所以行被限定为纯 JSON 数据。表表达不了的 HTML 改写仍可走 `tapIndex(html => html)` 逃生口，它在表渲染之后按注册顺序跑。
-
-**页面样式归主题包和功能插件分管。** 颜色、排版、动效这类全局令牌（一批 `--dsw-` 开头的 CSS 变量）归主题包所有；功能插件只能使用主题定义的语义别名，不得另起全局主题，也不得写死颜色值（`docs/web-styling.zh.md`）。于是注入的样式里出现的是主题变量而不是具体色值——切换明暗主题时，注入的样式自动跟着变。
+**路由之外，webServer 还提供一个事件面：页面注入表。** 路由是「有请求时谁来应答」，注入表是「返回页面 HTML 之前，谁能往里面加东西」，而且每返回一次就重新采集一遍。想往页面里塞 `<style>`、`<script>` 这类启动所需的东西，正规通道不是改 HTML 文件，而是订阅 `webserver/index-inject`：webServer 新建一张空表并广播这个事件，每个订阅者把自己当前的行 push 进去，最后按行自带的定位渲染进 HTML——该进 head 的插在 `<head>` 开标签后，该进 body 的插在 `<body>` 开标签后。关键在于行是**推到那一刻现读的**：主题偏好、模块图当场取值，所以运行期主题切换、插件装卸，下一次刷新就跟着变，不存在表里数据过期这回事；插件卸载时订阅随 fiber 销毁，它推过的行也一起消失。
 
 **插件之间不约启动顺序，只声明服务依赖。** 插件想用 webServer 时，轮到它启动的那一刻服务器可能还没就绪。框架的规矩是：插件声明自己需要哪些服务，框架等服务就绪再启动它——「加载顺序通过服务依赖表达，而非手动编排启动序列」（`docs/cordis-primer.zh.md`）。代码里就是 `ctx.inject(['webServer'], ...)`：这不是可选的等待工具，而是「我要用某个服务」的正规声明。
 
@@ -203,7 +199,7 @@ ctx.on('webserver/index-inject', (table) => {
 })
 ```
 
-`webserver/index-inject` 是 DSH 的「往页面里塞东西」事件：每次要交付页面 HTML 之前，DSH 都重新广播一次，`table` 是刚新建的空列表，各插件往里面 push 自己当前的行。我们 push 一条 `style`，内容就是 style.css 的全文，DSH 会把它渲染成 `<style>...</style>` 放进页面的 `<head>`。
+`webserver/index-inject` 是 DSH 的「往页面里塞东西」事件：每次浏览器来要页面 HTML 之前，DSH 都会重新广播一次，`table` 是刚新建的空列表，各插件往里面 push 自己当前的行。我们 push 一条 `style`，内容就是 style.css 的全文，DSH 会把它渲染成 `<style>...</style>` 放进页面的 `<head>`。
 
 `new URL('./style.css', import.meta.url)`：以插件源码文件自己的位置为基准找文件，不依赖你从哪个目录启动 DSH（这是比写相对路径更稳的写法）。
 
@@ -264,7 +260,7 @@ div:has(> [data-shell-overlay]) [data-slot='conversation'] > [data-phase] {
 
 `@deepseek-ai/dsh-host-webserver` 是 DSH 的 web 服务包，前面写插件时说过——它负责提供 `ctx.webServer` 和 `webserver/index-inject` 的类型声明。装上它，代码里的类型才会齐全。
 
-（前面提到的 `@deepseek-ai/dsh-host-frontend-static` 是另一个包，它在发行版组合里认领回退席位；本插件不需要它——页面文件由它交付，我们只往表里 inject 一行样式。）
+（前面提到的 `@deepseek-ai/dsh-host-frontend-static` 是另一个包，它在发行版组合里认领回退席位；本插件不需要它——页面文件由它返回给浏览器，我们只往表里 inject 一行样式。）
 
 ### patch.yaml
 
