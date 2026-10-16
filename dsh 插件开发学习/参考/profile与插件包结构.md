@@ -1,5 +1,4 @@
 ---
-flowix_key: vhz25pi7
 title: profile 与插件包结构
 date: 2026-09-12
 tags:

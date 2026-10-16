@@ -1,5 +1,4 @@
 ---
-flowix_key: qcyjnpbu
 title: 04-挂到 gin 路由
 date: 2026-03-25
 tags: [go, mcp, ai]

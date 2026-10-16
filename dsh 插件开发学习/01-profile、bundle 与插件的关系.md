@@ -1,5 +1,4 @@
 ---
-flowix_key: ns9o4gw8
 title: 01-profile、bundle 与插件的关系
 date: 2026-08-25
 tags:

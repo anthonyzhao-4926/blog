@@ -1,5 +1,4 @@
 ---
-flowix_key: sfi593ly
 title: dsh 插件开发学习
 date: 2026-09-12
 tags:

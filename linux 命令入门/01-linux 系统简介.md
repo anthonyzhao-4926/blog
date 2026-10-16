@@ -1,5 +1,4 @@
 ---
-flowix_key: jpt9le9i
 title: 01-linux 系统简介
 date: 2025-06-01
 tags:

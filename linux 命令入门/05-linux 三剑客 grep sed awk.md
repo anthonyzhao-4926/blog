@@ -1,5 +1,4 @@
 ---
-flowix_key: bm8zlv6l
 title: 05-linux 三剑客 grep sed awk
 date: 2025-06-01
 tags:

@@ -1,5 +1,4 @@
 ---
-flowix_key: 8dx0bbho
 title: 02-linux 常用命令
 date: 2025-06-01
 tags:

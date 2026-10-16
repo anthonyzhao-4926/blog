@@ -1,5 +1,4 @@
 ---
-flowix_key: fwe7ah6y
 title: 08-Hooks
 date: 2026-07-20
 tags: [ai, claude]

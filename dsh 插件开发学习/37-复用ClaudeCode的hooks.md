@@ -1,5 +1,4 @@
 ---
-flowix_key: y4p7c1jd
 title: 37-复用ClaudeCode的hooks
 date: 2026-10-11
 tags:

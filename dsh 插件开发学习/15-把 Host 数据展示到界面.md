@@ -1,5 +1,4 @@
 ---
-flowix_key: 43x2ga68
 title: 15-把 Host 数据展示到界面
 date: 2026-09-30
 tags:

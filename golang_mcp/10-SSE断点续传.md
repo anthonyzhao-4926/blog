@@ -1,5 +1,4 @@
 ---
-flowix_key: fxgwoz30
 title: 10-SSE 断点续传
 date: 2026-03-25
 tags: [go, mcp, ai]

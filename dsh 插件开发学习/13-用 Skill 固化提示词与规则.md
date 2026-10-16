@@ -1,5 +1,4 @@
 ---
-flowix_key: 0t6dlriu
 title: 13-用 Skill 固化提示词与规则
 date: 2026-09-30
 tags:

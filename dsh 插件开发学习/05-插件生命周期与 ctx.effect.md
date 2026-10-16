@@ -1,5 +1,4 @@
 ---
-flowix_key: zhtxt3dg
 title: 05-插件生命周期与 ctx.effect
 date: 2026-09-01
 tags:

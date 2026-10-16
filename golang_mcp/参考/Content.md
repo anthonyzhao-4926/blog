@@ -1,5 +1,4 @@
 ---
-flowix_key: afsqsii1
 title: Content
 date: 2026-03-29
 tags: [go, mcp, ai]

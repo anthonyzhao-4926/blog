@@ -1,5 +1,4 @@
 ---
-flowix_key: 9kxluox5
 title: 01-宏观认识Claude code
 date: 2026-07-02
 tags: [ai, claude]

@@ -1,5 +1,4 @@
 ---
-flowix_key: w3j9r5kc
 title: 29-接入 MCP 服务
 date: 2026-10-09
 tags:

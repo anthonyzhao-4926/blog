@@ -1,5 +1,4 @@
 ---
-flowix_key: qwaizxv2
 title: 04-注册 HTTP 路由与注入页面样式
 date: 2026-08-31
 tags:

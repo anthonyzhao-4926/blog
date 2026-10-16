@@ -1,5 +1,4 @@
 ---
-flowix_key: yjkq9h8i
 title: MIME 类型
 date: 2026-03-28
 tags: [go, mcp, ai]

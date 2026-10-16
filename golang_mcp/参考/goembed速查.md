@@ -1,5 +1,4 @@
 ---
-flowix_key: 28my11r4
 title: go:embed 速查
 date: 2026-03-28
 tags: [go, mcp, ai]

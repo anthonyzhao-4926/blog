@@ -1,5 +1,4 @@
 ---
-flowix_key: doevzf60
 title: go-carbon
 date: 2025-05-14
 tags:

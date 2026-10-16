@@ -1,5 +1,4 @@
 ---
-flowix_key: btwi93pi
 title: 06-提供 Resources 知识库
 date: 2026-03-29
 tags: [go, mcp, ai]

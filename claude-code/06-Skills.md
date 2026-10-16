@@ -1,5 +1,4 @@
 ---
-flowix_key: ksq1xoh2
 title: 06-Skills
 date: 2026-06-16
 tags: [ai, claude]

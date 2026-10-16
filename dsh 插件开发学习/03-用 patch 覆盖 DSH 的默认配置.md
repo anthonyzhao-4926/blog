@@ -1,5 +1,4 @@
 ---
-flowix_key: fzhy1wvc
 title: 03-用 patch 覆盖 DSH 的默认配置
 date: 2026-09-12
 tags:

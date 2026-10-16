@@ -1,5 +1,4 @@
 ---
-flowix_key: f8d4s6yb
 title: 31-把 DSH 嵌进自己的应用
 date: 2026-10-09
 tags:

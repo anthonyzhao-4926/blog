@@ -1,5 +1,4 @@
 ---
-flowix_key: xs9ps5lt
 title: 03-跑成 HTTP 服务
 date: 2026-03-25
 tags: [go, mcp, ai]

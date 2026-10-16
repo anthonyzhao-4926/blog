@@ -1,5 +1,4 @@
 ---
-flowix_key: lj9cyae8
 title: 01-第一个 MCP
 date: 2026-04-01
 tags: [go, mcp, ai]

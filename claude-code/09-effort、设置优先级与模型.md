@@ -1,5 +1,4 @@
 ---
-flowix_key: uds0g8gp
 title: 09-effort、设置优先级与模型
 date: 2026-07-02
 tags:

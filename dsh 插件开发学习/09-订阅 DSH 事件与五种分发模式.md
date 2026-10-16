@@ -1,5 +1,4 @@
 ---
-flowix_key: t9r8gi4x
 title: 09-订阅 DSH 事件与五种分发模式
 date: 2026-09-27
 tags:

@@ -1,5 +1,4 @@
 ---
-flowix_key: b1pnk6yr
 title: linux 命令入门
 date: 2025-06-01
 tags:

@@ -1,5 +1,4 @@
 ---
-flowix_key: a0na9dxp
 title: claude-code
 date: 2026-06-08
 tags: [ai, claude]

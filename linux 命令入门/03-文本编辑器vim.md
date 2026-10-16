@@ -1,5 +1,4 @@
 ---
-flowix_key: z1sqm69d
 title: 03-文本编辑器 vim
 date: 2025-06-01
 tags:

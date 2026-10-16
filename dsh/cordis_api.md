@@ -1,5 +1,4 @@
 ---
-flowix_key: 6xx9gx1i
 title: Cordis API 文档
 date: 2026-08-24
 tags: [dsh, cordis]

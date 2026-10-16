@@ -1,5 +1,4 @@
 ---
-flowix_key: p7wq2zmn
 title: 17-编写 LLM adapter 接入自有模型
 date: 2026-10-09
 tags:

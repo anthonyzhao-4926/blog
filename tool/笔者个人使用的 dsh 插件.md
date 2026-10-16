@@ -1,5 +1,4 @@
 ---
-flowix_key: vs20bgxv
 title: 笔者个人使用的 dsh 插件
 date:
 tags:

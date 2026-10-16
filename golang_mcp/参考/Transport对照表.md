@@ -1,5 +1,4 @@
 ---
-flowix_key: jxk1xs1t
 title: Transport 对照表
 date: 2026-03-25
 tags: [go, mcp, ai]

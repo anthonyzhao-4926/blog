@@ -1,5 +1,4 @@
 ---
-flowix_key: mn4g4405
 title: 06-用 Config schema 声明插件配置
 date: "2026-09-12"
 tags:
@@ -9,9 +8,6 @@ column: dsh-plugin
 order: 6
 dsh-version: 0.2.0-rc.2
 viewable: true
-flowix_colors: []
-flowix_favorited: false
-flowix_icon: null
 ---
 > **读完这篇你能**：把插件里写死的图片路径、透明度改成交互配置，不改代码、不重装就能换图。
 >
