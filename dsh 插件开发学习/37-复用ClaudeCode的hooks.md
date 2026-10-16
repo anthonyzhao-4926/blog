@@ -30,34 +30,38 @@ viewable: true
 
 ## DSH 设计
 
-两条路的分工由桥自己的定位声明决定：桥是兼容适配器，而 DSH 的拦截点本来就是类型化扩展点（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hooks-claude-code/README.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cookbook/extension-cookbook.zh.md`）。
+这一节不依赖本文后面的任何内容，单独讲清 DSH 里"hook（钩子）"背后的两套设计（依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hooks-claude-code/README.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cookbook/extension-cookbook.zh.md`）。
 
-**桥的存在理由是复用，所以它的边界是"显式受支持的子集"。** 两个桥 README 的设计理念第一条一字不差："兼容适配器，而非强力工具"——桥的存在意义是运行现有配置中显式受支持的 command hook 子集，定制行为应放在同一批扩展点上的原生插件里。这一条解释了全篇最反直觉的两件事：官方为什么劝你别用桥；那 23 / 5 个不支持事件为什么是"边界"而不是"没做完"——适配器只承诺翻译它显式认领的部分，其余是原生插件的领土。
+**拦截点先于任何 hook 存在。** DSH 的对话循环留出几个固定的插手时刻：会话建立、模型要发请求之前、工具执行之前与之后、一轮要停下时。这些时刻叫扩展点；其中能"说不"的几个是 waterfall（瀑布式）事件——监听器排成一列，每个要么调用 `next()` 把决定权交给下一个，要么返回一个类型化的决定：放行、拒绝，或要求人工确认。官方扩展手册把"钩子系统"直接列成这些扩展点上的监听器，并给出一句话定义：原生钩子（native hook）是在拦截点上运行的普通插件——插件是 DSH 里一切功能的基本单位，一个名字加一个挂载时执行的函数——不需要任何外部协议。
 
-**native hook 不需要协议，因为扩展点本来就是给插件站的。** cookbook 的功能→机制映射表把"钩子系统"直接列成 `agent/created`、`agent/pre-step`、`tools/pre-execute`、`tools/post-execute`、`agent/turn-stopping` 上的监听器，桥接器只是"将钩子配置文件映射到这些扩展点上"。拦截点先于桥存在，桥是后加的翻译层；native hook 跳过翻译直接站在点上，所以拿得到完整 `ctx`、返回类型化对象，不必把决策压成退出码与 stderr。
+**桥是后加的翻译层，存在理由是复用。** Claude Code 与 Codex 是另外两个 AI 编程助手，它们的 hook 机制都是"JSON 配置加外部 shell 进程"：到了某个时刻起一个进程，把上下文用 JSON 打进它的标准输入，再看退出码——2 表示阻断，错误输出是理由。DSH 的两个桥接包各自认领一种方言：把既有配置里的事件映射到同一批扩展点上，进程跑完再把退出码与输出翻译回类型化决定。两个桥把定位写成同一句设计理念："兼容适配器，而非强力工具"——只承诺运行既有配置中显式受支持的子集，没有对应物的定制行为应该写成原生插件。按这个口径，Claude Code 官方的 30 个事件里桥接 7 个，Codex 官方的 10 个里桥接 5 个；落在子集之外的配置在解析阶段就被忽略，不会让整份配置失效。那一长串"不支持的事件"因而是边界，不是没做完。
 
 ```mermaid
 flowchart LR
     subgraph bridge["协议 hook：翻译层"]
-        J["既有 hooks.json"] --> P["dsh-hook-protocol 引擎<br/>匹配 / 执行 / 解码 / 合并 / 记日志"]
+        J["既有的 hooks.json"] --> P["共享引擎<br/>匹配 / 执行 / 解码 / 合并 / 记日志"]
         P --> X["外部 shell 进程"]
-        X -->|"exit code / stdout / stderr"| P
+        X -->|"退出码与输出"| P
     end
-    subgraph native["native hook：直达"]
-        C["普通 Cordis 插件<br/>ctx.on(...)"]
+    subgraph native["原生 hook：直达"]
+        C["普通插件<br/>直接监听扩展点"]
     end
-    P -->|"翻译成类型化 Decision"| EP["同一批拦截扩展点<br/>agent/created · agent/pre-step<br/>tools/pre-execute · tools/post-execute<br/>agent/turn-stopping"]
+    P -->|"翻译成类型化决定"| EP["同一批拦截扩展点"]
     C --> EP
-    EP --> D["类型化决定<br/>next / deny / ask"]
+    EP --> D["放行 / 拒绝 / 要求确认"]
 ```
 
-**引擎的每条设计都在为"外部进程不可信"兜底。** hook-protocol 的 README 把动机写得很直白："绝不向循环抛异常"——畸形 JSON、无效正则、执行器拒斥都降级成受控结果，hook 永远不能弄崩当前这一轮；"把唯一差异轴收拢进 `mode`"——两个方言只差在 matcher 的解读方式，所以共用一个引擎（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hook-protocol/README.zh.md`）。正文的降级矩阵与两方言 matcher 表，就是这两条的展开。
+**引擎的每条设计都在为"外部进程不可信"兜底。** 两个桥共用一个引擎，它的设计理念写得很直白："绝不向循环抛异常"——畸形 JSON、无效正则、进程启动失败，全都降级成受控结果，一个 hook 永远不能弄崩当前这一轮（turn：从接下输入到模型停下的一个来回）；进程控制交给已有的 shell 执行服务，洗过的环境、取消与超时是现成能力，引擎不自己起进程；两种方言只差在"匹配模式怎么解读"这一根轴上，所以差异被收拢成一个参数，而不是复制成两套引擎（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hook-protocol/README.zh.md`）。
 
-**Codex 桥刻意保持方言形状，而不是做到能力最大化。** 它的设计理念里有一条 CC 桥没有的：payload 保持 snake_case 并带 `turn_id` / `model`，stdin 不补尾随换行，也不实现工具前审批与改写路径——即使 harness 本可以做得更多，也保留协议的形状（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hooks-codex/README.zh.md`）。正文里"Codex 桥不补换行""Codex 没有 ask"这两个孤立事实，出处都是这条取向。
+**方言的形状被刻意保留，而不是做到能力最大化。** Codex 桥有一条另一条桥没有的设计理念：数据保持那个产品自己的字段形状，标准输入不补尾随换行，也不实现工具前审批与参数改写——按它的原话，"即使 harness 本可以做得更多，也保留协议的形状"（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/hooks/hooks-codex/README.zh.md`）。桥的目标是"那份配置搬过来还能跑"，不是借那份配置长出一个更强的机制。
 
-**添加上下文不是否决，所以只带 context 的 hook 先 `next()` 再折叠。** 两个桥 README 把这条与"兼容适配器"并列：仅提供上下文的 hook 先通过 `next()` 委托，再把自己的消息折进下游传回的决定里，这样排在它后面的监听器仍然可以拒绝或改写。正文第 8 跳的那处细节不是实现怪癖，而是对"hook 只是贡献者之一"这个定位的坚持——桥不能让自己的上下文堵住别的策略层。
+**"要求人工确认"这一档不是所有方言都有。** 退出码与输出翻译回类型化决定时，大多数拦截点上只有"拒绝"一档；"要求人工确认"只在工具执行之前这个点、且只有 Claude Code 方言才有，Codex 方言在同一个点上只能拒绝。决定的词汇表由扩展点定义，方言能填几档由桥认领。
 
-**串行不去重，是拿延迟换审计可读。** 桥 README 的原话：串行让每个 `hook/invoked` / `hook/result` 对在日志里相邻，且最严格折叠（`deny > ask > allow`）与顺序无关——结果与参考实现的并发一致，代价只是串行的延迟。这对记录的定位也随之清楚：它是"运行了什么、决定了什么"的持久证据，所以必须落在已打开的 turn 内（协议的不变式伴生插件会拒绝轮外记录），所以发生在 turn 之外的 SessionStart 不写它；native hook 同样不写——没有桥，就没有记账人，要审计就自己在事件流上折。
+**添加上下文不是否决。** 只贡献上下文的 hook 必须先调用 `next()` 把决定权交下去，再把自己的那段文字折进下游传回的决定里——排在后面的监听器仍然可以拒绝或改写。桥不让自己附带的内容堵住别的策略层，因为 hook 只是拦截点上的贡献者之一。
+
+**审计记录成对出现，且必须落在一轮之内。** 桥每执行一个 hook，就往会话日志（一次对话里只增不改的事件记录）写一对只写日志的事件：`hook/invoked` 与 `hook/result`，作为"运行了什么、决定了什么"的持久证据。匹配到的多个 hook 按配置顺序串行执行、不去重，为的就是每个 hook 的这对记录在日志里相邻，而且"最严格者优先"的合并与顺序无关。这对记录必须落在已打开的一轮之内——发生在轮外的时刻（比如会话刚建立时）不写，还有专门的运行期自检拒绝轮外记录。原生插件不是桥、没有记账人，这对记录它一条都不写；要审计得自己在事件流上折。
+
+两条路不是新旧替代关系：桥翻译存量配置，原生插件写新行为，它们站在同一批扩展点上。
 
 ## 两条路
 

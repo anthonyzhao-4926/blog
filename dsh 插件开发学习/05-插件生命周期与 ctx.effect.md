@@ -22,31 +22,34 @@ viewable: true
 
 ## DSH 设计
 
-`ctx.effect` 为什么非写不可，由 Cordis 的三条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-api/fiber.zh.md`）。
+这一节不依赖本文其他任何内容，单独讲清 DSH 的插件生命周期与「可撤销的注册」是怎么设计的，依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-api/fiber.zh.md`。
 
-**卸载是常态，所以注册必须可逆。** DSH 的配置热重载默认开着（见 [03 篇](03-用 patch 覆盖 DSH 的默认装配.md)），禁用、启用、重载一行随时发生；架构层面就写明「各项注册都是副作用，会在其插件卸载时撤销」。Cordis 把这条落成机制：提示词片段、工具 schema、适配器、提供方、监听器，全都通过 `ctx.effect()` 或 `ctx.on()` 安装，reload 和 teardown 时按预期撤销。所以「装上去的东西、卸下来时必须拆掉」不是经验之谈，而是框架的默认语义——插件要做的只是登记「拆的时候做什么」。
+**卸载是常态，所以每次注册都必须可逆。** 先对齐三个词：插件是给 DSH 增加功能的一段代码；挂载是把它装进运行中的系统；卸载是把它拿出来。DSH 自带的 web 方案默认开着配置热重载——改完配置文件不用重启进程，框架会把受影响的插件就地卸载再挂载；禁用、启用、移除插件更是日常操作。框架因此把「注册是可逆的副作用」列为核心约定：提示词片段、工具定义、事件监听这些注册，装的时候就得配好「拆的时候做什么」。在这套框架里，装上去却卸不干净的注册就是缺陷。
 
-**fiber 是撤销的归属单位。** fiber 是一个已加载的插件实例，装着它的生命周期状态、校验过的配置和已注册的作用；`ctx.effect()` 就是委托给当前 fiber。每次挂载各建一个 fiber，所以同一个插件挂两次，配置、等待的服务、收集的清理函数互不串扰。卸载就是 dispose 这个 fiber：它收集的清理函数按注册的相反顺序跑完，异步清理也会等到完成。逆序是刻意的——后注册的往往建立在前面的注册之上，拆要倒着拆；实践规则因此建议「teardown 顺序有要求时，把相关工作放进同一个 effect」。而 `ctx.on` 这类辅助方法内部已经把监听器包进了 effect，所以只有拿到「框架不管的资源」（路由注册、定时器、连接）时，才需要像上一篇那样亲手写 `ctx.effect`。
+**fiber 是撤销动作的归属单位。** 插件每被挂载一次，框架就创建一个 fiber（一个插件的一次运行实例），装着这次运行的生命周期状态、校验过的配置，以及它登记过的全部清理动作。同一个插件挂两次就有两个互不串扰的 fiber：各自的配置、各自等待的服务、各自收集的清理函数，各管各的。卸载一个插件，落到实现上就是销毁它那个 fiber——把它收集的清理函数逐个执行完才算了结。
 
-**四个阶段对应 fiber 的状态机。** 源码里 fiber 有六个生命周期状态：`PENDING`（等待必需服务）、`LOADING`（插件回调运行中）、`ACTIVE`（已加载并提供）、`FAILED`（回调或配置抛出）、`UNLOADING`（清理函数运行中）、`DISPOSED`（已移除）（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/vendor/cordis/src/fiber.ts`）。本篇的①发生在 import 时，fiber 还没创建；②③发生在 `LOADING`；④就是 `UNLOADING` 干的事。apply 之所以不紧跟 import，是因为 `PENDING` 在等 `inject` 声明的服务——挂载时机由服务依赖决定，不由 import 顺序决定。
+**ctx.effect 是登记「可撤销注册」的入口。** 插件启动函数里拿到的 `ctx` 是插件与框架打交道的上下文对象。`ctx.effect` 接收一个函数并立即执行它；这个函数返回的第二个函数就是清理函数（「拆的时候做什么」），被 fiber 收起来。清理函数在两种情况下执行：插件主动撤销这个注册，或者 fiber 被卸载——以先到者为准，重复调用不会重复执行。框架的辅助方法（比如监听事件的 `ctx.on`）内部已经把注销动作包进了同一套机制，所以只有拿到框架不管的资源——一条路由注册、一个定时器、一个连接——才需要亲手写 `ctx.effect`。官方实践规则还有两条：每个注册都应有对应的清理函数；拆的顺序有讲究时，把相关工作放进同一个 effect，保证按预期顺序释放。
+
+**清理按登记的相反顺序执行，异步清理也会被等待。** 销毁 fiber 时，清理函数按登记的相反顺序跑——后登记的往往建立在前面的注册之上，拆要倒着拆。清理函数可以是异步的，卸载过程会等它完成才结束。
+
+**插件的一生是六个状态的流转。** fiber 源码里定义了六个生命周期状态：`PENDING`（等待声明依赖的服务就绪）、`LOADING`（插件的启动函数运行中）、`ACTIVE`（已加载并对外提供能力）、`FAILED`（启动函数或配置校验抛了错）、`UNLOADING`（清理函数运行中）、`DISPOSED`（已移除）；每次状态转换都会广播一次内部事件（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/vendor/cordis/src/fiber.ts`）。这解释了一个常见困惑：插件文件被加载后，它的启动函数并不立刻执行——声明了要等的服务时，fiber 停在 `PENDING`，服务就绪才进入 `LOADING`。挂载时机由服务依赖决定，不由文件加载顺序决定。
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING: ctx.plugin() 创建 fiber
-    PENDING --> LOADING: inject 的服务就绪
-    LOADING --> ACTIVE: apply 执行完
-    LOADING --> FAILED: 配置校验或 apply 抛出
+    [*] --> PENDING: 插件被挂载
+    PENDING: 等待声明的服务就绪
+    PENDING --> LOADING: 服务就绪
+    LOADING: 启动函数运行中
+    LOADING --> ACTIVE: 启动函数跑完
+    LOADING --> FAILED: 配置校验或启动函数抛错
+    ACTIVE: 对外提供能力
     ACTIVE --> UNLOADING: 禁用 / 移除 / 重载
-    UNLOADING --> DISPOSED: 清理函数逆序跑完
+    UNLOADING: 清理函数逆序执行
+    UNLOADING --> DISPOSED: 清理完毕
     DISPOSED --> [*]
-    note right of LOADING
-        ② apply 执行
-        ③ effect 回调立即执行、清理函数被收集
-    end note
-    note right of UNLOADING
-        ④ 收集的清理函数逆序执行
-    end note
 ```
+
+一句话点题：在这套设计里，「注册」和「注销」是同一笔账的两面——fiber 记账，`ctx.effect` 是记账的笔。
 
 ## 插件生命周期
 

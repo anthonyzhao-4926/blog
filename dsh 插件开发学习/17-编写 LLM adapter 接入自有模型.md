@@ -31,39 +31,39 @@ viewable: true
 
 ## DSH 设计
 
-adapter 这层为什么只剩「翻译」一件事，由 LLM 层的四条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/llm-streaming.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cookbook/adding-an-llm-adapter.zh.md`）。
+这一节不依赖本文后面的任何内容，单独讲清 DSH 接入模型的那一层是怎么设计的（主要依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/llm-streaming.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cookbook/adding-an-llm-adapter.zh.md`）。
 
-**llm 包的职责被正式划成「词汇表 + 缝」。** architecture.zh.md 的核心包表给 llm 定的职责是「消息与流式词汇表，以及适配器 seam」，同一份文档的归属表把「添加模型提供方」规定为「在 `ctx.llm` 上注册其适配器」。词汇表（`GenerateOptions` 与 `StreamChunk`）是内核关于模型调用的全部知识，缝是内核留给外部世界的唯一开口——所以 `LlmAdapter` 只把 `stream()` 留成抽象方法，其余几个都给了「我没有额外信息可提供」的默认实现。
+**内核只认一套统一协议，认不得任何一家厂商的格式。** DSH 的模型包对外只提供两样东西：一套词汇表，加一条缝。词汇表是两个类型——`GenerateOptions`（一次组装完的模型请求）和 `StreamChunk`（流式返回的分片格式）；缝（seam：内核留给外部世界的可替换开口）就是**模型适配器**（adapter）：一个类，负责把统一协议翻译成某家模型服务商的 HTTP 格式，再把流式响应翻译回来。协议文档把接入一个提供方写成三步：创建这个类的子类、实现 `stream()`、在 `ctx.llm`（插件共享上下文上的模型服务）上注册一个实例。适配器类只把 `stream()` 留成唯一必须实现的方法，其余几个（报路由名、列模型清单、报重试策略……）都给了「我没有额外信息可提供」的默认实现——所以一个最小适配器的全部工作，就是翻译一次流式调用。
 
-**折叠由内核的共享实现完成，协议保持闭集。** `StreamChunk` 是封闭联合，而 `block-start` / `block-end` 的 `index` 关联与共享的 `BlockAssembler` 共同意味着：块重组不是每个适配器各自的问题，adapter 只需产出格式正确的分片（依据 llm-streaming.zh.md）。本篇的流翻译因此只需管两件事——自己发一套块编号，以及把 `block-end` / `usage` / `finish` 集中在收尾处按序发出。
+**把分片拼回完整回复是内核的活，不是适配器的活。** 一次流式响应里，正文、推理过程、多个工具调用是交错到达的；协议用编号把每片对上号，适配器自己发号就行。而把所有分片折叠回完整消息，由内核里唯一一份共享实现负责——协议文档写明「块重组不是每个适配器各自的问题」。同时 `StreamChunk` 的取值是个封闭集合：就那几种分片，谁也不许偷偷加一种——加了，所有消费方的编译会直接报错。封闭换来的是消费方可以穷尽所有分片种类，编译器替你检查漏没漏。
 
-**失败在公共边界被归一化。** 防御性模式里有一条专门的规则「公共约定两侧都要遵守」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/defensive-patterns.zh.md`）：adapter 可以抛、也可以发 `finish { kind: 'error' }`，但 `LlmRuntime.stream()` 只以终止型 finish 分片向消费方暴露失败，消费方不必猜异常来自 provider、包装层还是自己的组装逻辑。所以 adapter 的职责止于把事实如实翻成 `LlmFailure`——`providerRetryAfterMs` 是 provider 的要求而不是 adapter 的决定，这一句就写在这份类型的定义里。
+**失败在公共边界被归一成一种形状。** 适配器报错有两条合法路径：直接抛异常（连不上、HTTP 报错这类传输故障），或者在流末尾发一个携带失败事实的结束分片（厂商在流里面报的错，没法抛）。协议约定：不管走哪条路，内核对外只以「结束分片携带失败事实」一种形状向消费方暴露——消费方不用猜异常来自厂商、包装层还是自己的组装逻辑。失败事实里有个字段值得点名：`providerRetryAfterMs` 是**厂商要求**的等待时长，文档特意写明它是厂商的请求，而不是适配器的重试决定。要不要重试另有决策者：重试策略在路由注册时被解析成不可变的值、跟着那次注册走，之后换掉适配器，也改不了一个正在进行中的失败请求的处理方式。
 
-**契约是两个参考实现共同验证过的。** cookbook 写明这些协议义务是「两个适配器都经过验证的约定」：`llm-deepseek` 直连 HTTP，`llm-pi-ai` 封装现成库，两条实现路线在 `usage` 先于 `finish`、工具参数全程原始 JSON、空补全归 `EMPTY_RESPONSE` 上完全一致。所以照着契约写不是照抄一家之言——每条义务背后都有两个实现背书，而「一次 adapter 调用就是一次 provider 尝试」正是它们都不自带重试的原因。
+**契约由两个参考实现共同背书。** 适配器要遵守的规矩——用量分片必须排在结束分片之前、结束之后什么都不许再发、工具参数全程是原始 JSON 字符串、一次适配器调用就是一次厂商尝试（要关掉 HTTP 库自带的重试）、空回复算可重试的错误而不是静默成功——官方手册写明这是「两个适配器都经过验证的约定」：一个直连 HTTP，一个封装现成的模型库，两条实现路线在这些义务上完全一致。照着契约写不是照抄一家之言，每条义务背后都有两个实现背书。
 
 ```mermaid
 flowchart LR
     subgraph core["内核一侧（只认统一协议）"]
-        L["agent loop<br/>组装 GenerateOptions"]
-        A["BlockAssembler<br/>共享折叠实现"]
-        R["llm-retry<br/>策略随注册快照"]
+        L["对话循环<br/>组装请求"]
+        A["共享折叠器<br/>分片拼回完整回复"]
+        R["重试策略<br/>注册时快照"]
         L --> A
         A -- "失败事实 + 快照策略" --> R
-        R -- "新的持久轮次" --> L
+        R -- "另开一轮请求" --> L
     end
-    subgraph seam["适配器缝（本篇写的这层）"]
-        AD["stream()<br/>唯一的抽象方法"]
+    subgraph seam["适配器（唯一要写的层）"]
+        AD["stream()<br/>唯一必须实现的方法"]
     end
-    subgraph provider["provider 一侧（各家私有格式）"]
-        P["HTTP 端点<br/>Ollama / 公司网关"]
+    subgraph provider["厂商一侧（各家私有格式）"]
+        P["HTTP 端点"]
     end
-    L -- "GenerateOptions" --> AD
-    AD -- "翻译成 wire 格式" --> P
+    L -- "GenerateOptions<br/>组装完的请求" --> AD
+    AD -- "翻译成厂商格式" --> P
     P -- "流式分片" --> AD
-    AD -- "StreamChunk（封闭联合）" --> A
+    AD -- "StreamChunk<br/>统一分片协议" --> A
 ```
 
-会话日志、token 计量、卡片渲染全在「内核一侧」，只依赖统一协议——换一个 adapter 不动任何消费方，这就是「缝」的含义。
+会话记录、token 计量、界面渲染全在「内核一侧」，只依赖统一协议——换一个适配器不用动任何消费方，这就是「缝」的含义。
 
 ## adapter 在 LLM 层的位置
 

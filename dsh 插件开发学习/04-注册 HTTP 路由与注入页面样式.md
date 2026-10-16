@@ -25,46 +25,42 @@ viewable: true
 
 ## DSH 设计
 
-这篇的两条链路为什么长这样，由 webServer 这个包的三条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/host/webserver/README.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/web-server.zh.md`）。
+这一节不依赖本文其他任何内容，单独讲清 DSH 的 Web 服务器和页面注入是怎么设计的，依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/host/webserver/README.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/web-server.zh.md`。
 
-**webServer 是一个不认识 DSH 的空载体。** 它就是一个 `node:http` 服务器加一张路由注册表：不了解任何 harness 概念，也不提供任何文件服务——`/api` 桥接、插件 bundle、HMR 事件流、SPA dist 全都属于注册它们的插件。所以「让浏览器拿到图片」不是去配置服务器，而是往这张表里注册一行，和内置插件走同一条路。这张表按组合优先设计：具名路由在组合上互不相交，匹配顺序固定（先 exact、再最长前缀、最后回退——回退席位是应答所有未命中请求的唯一 handler）；同一张表里重复注册同一条 `(kind, path)` 直接抛错，因为路由模式是组合层约定，撞了就是配置错误。我们的图片路由和 DSH 自己的页面能共存，靠的就是这几条约定。
+**DSH 的 HTTP 服务器是个不认识 DSH 的空载体。** DSH 内置的 Web 服务器（webServer，一个作为插件挂载的 HTTP 服务）就是一个 HTTP 服务器加一张路由注册表：它不了解任何 DSH 自身的概念，自己也不提供任何文件——`/api` 桥接、插件包资源、热更新（HMR）事件流、打包好的网页文件，全都属于往表里注册的各个插件。所以「让浏览器能访问某个地址」不是去配置服务器，而是和内置功能走同一条路：往这张表里注册一行。服务器一激活就开始监听端口；路由的处理函数（handler）拿到请求后拥有响应的全部控制权，状态码、响应内容、甚至保持连接开着都由它决定。
 
-**插件之间不约启动顺序，只声明服务依赖。** webServer 是一个 Cordis Service，激活即开始监听；而我们的插件跑 `apply()` 时，它可能还没就绪。Cordis 的解法是：插件声明所需的服务后，会等待服务就绪才启动——「加载顺序通过服务依赖表达，而非手动编排启动序列」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md`）。`ctx.inject(['webServer'], ...)` 就是这条设计在代码里的样子：不是可选的等待工具，而是「我要用某个服务」的正规写法。
+**路由表为「组合」设计，不为「顺序」设计。** 每个插件注册的是具名路由：要么逐字匹配一个路径（exact），要么匹配一个前缀和它下面的所有路径（prefix）。请求到达时匹配顺序固定不变——先查全表的精确匹配，再取最长的前缀匹配，最后交给「回退席位」（应答所有未命中请求的位置，全表只有一席；被领走后别人再领会直接报错；没人领时服务器回答 404）。随发行版交付的网页组合里，这个席位归「网页文件服务器」，它负责返回打包好的页面文件。同一张表里重复注册同一条路由会直接抛错：路由归属是插件之间的组合约定，撞了就是装配错了，不是谁先到先得。也正因为具名路由在组合上互不相交，注册的先后不影响任何一次请求的处理。
 
-**页面注入不是静态注册表，而是每次渲染现问一遍。** 每次渲染 index 响应，webServer 都发出一次 `webserver/index-inject`，收集一张全新的注入表，每个订阅方推入自己的当前行；行里的数据（模块图、主题偏好）在 emit 那一刻现读，下一次渲染自然跟上运行期的变化。我们 push 一段固定的 `<style>` 是这个机制的最简形态——表是活的，只是我们那一行恰好不变。
+**插件之间不约启动顺序，只声明服务依赖。** 插件（给 DSH 增加功能的一段代码）想用 webServer 时，轮到它启动的那一刻，服务器可能还没就绪。框架的规矩是：插件声明自己需要哪些服务，框架等服务就绪再启动它——「加载顺序通过服务依赖表达，而非手动编排启动序列」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md`）。代码里的写法是 `ctx.inject(['webServer'], ...)`：这不是一个可选的等待工具，而是「我要用某个服务」的正规声明。
+
+**页面注入不是静态清单，而是每次渲染现问一遍。** 每次要返回页面 HTML 时，网页文件服务器都会请 webServer 收集一张全新的「注入表」：webServer 广播一次名为 `webserver/index-inject` 的事件，每个订阅了它的插件往表里推入自己当前的行（一段样式、一个脚本声明等），行里的数据在广播那一刻现读，下一次渲染自然跟上运行期的变化。注入行先渲染进页面正文，之后才轮到更底层的原始 HTML 转换。想往每个页面里塞点东西，正规通道就是订阅这个事件、推一行进去。
+
+**页面样式归主题包和功能插件分管。** DSH 网页的样式有一条归属线：颜色、排版、动效这类全局令牌（一批 `--dsw-` 开头的 CSS 变量）归主题包所有；功能插件只能使用主题定义好的语义别名，不得另起全局主题，也不得写死颜色值（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/web-styling.zh.md`）。于是插件注入页面的样式里出现的是主题变量而不是具体色值——切换明暗主题时，注入的样式自动跟着变。
 
 ```mermaid
-flowchart LR
-    subgraph W["dsh-host-webserver<br/>（不带 harness 词汇的路由注册表）"]
-        direction TB
-        R["具名路由表<br/>exact → 最长前缀"]
-        F["回退席位（仅一席）"]
-        I["webserver/index-inject<br/>每次渲染重新收集"]
-    end
-    A["内置功能插件<br/>/api 桥接、HMR 事件流"] -->|"register"| R
-    S["SPA dist 服务器"] -->|"registerFallback"| F
-    O["我们的插件"] -->|"register 图片路由"| R
-    O -->|"push style 行"| I
-    M["客户端模块插件"] -->|"push script 行"| I
-    B["浏览器"] -->|"HTTP 请求"| W
+flowchart TD
+    B["浏览器请求到达 webServer"] --> Q{"路由表按固定顺序匹配"}
+    Q -->|"1. 精确匹配命中"| H1["认领这个路径的插件<br/>如接口桥接、热更新流"]
+    Q -->|"2. 最长前缀命中"| H2["认领这个前缀的插件"]
+    Q -->|"3. 都不命中"| H3["回退席位（仅一席）<br/>网页文件服务器：返回页面文件"]
 ```
 
 ```mermaid
 sequenceDiagram
     participant B as 浏览器
     participant W as webServer
-    participant F as 回退席位（SPA dist 服务器）
-    participant P as 各订阅插件（含我们）
-    B->>W: GET /（请求页面）
+    participant F as 回退席位（网页文件服务器）
+    participant P as 订阅注入事件的各插件
+    B->>W: 请求页面
     W->>F: 无具名路由命中，落到回退席位
-    F->>W: renderIndex(html)
-    W->>P: emit webserver/index-inject（全新空表）
-    P-->>W: 各自 push 当前行
-    W-->>F: 注入行渲染进正文
-    F-->>B: 页面响应
+    F->>W: 请收集注入表
+    W->>P: 广播 webserver/index-inject（全新空表）
+    P-->>W: 各自推入当前行（样式 / 脚本）
+    W-->>F: 注入行渲染进页面正文
+    F-->>B: 返回页面
 ```
 
-回退席位在随附的 Web 组合里归 SPA dist 服务器所有，它对渲染的每个 index 响应调用 `renderIndex`——我们的样式行就是在这一刻进页面的。
+一句话点题：服务器只提供路由表和事件，页面上能看到的一切，都是各个插件认领和推入的。
 
 ## 两条链路
 

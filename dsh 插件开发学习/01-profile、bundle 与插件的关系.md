@@ -16,33 +16,30 @@ viewable: true
 
 ## DSH 设计
 
-为什么「建 profile = 写一个 package.json」，由 DSH 的三条装配设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「Profile 与组合包」一节）。
+这一节不依赖本文其他任何内容，单独讲清 DSH 装配体系里的三层概念——插件、组合包（bundle）、profile（装配方案），依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「Profile 与组合包」一节与 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/boot/app-boot/README.zh.md`。
 
-**没有特权内核，「装什么」只能外置成清单。** 运行中的 dsh 是一棵插件树，由启动时按序叠加的各层组合而成；内核不做任何插件做不到的事，连 agent loop 本身都是插件。既然装哪些插件不可能写死在程序里，就必须有一个地方把清单列出来——profile 就是这个具名容器：列出自己叠放的组合包，存放自己安装的树外插件，保存自己的 `cordis.patch.yml`。本篇说的「插件集合隔离」，落到实处就是这份清单按名字各存一份。
+**一切功能都是插件，所以「装什么」只能外置成清单。** 在 DSH 里，一个插件就是一段带名字的代码：一个名字，加一个挂载进系统时执行的函数。DSH 自己的全部功能——对接模型、注册工具、保存会话、驱动对话的循环——也都是插件，和用户写的插件没有身份差别；系统里不存在「内核能做、插件做不到」的事。既然没有任何功能写死在程序里，「这次启动装哪些功能」就必须有一份程序之外的清单：运行中的 DSH 是一棵插件树（启动时各层清单叠加出来的功能总表），这棵树完全由外部清单叠出来。
 
-**一份安装，多个界面。** profile 是同一套 dsh 安装提供不同应用界面的方式：`web`、`headless`、`sdk`、`sdk-minimal`、`acp` 从同一个 launcher 启动出不同组合（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/boot/app-boot/README.zh.md`）。所以这几个模板同时是 CLI 子命令——`dsh web` 就是 `dsh --profile web`；也所以启动必须点名：不存在「默认界面」，选一个 profile 就是选一个界面。
+**组合包是插件的正规分发格式。** 光有代码不够，系统还得知道「这段代码怎么进树」。组合包（bundle）把两样东西打包在一起分发：一批插件的代码，加上它们的挂载补丁（补丁是一份 YAML 文件，逐行声明往树里插一行、改一行的参数、或停用一行）。组合包在自己的 `package.json` 里用 `dsh.bundle` 字段指出补丁文件的位置；它插进树里的每一行，始终可以被后续各层再改——分发默认装配和允许别人改默认装配，是同一个格式的一体两面。
 
-**组合包是可安装的分发格式，不是「内核的一部分」。** bundle 的定义是「Cordis 配置项及其挂载代码的分发格式」，它插进树里的内容始终可被其上各层 patch。profile 与 bundle 都在各自的 `package.json` 里用 `dsh` 字段声明身份：`dsh.profile` 列出组合包，`dsh.bundle` 指向 patch 文件。所以建一个 profile 的全部工作就是写一个带 `dsh.profile.bundles` 的 `package.json`——本篇的 test profile 只有一个文件，不是精简，是 profile 的定义本来就这么大。至于预置的两个包：`dsh-base` 是 web、headless、sdk、acp 共享的第一层（模型适配器、工具、持久化、审批这些底座），`dsh-web-app` 在上面加浏览器应用；test 照抄的就是 web 模板的最小骨架。
+**profile 是一份具名的装配方案。** profile 存放在 DSH 的用户配置目录（叫 harness home，通常是 `~/.dsh`，方案放在 `profiles/<名字>/`）里，内容就三样：要叠放哪些组合包、另外单独安装的插件、以及方案自己的那份覆盖补丁。和组合包一样，profile 也在自己的 `package.json` 里声明身份：`dsh.profile.bundles` 字段列出组合包名单。所以建一个 profile 的全部工作，就是写一个带这个字段的 `package.json`——这不是精简玩法，而是 profile 的定义本来就这么大。
+
+**一份安装，多个界面。** profile 是同一套 DSH 安装提供不同应用界面的方式：`web`（浏览器界面）、`headless`（无界面的一次性运行）、`sdk`、`sdk-minimal`、`acp` 这些模板随发行版交付，从同一个启动器启动出不同组合；它们同时也是命令行子命令，`dsh web` 就是 `dsh --profile web`。系统没有「默认界面」：启动时必须点名一个 profile，选哪个 profile 就是选哪个界面。预置组合包的分工跟着界面走：`dsh-base` 是 web、headless、sdk、acp 共享的第一层底座（模型适配器、工具、持久化、沙箱与审批等），`dsh-web-app`、`dsh-headless` 等再各自在上面加自己界面的东西。
 
 ```mermaid
 flowchart TD
-    subgraph install["同一份 dsh 安装（同一个 launcher，无默认装配）"]
-        L["dsh 可执行文件"]
-    end
-    subgraph home["Harness home：~/.dsh/profiles/"]
-        W["profile: web<br/>（随发行版交付的模板）"]
-        H["profile: headless<br/>（模板）"]
-        T["profile: test<br/>（本篇新建）"]
-    end
-    L -->|"dsh web"| W
-    L -->|"dsh headless"| H
-    L -->|"dsh --profile test"| T
-    W --> WT["插件树：dsh-base + dsh-web-app"]
-    H --> HT["插件树：dsh-base + dsh-headless"]
-    T --> TT["插件树：dsh-base + dsh-web-app<br/>+ 以后要叠的插件"]
+    L["同一个 dsh 启动器<br/>没有默认界面，启动必须点名"] --> W["profile 模板：web"]
+    L --> H["profile 模板：headless"]
+    L --> U["profile：用户自建方案"]
+    W --> WB["组合包：dsh-base + dsh-web-app"]
+    H --> HB["组合包：dsh-base + dsh-headless"]
+    U --> UB["方案 package.json 里<br/>列出的组合包"]
+    WB --> T["各包的补丁按序叠加<br/>叠出本次启动的插件树"]
+    HB --> T
+    UB --> T
 ```
 
-后面装插件、写 patch，全都是往这棵树上叠层——profile 是叠加的出发点。
+三层各管一件事：插件是功能本身，组合包是功能的分发方式，profile 是决定哪些分发进入本次启动的方案。之后装插件、改配置、停用功能，都是在这套叠加体系里动清单。
 
 ## profile 的含义
 如下是dsh 插件安装命令，我们来理解一下 profile 的含义。

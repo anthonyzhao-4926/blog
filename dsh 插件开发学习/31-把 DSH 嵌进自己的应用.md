@@ -28,31 +28,30 @@ viewable: true
 
 ## DSH 设计
 
-把 DSH 嵌进应用的做法之所以是「选 profile、起进程、说协议」，而不是「import 一个库」，由架构对「应用是什么」的两条规定决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「应用启动」与「Profile 与组合包」两节）。
+这一节不依赖本文其他任何内容，单独讲清 DSH 对「把 DSH 嵌进别的程序」这件事的设计（依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「应用启动」与「Profile 与组合包」两节，以及 `packages/sdk/README.zh.md`、`packages/acp/README.zh.md`）。
 
-**应用组合只用配置表达，不用代码表达。** 架构规定受支持的 Node 应用一律通过具名 `dsh` profile 启动；自定义插件组合「继续由 profile 与有序 patch 文件表达，而不是另一个可执行文件或内联应用树」。仓库还有专门的校验脚本，把任何绕过 `dsh` 启动器的 Node 应用路径归入拒绝之列。所以「嵌入」没有第二个入口：TypeScript SDK 解析同版本的 `dsh` 依赖并替你选择 `sdk` profile，Python SDK 暴露的同样是「profile 选择 + 有序 patch 文件」而不是完整 Cordis 树——你交付的从来不是另一个可执行文件，而是对既有装配的一份选择与覆盖。
+**嵌入的入口只有一个：启动时选一套具名的装配方案。** DSH 把「一个应用」定义成一套方案，叫它 profile：一份清单，写明这套方案要叠放哪些功能包、覆盖哪些配置。发行版自带五套现成的：`web`（浏览器界面，给人用）、`headless`（在命令行跑一个一次性任务）、`sdk`（挂一个供别的进程驱动的服务器）、`sdk-minimal`（最小依赖）、`acp`（挂一个自动化协议服务器）。架构把这条路定为唯一入口：受支持的应用一律用 `dsh --profile <名字>` 启动；想自定义功能组合，也只能用「选一套方案、再叠几份补丁」来表达——补丁（patch）是逐条声明「插入、替换、停用哪个功能条目」的配置文件——而不是另写一个可执行文件；仓库还有专门的校验脚本，把任何绕过这个启动器的应用形态归入拒绝之列。所以「嵌入」从来不是 import 一个库再自己组装，而是选一套方案、起它的进程、按它暴露的方式对话。
 
-**五个 profile 共享同一套运行时，差异只在叠了哪一层。** `dsh-base` 是 `web`、`headless`、`sdk`、`acp` 的共享第一层，各 profile 再叠一个应用层组合包；组合包插入的内容始终可被其上各层 patch，所以没有任何一个 profile 是封闭产品。`sdk-minimal` 是「刻意保留的例外」：一个组合包拥有完整的显式 SDK 配置树、不应用 `dsh-base`——它的存在本身就在说明 base 也只是一层可选装配，不是内核的一部分。
+**五套方案跑的是同一套运行时，差别只在叠了哪一层功能包。** DSH 的功能按组合包（bundle：把一批插件——即挂载进系统的功能代码——连同挂载说明打包在一起的分发单位）分发，启动时一层层叠上去，上层可以改下层插入的任何内容。五套现成方案里，四套以同一个叫 `dsh-base` 的组合包打底——模型对接、工具、会话存储、沙箱策略（限制程序能碰哪些文件）都在这一层——再各叠一个应用层包。唯一的例外是 `sdk-minimal`：不打底，由单个组合包给出完整配置。这个例外是被刻意保留的，它说明打底那层也只是一层可选的装配，不是内核的一部分。
+
+**对外的两条协议路，各自把边界收得很窄。** 一条是 SDK 家族：让另一个进程通过按换行分帧的 JSON-RPC（一行一条 JSON 消息的远程调用格式）驱动完整的运行时——开会话、发提示词、收事件，仅此而已；包组文档明说这些包不创建开发者项目、也不定义应用形态，TypeScript 与 Python 两份客户端说同一种协议、驱动同一个 `sdk` 方案。另一条是 ACP（Agent Client Protocol）：一条公开的「程序驱动智能体」协议，定位是仅面向自动化——权限确认必须能由程序直接给答案、取消必须能经协议发起，设计上直接排除「有个人坐在屏幕前」的情形。
+
+**装配结果永远摊在眼前，也永远改得动。** 启动器提供 `--dump-config`，能把某套方案最终叠出的完整配置树打印出来；树上打印出来的任何条目，都可以用一份自己的补丁替换。这条保证让「选一套方案」不是接受一个黑盒：先看清它装了什么，再决定要不要改、改哪一行。
 
 ```mermaid
 flowchart TD
-    subgraph entry["所有嵌入路径收敛到同一个启动器"]
-        direction TB
-        CLI["命令行<br/>dsh --profile headless"]
-        TS["TS SDK 客户端<br/>具名 profile + 有序 patch"]
-        PY["Python SDK<br/>同一份协议与 profile"]
-    end
-    CLI --> L["dsh 应用启动器"]
-    TS --> L
-    PY --> L
-    L --> TREE["按 profile 层叠出的插件树<br/>web / headless / sdk / acp 共享 dsh-base"]
-    M["sdk-minimal<br/>一个组合包给出完整配置树"] -.->|"刻意保留的例外：不应用 base"| TREE
-    TREE --> OUT["对外姿态由所叠应用层决定<br/>stdout / JSON-RPC stdio / ACP stdio"]
+    CLI["命令行<br/>dsh --profile headless"]
+    TSPY["TS 或 Python 客户端<br/>选方案名、叠补丁"]
+    ACPC["会说 ACP 的外部程序"]
+    CLI --> L["同一个 dsh 启动器"]
+    TSPY --> L
+    ACPC --> L
+    L --> BASE["共享打底组合包 dsh-base<br/>模型 / 工具 / 会话存储"]
+    BASE --> APP["按方案叠应用层<br/>一次性运行器、对话服务器、自动化协议服务器"]
+    MIN["sdk-minimal：不打底<br/>单个组合包给出完整配置"] -.->|"刻意保留的例外"| L
 ```
 
-**SDK 与 ACP 各自的边界，也从这条总原则推出来。** SDK 家族只剩一个职责——让另一进程通过按换行分帧的 JSON-RPC 驱动完整运行时——所以包组 README 明说「这些包不会创建开发者项目，也不定义其他应用」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/sdk/README.zh.md`）：你的工程该长什么样，已经由 profile 与 patch 机制回答过了，SDK 不再越界。ACP 则是另一条刻意的边界：包组定位就是「仅面向自动化的协议」，权限提示与取消都必须有程序化答案（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/acp/README.zh.md`）。同一份 README 还记着配套客户端 `subagent-acp` 的位置——协议两端都是包组里的正式角色，正文那句「同一条协议，两个方向都在用」由此而来。
-
-本篇的做法都能挂回这两条规定：选 profile 是选一层现成装配；`headless` 与 `sdk` 跑同一套运行时，差别只在控制权在谁手里；树外组合包走 `dsh plugin add`，因为 profile 的语义本来就是「列出自己叠放哪些组合包」。
+嵌入 DSH 要做的决定因此永远只有两个：选哪套装配方案，以及跟它说哪种话。
 
 ## 五个 profile
 
