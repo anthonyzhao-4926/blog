@@ -12,13 +12,13 @@ viewable: true
 ---
 > **读完这篇你能**：把插件在 Host 进程里攒下的数据送到浏览器——仓库内插件走 `ctx.remote` 五步，外部插件走 `/api` 下的一条 Fetch 路由；并把展示挂进设置页的 `settings.section` 槽位。
 >
-> **前置**：[把插件配置搬进设置页](14-把插件配置搬进设置页.md)。约 35 分钟。
+> **前置**：[14-把插件配置搬进设置页](14-把插件配置搬进设置页.md)。约 35 分钟。
 >
 > **示例代码**：[dsh-note-stats](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-note-stats)
 
-11 篇的 `note_search` 跑起来之后，我想知道的很朴素：工作区里现在有多少篇笔记、最近都搜过什么关键词。统计本身不难——09 篇订阅 `tools/result` 的手法原样搬过来就能攒出来。难的是另一半：数据在 Host 的 Node 进程里，页面在浏览器里，中间隔着一层 HTTP。
+[11-为模型注册自定义工具](11-为模型注册自定义工具.md)的 `note_search` 跑起来之后，我想知道的很朴素：工作区里现在有多少篇笔记、最近都搜过什么关键词。统计本身不难——[09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)订阅 `tools/result` 的手法原样搬过来就能攒出来。难的是另一半：数据在 Host 的 Node 进程里，页面在浏览器里，中间隔着一层 HTTP。
 
-14 篇讲过「一个包两半」：Host 半跑在 Node 进程，浏览器半从 `exports['./client']` 进页面。这篇把两半之间的数据通道打通，并把展示挂到界面上。
+[14-把插件配置搬进设置页](14-把插件配置搬进设置页.md)讲过「一个包两半」：Host 半跑在 Node 进程，浏览器半从 `exports['./client']` 进页面。这篇把两半之间的数据通道打通，并把展示挂到界面上。
 
 ## 目标
 
@@ -53,11 +53,11 @@ flowchart TD
 
 | 路 | 注册方式 | 鉴权 | 谁能用 |
 | --- | --- | --- | --- |
-| webServer 裸路由（04 篇） | `ctx.webServer.register` | 无——谁都能 curl | 任何插件 |
+| webServer 裸路由（[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)） | `ctx.webServer.register` | 无——谁都能 curl | 任何插件 |
 | `/api` 下的 Fetch 路由 | `ctx.connection.fetch.register` | Host/Origin 检查 + 浏览器会话认证 | 任何插件 |
 | `ctx.remote` 类型化调用 | `@Remote` + 生成管线 | 同上，外加参数校验与失败码表 | 仓库内插件 |
 
-04 篇走的是第一条：图片是公开资源，不需要鉴权。这篇的统计数据只想给「打开这个页面的浏览器」看，走第二条。第三条是 DSH 自己所有界面数据的通道，外部插件用不上，但读 DSH 源码、看内置插件怎么干活时处处是它，所以先讲它。
+[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)走的是第一条：图片是公开资源，不需要鉴权。这篇的统计数据只想给「打开这个页面的浏览器」看，走第二条。第三条是 DSH 自己所有界面数据的通道，外部插件用不上，但读 DSH 源码、看内置插件怎么干活时处处是它，所以先讲它。
 
 ## `ctx.remote` 五步
 
@@ -222,13 +222,13 @@ ctx.inject(['connection'], (connCtx) => {
 })
 ```
 
-和 04 篇的 `webServer.register` 三处不同：
+和 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)的 `webServer.register` 三处不同：
 
 - **handler 是 Fetch 形态**：收 `Request`、返回 `Response`，不是 `node:http` 的 `(req, res)`。
 - **鉴权在到达 handler 之前**。终端里 `curl` 这条路由只会拿到 401——它没有 cookie。浏览器页面里同源 `fetch('/api/...')` 自动带 cookie，什么都不用管。
-- **注册内部已经是一次 effect**（`register` 把注销绑进调用方的 fiber）：插件卸载，路由跟着消失，不用再像 04 篇那样自己包一层 `ctx.effect`。重复注册同一个 path 照样抛错——路由是组合级契约。
+- **注册内部已经是一次 effect**（`register` 把注销绑进调用方的 fiber）：插件卸载，路由跟着消失，不用再像 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)那样自己包一层 `ctx.effect`。重复注册同一个 path 照样抛错——路由是组合级契约。
 
-`ctx.inject(['connection'], ...)` 的写法和 09 篇等 `webServer` 一样：统计本身不依赖 HTTP，headless profile 里没有 connection 服务，回调不执行，统计照样攒。
+`ctx.inject(['connection'], ...)` 的写法和 [09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)等 `webServer` 一样：统计本身不依赖 HTTP，headless profile 里没有 connection 服务，回调不执行，统计照样攒。
 
 ## slot 的声明归属
 
@@ -292,11 +292,11 @@ inject: () => ({ hooks: { noteStats: stats }, refresh })
 
 ## 客户端模块的注入
 
-浏览器那半怎么进页面，是 `dsh-client-modules` 这个服务的事（14 篇讲了「一个包两半」的前提，这里讲机制）：
+浏览器那半怎么进页面，是 `dsh-client-modules` 这个服务的事（[14-把插件配置搬进设置页](14-把插件配置搬进设置页.md)讲了「一个包两半」的前提，这里讲机制）：
 
 1. **声明**：`package.json` 里写 `dsh.client: { platform: 'web' }`，并且 `exports['./client']` 指向打好的 bundle。
 2. **扫描**：client-modules 盯着 Host Loader 的条目，从条目文件的位置**向上找最近的 `package.json`**——所以我们的 patch.yaml 挂的是 `src/index.ts` 源码文件，也算这个包的条目，它旁边的 `package.json` 就是身份。
-3. **注入**：每次渲染页面 HTML 时，client-modules 把组合好的启动图答进 `webserver/index-inject`（04 篇见过这个事件），页面里的 `window.__DSH_BOOT__` 就是这张图；bundle 本体由 `/plugins/??<包名>/client.js&rev=<修订号>` 这类组合路由供出。
+3. **注入**：每次渲染页面 HTML 时，client-modules 把组合好的启动图答进 `webserver/index-inject`（[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)见过这个事件），页面里的 `window.__DSH_BOOT__` 就是这张图；bundle 本体由 `/plugins/??<包名>/client.js&rev=<修订号>` 这类组合路由供出。
 
 失败待遇分两档，都值得知道：启动期，已加载条目里有一个声明了 `dsh.client` 但 bundle 缺失或声明畸形，整个服务聚合成一个 `AggregateError` 直接 FAILED——页面起不来，错误里列全所有坏包；运行期（热重载途中）单个包坏了只记一条警告，不拖别人。
 
@@ -324,8 +324,8 @@ dsh-note-stats/                       ← 插件包（bundle）
  * dsh-note-stats 的 Host 半：订阅 note_search 的工具调用事件做统计，
  * 数一遍笔记目录，把结果挂在 /api 下的一条 Fetch 路由上。
  *
- * 统计手法与 09 篇相同（广播事件 tools/result，结果定型后只观察）；
- * 路由不是 04 篇的 webServer.register，而是 Connection 的 exact Fetch 路由——
+ * 统计手法与 09-订阅 DSH 事件与五种分发模式相同（广播事件 tools/result，结果定型后只观察）；
+ * 路由不是 04-注册 HTTP 路由与注入页面样式的 webServer.register，而是 Connection 的 exact Fetch 路由——
  * 它在 /api 下面，到达 handler 之前已经过了 Host/Origin 检查和浏览器会话认证。
  */
 import { readdir } from 'node:fs/promises'
@@ -340,7 +340,7 @@ import type {} from '@deepseek-ai/dsh-tools'
 export const name = 'dsh-note-stats'
 
 export interface Config {
-    /** 笔记目录的绝对路径（与 11 篇 dsh-note-search 的 root 看同一个地方）。 */
+    /** 笔记目录的绝对路径（与 11-为模型注册自定义工具 dsh-note-search 的 root 看同一个地方）。 */
     root: string
 }
 
@@ -363,7 +363,7 @@ export function apply(ctx: Context, config: Config): void {
     let failures = 0
     const recent: SearchRecord[] = []
 
-    // 广播：结果已定型的时机，只记账（手法见 09 篇）。exec.arguments 是这次调用的参数。
+    // 广播：结果已定型的时机，只记账（手法见 09-订阅 DSH 事件与五种分发模式）。exec.arguments 是这次调用的参数。
     ctx.on('tools/result', (exec, result) => {
         if (exec.name !== 'note_search') return
         const args = (exec.arguments ?? {}) as { query?: unknown }
@@ -382,10 +382,10 @@ export function apply(ctx: Context, config: Config): void {
         searches: { calls, failures, recent },
     })
 
-    // 统计本身不依赖 HTTP：只有挂路由这段等 connection 服务（09 篇等 webServer 的同款写法）。
+    // 统计本身不依赖 HTTP：只有挂路由这段等 connection 服务（09-订阅 DSH 事件与五种分发模式等 webServer 的同款写法）。
     ctx.inject(['connection'], (connCtx) => {
         // register 内部已把注销绑进调用方的 effect——插件卸载，路由跟着消失，
-        // 不用再像 04 篇的 webServer.register 那样自己包一层 ctx.effect。
+        // 不用再像 04-注册 HTTP 路由与注入页面样式的 webServer.register 那样自己包一层 ctx.effect。
         connCtx.connection.fetch.register({
             path: '/api/dsh-note-stats/stats',
             methods: ['GET'],
@@ -542,7 +542,7 @@ window.__ModuleLoader__.load({
 }
 ```
 
-比 09 篇的包多出两块：`exports['./client']` 指向浏览器半的 bundle；`dsh.client` 声明「这个包有浏览器端代码」。四个依赖里后两个都是 `import type` 用的类型来源，运行时会被剥掉。
+比 [09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)的包多出两块：`exports['./client']` 指向浏览器半的 bundle；`dsh.client` 声明「这个包有浏览器端代码」。四个依赖里后两个都是 `import type` 用的类型来源，运行时会被剥掉。
 
 `patch.yaml` 与 `install.sh` 沿用旧惯例——patch 里留占位符，install.sh 填绝对路径、`pnpm install`、`dsh plugin add`：
 
@@ -592,7 +592,7 @@ curl -i -s 'http://127.0.0.1:3099/api/dsh-note-stats/stats' | head -3
 HTTP/1.1 401 Unauthorized
 ```
 
-对比 04 篇那条 `webServer` 路由：`curl -sI http://127.0.0.1:3099/dsh-chat-background/image.jpg` 是能拿到 200 的。同一个端口，两种待遇——`/api` 以下的路由过 Connection 的信任检查与会话认证，裸路由不过。
+对比 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)那条 `webServer` 路由：`curl -sI http://127.0.0.1:3099/dsh-chat-background/image.jpg` 是能拿到 200 的。同一个端口，两种待遇——`/api` 以下的路由过 Connection 的信任检查与会话认证，裸路由不过。
 
 再用带 token 的 URL 打开页面（启动日志里那行，或 `dsh --profile test` 不带 `--no-open` 让它自己开）。打开设置，导航里多了一节「笔记统计」，点进去：
 
@@ -608,12 +608,12 @@ note_search 被调了 0 次，失败 0 次
 ## 注意事项
 
 - **`/api` 的 Fetch 路由不在失败词汇表里。** 词汇表（`RemoteError` + code 表）管的是 `ctx.remote` 调用——那种调用的错误装在 `RemoteResult` 的信封里过线。Fetch 路由是「RPC 信封之外的响应」，失败就是普通 HTTP 状态码，客户端 `response.ok` 自己判断。选哪条路，失败的表达方式跟着走。
-- **三条路的鉴权差异要当成选择题。** `webServer` 裸路由（04 篇）没有认证，适合公开静态资源；`/api` 路由有信任检查与会话认证，适合「只给这个页面看」的数据；`ctx.remote` 在此之上还有参数校验和 code 表，是仓库内插件的正规路。
-- **统计是整进程的**（09 篇说过）：没有作用域标签的插件收到所有会话的 `note_search` 调用。handler 每次请求都重数一遍目录——演示可以，目录大了该缓存或监听文件变化。
+- **三条路的鉴权差异要当成选择题。** `webServer` 裸路由（[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)）没有认证，适合公开静态资源；`/api` 路由有信任检查与会话认证，适合「只给这个页面看」的数据；`ctx.remote` 在此之上还有参数校验和 code 表，是仓库内插件的正规路。
+- **统计是整进程的**（[09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)说过）：没有作用域标签的插件收到所有会话的 `note_search` 调用。handler 每次请求都重数一遍目录——演示可以，目录大了该缓存或监听文件变化。
 - **observable 的 snapshot 身份要稳。** 值没变就返回同一个引用；每次 `getSnapshot` 都新建对象，渲染器会以为它一直在变。demo 里 `set` 才换引用，是对的。
 - **手写的 `client.js` 是生成物的最小形态**：没有 sourcemap，没有 CSS 管道（要样式用内联 `style`），改完重启 profile 最稳。仓库内插件的文案必须走 locale 字典（注册时的 `locale` + `t` prop），那是仓库自己的规矩；外部插件用普通字符串的 `label` 即可。
 - **声明了 `dsh.client` 就要保证 bundle 在。** 启动期缺 bundle 不是警告，是整个客户端模块服务 FAILED、页面起不来。把 `client.js` 删了再启动就能看到那个 `AggregateError`。
 
 ---
 
-**下一篇**：[把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)——`note_search` 的结果不再是一坨文本，在对话里渲染成可点击的卡片。
+[16-把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)——`note_search` 的结果不再是一坨文本，在对话里渲染成可点击的卡片。

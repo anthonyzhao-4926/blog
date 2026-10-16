@@ -12,11 +12,11 @@ viewable: true
 ---
 > **读完这篇你能**：订阅 DSH 内部的事件（工具调用、审批结果、会话记录），把计数挂到一条 HTTP 路由上；并且知道五种分发模式各自该用在什么地方。
 >
-> **前置**：[替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)。约 30 分钟。
+> **前置**：[08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-event-log](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-event-log)
 
-08 篇那个探针是"我发起一次搜索，看结果"。这篇反过来：模型自己跑起来之后，我看不见它做了什么。
+[08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)那个探针是"我发起一次搜索，看结果"。这篇反过来：模型自己跑起来之后，我看不见它做了什么。
 
 我想知道的很具体——这一轮它调了哪些工具、各几次、花了多久、失败几次；审批被拒了几次；哪条记录落进了会话文件。这些都不用改模型、也不用翻日志：DSH 内部每一步都会发**事件**，订阅就行。
 
@@ -24,7 +24,7 @@ viewable: true
 
 - 一个插件订阅三类真实事件，把计数挂到 `/dsh-event-log/stats`；一轮结束再往日志里打一行汇总。
 - 一个演示插件和一个探针，把五种分发模式的差别用六次 curl 看全。
-- 全部代码在 `dsh_plugin/dsh-event-log/`，装法与 08 篇同一个 profile。
+- 全部代码在 `dsh_plugin/dsh-event-log/`，装法与 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)同一个 profile。
 
 ## DSH 设计
 
@@ -56,7 +56,7 @@ flowchart TD
 
 ## 事件与它的契约
 
-08 篇讲的是**服务调用**：消费者拿到 `ctx.web`，调它的 `search()`，一对一，要返回值。
+[08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)讲的是**服务调用**：消费者拿到 `ctx.web`，调它的 `search()`，一对一，要返回值。
 
 事件是另一种通信方式：某个组件喊一声"这件事发生了"，谁想听谁听，喊的人不知道也不关心有几个监听器。
 
@@ -168,7 +168,7 @@ Cordis 把 `ctx.on` 和五种派发方法的参数类型都绑在这张表上。
  * 演示用的五个监听器，一个分发模式一个。
  *
  * 这个插件不派发事件，只监听——派发方在 dsh-event-probe.ts 里。
- * 两边除了事件名（和它带来的 payload 类型）之外互不认识，跟 08 篇的
+ * 两边除了事件名（和它带来的 payload 类型）之外互不认识，跟 08-替换内置能力的提供方与消费者的
  * 「消费者只认接口」是同一回事。
  */
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -224,7 +224,7 @@ export function apply(ctx: Context): void {
         return `B(${builtin})`
     })
 
-    // 07 篇说过：ctx.logger 不往终端打，要肉眼可见的证据就自己 console.log。
+    // 07-配置与源码的热重载说过：ctx.logger 不往终端打，要肉眼可见的证据就自己 console.log。
     console.log(`[${name}] 5 个监听器已就位`)
 }
 ```
@@ -237,7 +237,7 @@ export function apply(ctx: Context): void {
  *
  * 五种分发模式各派发一个事件，好让"广播 / 并发 / 顺序 / 短路 / 管道"
  * 的差别在一次 curl 里看得见——真实插件不会为了看这个而发事件，这是
- * 演示与排查用的探针。08 篇的探针也是这个角色。
+ * 演示与排查用的探针。08-替换内置能力的提供方与消费者的探针也是这个角色。
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type { LabEvent } from './events.ts'
@@ -297,7 +297,7 @@ async function fire(ctx: Context, mode: string, payload: LabEvent): Promise<unkn
 }
 ```
 
-web 起起来（端口挑一个没被占用的，下面沿用 08 篇的 3099），五个模式各打一枪——`trace` 就是每个监听器留给我的那句话：
+web 起起来（端口挑一个没被占用的，下面沿用 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)的 3099），五个模式各打一枪——`trace` 就是每个监听器留给我的那句话：
 
 ```bash
 for m in emit parallel serial bail waterfall; do
@@ -401,7 +401,7 @@ register(label: string, hooks: Hook[], callback: any, options: EventOptions): ()
 }
 ```
 
-`this.ctx.fiber.effect(...)`——**注册监听器本身就是一次 effect**（05 篇的那种）。所以不需要自己写 `ctx.effect` 包一层，也不用维护"我注册过哪些监听器"的账本：插件卸载、重载、被 patch 停用，监听器跟着 fiber 一起摘掉。
+`this.ctx.fiber.effect(...)`——**注册监听器本身就是一次 effect**（[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)的那种）。所以不需要自己写 `ctx.effect` 包一层，也不用维护"我注册过哪些监听器"的账本：插件卸载、重载、被 patch 停用，监听器跟着 fiber 一起摘掉。
 
 验证方式是停掉 lab 那一行、留住探针行。在 profile 的 `cordis.patch.yml` 里写：
 
@@ -452,7 +452,7 @@ import type {} from '@deepseek-ai/dsh-user-approval'
 export const name = 'dsh-event-stats'
 
 // 故意不写模块级 inject：统计这件事本身不依赖任何服务，headless 里也要跑。
-// 只有"把计数挂到路由上"这一段需要 webServer，所以用 04 篇的写法单独等它。
+// 只有"把计数挂到路由上"这一段需要 webServer，所以用 04-注册 HTTP 路由与注入页面样式的写法单独等它。
 const PATH = '/dsh-event-log/stats'
 
 interface ToolStat {
@@ -623,13 +623,13 @@ dsh-event-log/                    ← 插件包（bundle）
       name: '/绝对路径/dsh-event-log/src/dsh-event-stats.ts'
 ```
 
-装完不写 profile 覆盖层——这三个插件没有配置项。所以 `install.sh` 只做两件事：`pnpm install`、`dsh plugin add`。别让它去覆盖 `cordis.patch.yml`：那里面还留着 08 篇的换源配置。
+装完不写 profile 覆盖层——这三个插件没有配置项。所以 `install.sh` 只做两件事：`pnpm install`、`dsh plugin add`。别让它去覆盖 `cordis.patch.yml`：那里面还留着 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)的换源配置。
 
 ```bash
 cd <你的插件包目录>/dsh-event-log && ./install.sh
 ```
 
-> 10 篇要讲的事件时间线是另一个包：[dsh-event-timeline](10-事件进阶.md)。两条路各管各的，本篇只跑通这三行也能看完全部实验。
+> [10-事件进阶](10-事件进阶.md)要讲的事件时间线是另一个包：[10-事件进阶](10-事件进阶.md)。两条路各管各的，本篇只跑通这三行也能看完全部实验。
 
 ## 验证
 
@@ -758,6 +758,6 @@ curl -s 'http://127.0.0.1:3099/dsh-event-log/stats'
 
 ---
 
-**下一篇**：[事件进阶](10-事件进阶.md)——09 篇只用了三个事件；DSH 有一百多个，先把它们按生命周期摆成一张地图，再挑该听哪一个。
+[10-事件进阶](10-事件进阶.md)——[09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)只用了三个事件；DSH 有一百多个，先把它们按生命周期摆成一张地图，再挑该听哪一个。
 
 profile 目录里哪些文件能改、patch 怎么合成，见[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有哪些能力，见 [Cordis API 文档](../dsh/cordis_api.md)。

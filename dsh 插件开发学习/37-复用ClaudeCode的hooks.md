@@ -12,7 +12,7 @@ viewable: true
 ---
 > **读完这篇你能**：知道 DSH 里"hook"其实是两条不同的路，以及各自适合什么；知道那两个兼容桥能承接 Claude Code 与 Codex 的哪些 hook、哪些逐字迁不过来；知道"native hook"的准确定义；以及为什么官方文档会劝你别用桥。
 >
-> **前置**：[给 DSH 提 PR](36-给DSH提PR.md)。约 30 分钟。
+> **前置**：[36-给DSH提PR](36-给DSH提PR.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-native-hook](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-native-hook)
 
@@ -322,4 +322,4 @@ dsh --profile test --dump-config | grep -A4 'id: hooks-claude-code'
 
 ---
 
-**下一篇**：[会话格式升级了](38-会话格式升级了.md)——升级之后老会话打不开是怎么回事，迁移链长什么样。
+[38-会话格式升级了](38-会话格式升级了.md)——升级之后老会话打不开是怎么回事，迁移链长什么样。

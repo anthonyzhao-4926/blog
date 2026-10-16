@@ -12,7 +12,7 @@ viewable: true
 ---
 > **读完这篇你能**：知道改一处 DSH 内核代码要过哪些门禁、这些门禁的权威写在哪；知道测试不是"三种"而是七层，以及每一层各管什么；知道哪些文档是机械生成的、改它等于白改；知道能力缝与不变式这两套自检机制在管什么。
 >
-> **前置**：[给团队加一条命令](35-给团队加一条命令.md)。约 40 分钟。
+> **前置**：[35-给团队加一条命令](35-给团队加一条命令.md)。约 40 分钟。
 >
 > **示例代码**：[dsh-kernel-map](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-kernel-map)
 
@@ -283,7 +283,7 @@ function parseEventMatrix(markdown: string): EventRow[] {
 }
 ```
 
-它刻意避开 `dsh-tool-cordis` 那条路：那个包把内核 API 目录暴露成工具，但 `files` 只发 `lib/index.js` 与类型声明，源码不进包，导出的目录数据不能被树外插件按子路径 import；而且第 19 篇的 `dsh-self-cordis` 已经占了那条路。
+它刻意避开 `dsh-tool-cordis` 那条路：那个包把内核 API 目录暴露成工具，但 `files` 只发 `lib/index.js` 与类型声明，源码不进包，导出的目录数据不能被树外插件按子路径 import；而且[19-运行期动态挂载插件](19-运行期动态挂载插件.md)的 `dsh-self-cordis` 已经占了那条路。
 
 这个 demo 与这一篇的关系在最后一步：**改内核时你最先改的就是这些生成物背后的源码。** 改一行、跑一次 `pnpm run gen-doc-graphs`，地图的行号跟着变，插件立刻能看出差异。手抄一份清单就没有这个性质——那正是 `docs/AGENTS.md` 里被点名的 slop。
 
@@ -332,4 +332,4 @@ cd /path/to/deepseek-harness && pnpm run gen-doc-graphs
 
 ---
 
-**下一篇**：[复用 Claude Code 的 hooks](37-复用ClaudeCode的hooks.md)——从别的 agent 迁过来，手上那堆 `hooks.json` 还能不能接着用。
+[37-复用ClaudeCode的hooks](37-复用ClaudeCode的hooks.md)——从别的 agent 迁过来，手上那堆 `hooks.json` 还能不能接着用。

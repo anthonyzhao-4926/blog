@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<!--
+title: 由行组成的树
+column: dsh-plugin
+viewable: true
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>由行组成的树</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #1b1f24;
+    --ink-soft: #4b5563;
+    --muted: #7b8694;
+    --line: #e2e6eb;
+    --line-strong: #cbd2da;
+    --branch: #a9b4c0;
+    --insert: #15803d;
+    --insert-bg: #e8f6ed;
+    --config: #1d4ed8;
+    --config-bg: #e8eefd;
+    --disable: #b91c1c;
+    --disable-bg: #fdeaea;
+    --enable: #b45309;
+    --enable-bg: #fdf1e2;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a;
+      --panel: #1b1f23;
+      --ink: #e8eaed;
+      --ink-soft: #b9c0c9;
+      --muted: #8b949e;
+      --line: #2c3238;
+      --line-strong: #3d454d;
+      --branch: #4d5761;
+      --insert: #4ade80;
+      --insert-bg: #16301f;
+      --config: #7aa2f7;
+      --config-bg: #17233d;
+      --disable: #f87171;
+      --disable-bg: #351c1c;
+      --enable: #fbbf24;
+      --enable-bg: #362a15;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 28px 64px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+
+  header.top { max-width: 1500px; margin: 0 auto; padding: 34px 0 18px; }
+  h1 { margin: 0 0 8px; font-size: 25px; letter-spacing: .3px; }
+  .lede { margin: 0 0 16px; max-width: 900px; color: var(--ink-soft); }
+  .lede b { color: var(--ink); }
+  .lede code { font-family: var(--mono); font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .controls .lbl { color: var(--muted); font-size: 12.5px; margin-right: 2px; }
+  button.step {
+    font: inherit; font-size: 12.5px; cursor: pointer;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink-soft);
+    transition: all .12s ease;
+  }
+  button.step:hover { border-color: var(--muted); color: var(--ink); }
+  button.step[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+  main {
+    max-width: 1500px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(430px, .95fr) minmax(470px, 1.05fr);
+    gap: 22px; align-items: start;
+  }
+  @media (max-width: 1080px) { main { grid-template-columns: 1fr; } }
+
+  .col-title {
+    font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--muted); margin: 4px 0 10px; font-weight: 600;
+  }
+
+  /* ── 左栏：清单里的行 ───────────────────────────────── */
+  .layer {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 12px 13px 13px; margin-bottom: 12px;
+    transition: opacity .18s ease;
+  }
+  .layer.pending { opacity: .34; }
+  .layer > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .lnum {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    padding: 1px 7px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line-strong); color: var(--ink-soft);
+  }
+  .layer h3 { margin: 0; font-size: 14px; }
+  .layer .file { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .layer .note { font-size: 12px; color: var(--muted); margin: 2px 0 9px; }
+  .rows { display: flex; flex-direction: column; gap: 5px; }
+
+  .strip {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 9px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: 12.5px; transition: border-color .12s, box-shadow .12s, background .12s;
+  }
+  .strip .op {
+    flex: none; font-size: 11px; font-weight: 700; letter-spacing: .3px;
+    padding: 1px 6px; border-radius: 5px; border: 1px solid transparent;
+  }
+  .op-insert  { color: var(--insert);  background: var(--insert-bg);  border-color: color-mix(in srgb, var(--insert) 30%, transparent); }
+  .op-config  { color: var(--config);  background: var(--config-bg);  border-color: color-mix(in srgb, var(--config) 30%, transparent); }
+  .op-disable { color: var(--disable); background: var(--disable-bg); border-color: color-mix(in srgb, var(--disable) 30%, transparent); }
+  .op-enable  { color: var(--enable);  background: var(--enable-bg);  border-color: color-mix(in srgb, var(--enable) 30%, transparent); }
+
+  .strip .rid { font-family: var(--mono); font-size: 12px; color: var(--ink); white-space: nowrap; }
+  .strip .rname { flex: 1 1 auto; min-width: 30px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip .rfields { margin-left: auto; flex: none; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .strip.childrow { margin-left: 22px; position: relative; }
+  .strip.childrow::before {
+    content: ""; position: absolute; left: -13px; top: 50%; width: 13px; height: 1px; background: var(--branch);
+  }
+  .strip.childrow::after {
+    content: ""; position: absolute; left: -13px; top: -3px; bottom: 50%; width: 1px; background: var(--branch);
+  }
+  .childchip { flex: none; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+
+  .row { cursor: pointer; }
+  .row:hover { border-color: var(--line-strong); }
+
+  /* ── 右栏：叠出来的树 ──────────────────────────────── */
+  .treewrap {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 12px 14px 18px;
+  }
+  .trace {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    min-height: 34px; padding: 7px 2px 9px; margin-bottom: 6px;
+    background: linear-gradient(var(--panel) 76%, transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .trace .who { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+  .trace .arrow { color: var(--muted); font-size: 12px; }
+  .trace .hint { color: var(--muted); font-size: 12px; }
+  .trace .pinned { font-size: 10.5px; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 6px; }
+
+  ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0; }
+  ul.tree { padding-left: 2px; }
+  ul.tree ul { padding-left: 26px; }
+  ul.tree li { position: relative; }
+
+  /* 连线：竖线 + 横线，最后一个子节点收短竖线 */
+  ul.tree ul > li::before {
+    content: ""; position: absolute; left: -13px; top: 0; bottom: 0; width: 1px; background: var(--branch);
+  }
+  ul.tree ul > li:last-child::before { bottom: auto; height: 20px; }
+  ul.tree ul > li::after {
+    content: ""; position: absolute; left: -13px; top: 20px; width: 13px; height: 1px; background: var(--branch);
+  }
+
+  li.node { padding: 3px 0; }
+  li.node > .strip { width: 100%; }
+  .nid { font-family: var(--mono); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .nname { flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nsub { flex: none; font-size: 11.5px; color: var(--muted); }
+  .badges { margin-left: auto; flex: none; display: flex; gap: 3px; }
+  .badges i {
+    font-style: normal; font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 0 5px; border-radius: 4px; border: 1px solid transparent;
+  }
+  .badges i.stale { opacity: .32; }
+  .state { flex: none; font-size: 10.5px; color: var(--disable); border: 1px solid color-mix(in srgb, var(--disable) 35%, transparent); background: var(--disable-bg); border-radius: 5px; padding: 0 5px; }
+  .state.on { color: var(--insert); border-color: color-mix(in srgb, var(--insert) 35%, transparent); background: var(--insert-bg); }
+  .kindchip { flex: none; font-size: 10.5px; color: var(--config); background: var(--config-bg); border: 1px solid color-mix(in srgb, var(--config) 30%, transparent); border-radius: 5px; padding: 0 5px; }
+
+  li.node.is-disabled .nid { text-decoration: line-through; text-decoration-color: var(--disable); }
+  li.node.unborn > .strip { opacity: .38; border-style: dashed; }
+  li.node.unborn .nid { text-decoration: none; }
+  li.node.unborn > ul { opacity: .3; }
+
+  li.node.root > .strip { background: var(--panel); border-color: var(--line-strong); }
+  li.node.root .nid { font-weight: 700; }
+
+  [data-node].hl > .strip, .strip.hl {
+    border-color: var(--ink) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 22%, transparent);
+    background: var(--panel);
+  }
+  li.node.hl > .strip { background: var(--panel); }
+
+  footer {
+    max-width: 1500px; margin: 24px auto 0; padding-top: 16px;
+    border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 13px;
+  }
+  footer ol { margin: 0; padding-left: 20px; }
+  footer li { margin-bottom: 6px; }
+  footer code { font-family: var(--mono); font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  footer .src { color: var(--muted); font-size: 12px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>由行组成的树</h1>
+  <p class="lede">
+    <b>树是叠出来的结果，行是清单里按 <code>id</code> 寻址的一条记录。</b>
+    左栏是四层 <code>cordis.patch.yml</code> 里的声明（一层一层往下叠），右栏是叠完之后长成的插件树。
+    树上每个节点就是一个 <code>id</code>；<code>group: true</code> 的那一行，它的 <code>config</code> 本身就是一份子行列表——行在这里长出枝。
+  </p>
+  <div class="controls">
+    <span class="lbl">叠加到第几层：</span>
+    <button class="step" data-upto="1">① dsh-base</button>
+    <button class="step" data-upto="2">② dsh-web-app</button>
+    <button class="step" data-upto="3">③ profile</button>
+    <button class="step" data-upto="4">④ --patch</button>
+    <button class="step" data-upto="99">全部叠加</button>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="col-title">清单 · 行（按层叠放的补丁）</div>
+    <div id="layers"></div>
+  </section>
+
+  <section>
+    <div class="col-title">结果 · 树（叠出来的插件树）</div>
+    <div class="treewrap">
+      <div class="trace" id="trace">
+        <span class="hint">把鼠标移到左边任意一行、或右边任意节点上：同一 <code>id</code> 的所有行会一起亮起，这里显示它在各层里被哪几行改过。</span>
+      </div>
+      <ul class="tree" id="tree"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <ol>
+    <li><b>「树」说的是形态</b>：各层叠完之后，插件之间是挂载/嵌套关系，所以产物是一棵树。</li>
+    <li><b>「行」说的是清单的书写与寻址单位</b>：补丁不按树的路径定位节点，只按 <code>id</code>。实现上是把所有条目（含嵌套 group 的子条目）递归摊平成一张 <code>Map&lt;id, entry&gt;</code>，补丁就是往这张表里加一条、覆盖某条、或把某条停用。</li>
+    <li><b>三种动作</b>：插一行 = <code>insert</code> 一条新条目；改一行的参数 = 按 <code>id</code> 覆盖该条字段（<code>config</code> 整体替换，不合并）；停用一行 = 该条 <code>disabled: true</code>。</li>
+    <li><b>同一节点可由多层多行改写，后写的赢</b>（last write wins per row）。所以树上的 1 个节点，清单里可能对应 2 条以上的行——<code>tool-fs</code> 就是「L1 插入 + L2 停用」两条。</li>
+    <li><b>行的先后无语义</b>：激活顺序由服务可用性驱动，不由行的排列决定。</li>
+  </ol>
+  <p class="src">
+    数据来源：<code>packages/bundle/base/cordis.patch.yml</code>、<code>packages/bundle/web-app/cordis.patch.yml</code>、
+    <code>~/.dsh/profiles/web/cordis.patch.yml</code>、<code>apps/cli/config/examples/github-review/cordis.yml</code>
+    （id / name / 字段取值均取自这些真实文件，节点在树上的排布作了归并）。
+  </p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── 四层补丁里的行 ──────────────────────────────────────────────
+  // op: insert 插一行 / config 改一行的参数 / disable 停用一行 / enable 启用一行
+  var LAYERS = [
+    {
+      l: 1,
+      key: "L1",
+      title: "组合包 dsh-base",
+      role: "第 1 层 · 底座",
+      file: "packages/bundle/base/cordis.patch.yml",
+      note: "一次 insert，落在空的 profile 根上；后续各层都按 id 认领这些条目。",
+      rows: [
+        { op: "insert", target: "tool-fs", name: "@deepseek-ai/dsh-tool-fs" },
+        { op: "insert", target: "tool-web", name: "@deepseek-ai/dsh-tool-web" },
+        { op: "insert", target: "llm-pi-ai", name: "@deepseek-ai/dsh-llm-pi-ai" },
+        { op: "insert", target: "system-prompt", name: "@deepseek-ai/dsh-system-prompt", fields: 1 },
+        { op: "insert", target: "agent-default-model", name: "@deepseek-ai/dsh-agent-default-model", fields: 2 },
+        { op: "insert", target: "tool-ralph", name: "@deepseek-ai/dsh-tool-ralph", fields: 2, disabled: true }
+      ]
+    },
+    {
+      l: 2,
+      key: "L2",
+      title: "组合包 dsh-web-app",
+      role: "第 2 层 · 浏览器界面",
+      file: "packages/bundle/web-app/cordis.patch.yml",
+      note: "对 base 的行既改参数、又停用（停用而不删除，是为了上层还能认领它），同时插入界面自己的行。",
+      rows: [
+        { op: "config", target: "system-prompt", name: "@deepseek-ai/dsh-system-prompt", fields: 2 },
+        { op: "disable", target: "tool-fs" },
+        { op: "disable", target: "tool-web" },
+        { op: "insert", target: "webserver", name: "@deepseek-ai/dsh-host-webserver", fields: 3 },
+        { op: "insert", target: "web-runtime", name: "@deepseek-ai/dsh-web-app", fields: 4 },
+        { op: "insert", target: "ui-chat", name: "@deepseek-ai/dsh-client-ui-chat" }
+      ]
+    },
+    {
+      l: 3,
+      key: "L3",
+      title: "profile 自己的补丁",
+      role: "第 3 层 · 用户方案",
+      file: "~/.dsh/profiles/web/cordis.patch.yml",
+      note: "只改参数：同一行、同一个 id，把值换成这台机器要的。",
+      rows: [
+        { op: "config", target: "agent-default-model", name: "@deepseek-ai/dsh-agent-default-model", fields: 3 },
+        { op: "config", target: "ui-chat", name: "@deepseek-ai/dsh-client-ui-chat", fields: 1 }
+      ]
+    },
+    {
+      l: 4,
+      key: "L4",
+      title: "--patch overlay（本次启动临时叠）",
+      role: "第 4 层 · 命令行覆盖",
+      file: "apps/cli/config/examples/github-review/cordis.yml",
+      note: "既启用一行，也插一行 group——group 行的 config 就是它的子行列表。",
+      rows: [
+        { op: "enable", target: "tool-ralph" },
+        { op: "insert", target: "github-webhook-ingress", name: "cordis:group", group: true, children: 2, fields: 1 },
+        { op: "insert", target: "github-webhook-server", name: "@deepseek-ai/dsh-host-webserver", fields: 2, child: true },
+        { op: "insert", target: "github-webhook-adapter", name: "@deepseek-ai/dsh-webhook-github", fields: 4, child: true }
+      ]
+    }
+  ];
+
+  // ── 叠出来的树 ────────────────────────────────────────────────
+  var TREE = {
+    id: "(profile 根)",
+    kind: "root",
+    name: "空条目列表",
+    sub: "各层都作用在它上面",
+    children: [
+      { id: "tool-fs", name: "@deepseek-ai/dsh-tool-fs" },
+      { id: "tool-web", name: "@deepseek-ai/dsh-tool-web" },
+      { id: "llm-pi-ai", name: "@deepseek-ai/dsh-llm-pi-ai" },
+      { id: "system-prompt", name: "@deepseek-ai/dsh-system-prompt" },
+      { id: "agent-default-model", name: "@deepseek-ai/dsh-agent-default-model" },
+      { id: "tool-ralph", name: "@deepseek-ai/dsh-tool-ralph" },
+      { id: "ui-chat", name: "@deepseek-ai/dsh-client-ui-chat" },
+      { id: "webserver", name: "@deepseek-ai/dsh-host-webserver" },
+      { id: "web-runtime", name: "@deepseek-ai/dsh-web-app" },
+      {
+        id: "github-webhook-ingress",
+        kind: "group",
+        name: "cordis:group",
+        sub: "config 是子行列表",
+        children: [
+          { id: "github-webhook-server", name: "@deepseek-ai/dsh-host-webserver" },
+          { id: "github-webhook-adapter", name: "@deepseek-ai/dsh-webhook-github" }
+        ]
+      }
+    ]
+  };
+
+  var OP_LABEL = { insert: "插入", config: "改参数", disable: "停用", enable: "启用" };
+
+  // id -> 各层的行，按层序
+  var ROWS_BY_NODE = {};
+  var ROWS = [];
+  LAYERS.forEach(function (layer) {
+    layer.rows.forEach(function (row) {
+      var r = Object.assign({}, row, { l: layer.l, layerKey: layer.key });
+      ROWS.push(r);
+      (ROWS_BY_NODE[r.target] = ROWS_BY_NODE[r.target] || []).push(r);
+    });
+  });
+
+  /** 节点在某层叠加后的状态；返回 null 表示这一层还没入树。 */
+  function stateOf(id, upto) {
+    var rows = (ROWS_BY_NODE[id] || []).filter(function (r) { return r.l <= upto; });
+    if (!rows.length) return null;
+    var disabled = false;
+    rows.forEach(function (r) {
+      if (r.op === "insert") disabled = !!r.disabled;
+      else if (r.op === "disable") disabled = true;
+      else if (r.op === "enable") disabled = false;
+    });
+    return { disabled: disabled, rows: rows };
+  }
+
+  var badgeClass = { insert: "op-insert", config: "op-config", disable: "op-disable", enable: "op-enable" };
+
+  // ── 渲染左栏 ──────────────────────────────────────────────────
+  var layersEl = document.getElementById("layers");
+  LAYERS.forEach(function (layer) {
+    var card = document.createElement("article");
+    card.className = "layer";
+    card.dataset.layer = String(layer.l);
+
+    var head = document.createElement("header");
+    head.innerHTML =
+      '<span class="lnum">' + layer.key + "</span>" +
+      "<h3></h3><span class=\"file\"></span>";
+    head.querySelector("h3").textContent = layer.title;
+    head.querySelector(".file").textContent = layer.file;
+    card.appendChild(head);
+
+    var note = document.createElement("p");
+    note.className = "note";
+    note.textContent = layer.role + " · " + layer.note;
+    card.appendChild(note);
+
+    var rowsEl = document.createElement("div");
+    rowsEl.className = "rows";
+
+    layer.rows.forEach(function (row) {
+      var el = document.createElement("div");
+      el.className = "strip row" + (row.child ? " childrow" : "");
+      el.dataset.node = row.target;
+      el.dataset.layer = String(layer.l);
+
+      if (row.child) {
+        var cc = document.createElement("span");
+        cc.className = "childchip";
+        cc.textContent = "└ 子行";
+        el.appendChild(cc);
+      }
+
+      var op = document.createElement("span");
+      op.className = "op " + badgeClass[row.op];
+      op.textContent = OP_LABEL[row.op];
+      el.appendChild(op);
+
+      var rid = document.createElement("code");
+      rid.className = "rid";
+      rid.textContent = "id: " + row.target;
+      el.appendChild(rid);
+
+      var rn = document.createElement("span");
+      rn.className = "rname";
+      rn.textContent = row.group ? "cordis:group" : (row.name || "");
+      el.appendChild(rn);
+
+      var right = row.group
+        ? "config = " + row.children + " 条子行"
+        : row.op === "disable"
+          ? "disabled: true"
+          : row.op === "enable"
+            ? "disabled: false"
+            : row.disabled
+              ? "disabled: true" + (row.fields ? " · config: " + row.fields + " 个字段" : "")
+              : row.fields ? "config: " + row.fields + " 个字段" : "";
+
+      var rf = document.createElement("span");
+      rf.className = "rfields";
+      rf.textContent = right;
+      el.appendChild(rf);
+
+      rowsEl.appendChild(el);
+    });
+
+    card.appendChild(rowsEl);
+    layersEl.appendChild(card);
+  });
+
+  // ── 渲染右栏 ──────────────────────────────────────────────────
+  var treeEl = document.getElementById("tree");
+
+  function renderNode(node, upto) {
+    var li = document.createElement("li");
+    li.className = "node";
+    li.dataset.node = node.id;
+    if (node.kind === "root") li.classList.add("root");
+    if (node.kind === "group") li.classList.add("group");
+
+    var state = null;
+    if (node.kind !== "root") {
+      state = stateOf(node.id, upto);
+      if (!state) li.classList.add("unborn");
+      else if (state.disabled) li.classList.add("is-disabled");
+    }
+
+    var strip = document.createElement("div");
+    strip.className = "strip";
+
+    var nid = document.createElement("code");
+    nid.className = "nid";
+    nid.textContent = node.id;
+    strip.appendChild(nid);
+
+    var name = document.createElement("span");
+    name.className = "nname";
+    name.textContent = node.kind === "root" ? node.name : (node.name || "");
+    strip.appendChild(name);
+
+    if (node.kind === "group") {
+      var sc = document.createElement("span");
+      sc.className = "nsub";
+      sc.textContent = node.sub || "";
+      strip.appendChild(sc);
+
+      var kc = document.createElement("span");
+      kc.className = "kindchip";
+      kc.textContent = "group: true";
+      strip.appendChild(kc);
+    }
+
+    if (node.kind === "root") {
+      var rc = document.createElement("span");
+      rc.className = "nsub";
+      rc.textContent = node.sub || "";
+      strip.appendChild(rc);
+    }
+
+    var badges = document.createElement("span");
+    badges.className = "badges";
+    if (node.kind !== "root") {
+      (ROWS_BY_NODE[node.id] || []).forEach(function (r) {
+        var b = document.createElement("i");
+        b.className = badgeClass[r.op] + (r.l > upto ? " stale" : "");
+        b.textContent = r.layerKey + " " + OP_LABEL[r.op];
+        b.title = r.layerKey + " " + OP_LABEL[r.op];
+        badges.appendChild(b);
+      });
+    }
+    strip.appendChild(badges);
+
+    if (node.kind !== "root") {
+      var st = document.createElement("span");
+      st.className = "state" + (state && !state.disabled ? " on" : "");
+      st.textContent = !state ? "尚未入树" : (state.disabled ? "已停用" : "生效中");
+      strip.appendChild(st);
+    }
+
+    li.appendChild(strip);
+
+    if (node.children && node.children.length) {
+      var ul = document.createElement("ul");
+      node.children.forEach(function (child) { ul.appendChild(renderNode(child, upto)); });
+      li.appendChild(ul);
+    }
+    return li;
+  }
+
+  // ── 溯源条 ────────────────────────────────────────────────────
+  var traceEl = document.getElementById("trace");
+  var pinned = null;
+
+  function showTrace(id) {
+    var rows = ROWS_BY_NODE[id];
+    traceEl.innerHTML = "";
+    if (!rows || !rows.length) {
+      var hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = id + " 不是补丁里的行——它是各层都作用其上的那张空列表。";
+      traceEl.appendChild(hint);
+      return;
+    }
+    var who = document.createElement("span");
+    who.className = "who";
+    who.textContent = "id: " + id;
+    traceEl.appendChild(who);
+
+    rows.forEach(function (r, i) {
+      if (i) {
+        var ar = document.createElement("span");
+        ar.className = "arrow";
+        ar.textContent = "→";
+        traceEl.appendChild(ar);
+      }
+      var chip = document.createElement("i");
+      chip.className = badgeClass[r.op];
+      chip.textContent = r.layerKey + " " + OP_LABEL[r.op];
+      chip.style.fontStyle = "normal";
+      chip.style.fontSize = "10.5px";
+      chip.style.fontWeight = "700";
+      chip.style.padding = "1px 6px";
+      chip.style.borderRadius = "5px";
+      chip.style.border = "1px solid transparent";
+      traceEl.appendChild(chip);
+
+      var val = document.createElement("span");
+      val.className = "hint";
+      if (r.group) val.textContent = "（config = " + r.children + " 条子行）";
+      else if (r.disabled) val.textContent = "（disabled: true）";
+      else if (r.fields) val.textContent = "（config: " + r.fields + " 个字段）";
+      traceEl.appendChild(val);
+    });
+
+    if (pinned === id) {
+      var p = document.createElement("span");
+      p.className = "pinned";
+      p.textContent = "已钉住";
+      traceEl.appendChild(p);
+    }
+  }
+
+  function highlight(id) {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-node]"), function (el) {
+      el.classList.toggle("hl", el.dataset.node === id);
+    });
+    showTrace(id);
+  }
+
+  function clearHighlight() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-node]"), function (el) {
+      el.classList.remove("hl");
+    });
+    if (pinned) showTrace(pinned);
+    else {
+      traceEl.innerHTML =
+        '<span class="hint">把鼠标移到左边任意一行、或右边任意节点上：同一 <code>id</code> 的所有行会一起亮起，这里显示它在各层里被哪几行改过。</span>';
+    }
+  }
+
+  // ── 状态与交互 ────────────────────────────────────────────────
+  var upto = 99;
+
+  function render() {
+    treeEl.innerHTML = "";
+    treeEl.appendChild(renderNode(TREE, upto));
+    Array.prototype.forEach.call(document.querySelectorAll(".layer"), function (card) {
+      card.classList.toggle("pending", Number(card.dataset.layer) > upto);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".row"), function (row) {
+      row.classList.toggle("pending", Number(row.dataset.layer) > upto);
+      row.style.opacity = Number(row.dataset.layer) > upto ? ".34" : "";
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("button.step"), function (b) {
+      b.setAttribute("aria-pressed", String(Number(b.dataset.upto) === upto));
+    });
+    clearHighlight();
+  }
+
+  document.querySelectorAll("button.step").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      upto = Number(btn.dataset.upto);
+      render();
+    });
+  });
+
+  document.addEventListener("mouseover", function (e) {
+    var el = e.target.closest && e.target.closest("[data-node]");
+    if (el) highlight(el.dataset.node);
+  });
+  document.addEventListener("mouseout", function (e) {
+    var el = e.target.closest && e.target.closest("[data-node]");
+    if (el) clearHighlight();
+  });
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-node]");
+    if (!el) return;
+    var id = el.dataset.node;
+    pinned = pinned === id ? null : id;
+    if (pinned) highlight(id); else clearHighlight();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

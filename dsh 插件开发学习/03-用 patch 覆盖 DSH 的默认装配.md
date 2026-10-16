@@ -12,11 +12,11 @@ viewable: true
 ---
 > **读完这篇你能**：用一份 patch 文件关掉不需要的内置插件、改掉内置插件的参数，不动 `node_modules` 里的一行源码。
 >
-> **前置**：[最小插件的结构与装配](02-最小插件的结构与装配.md)。约 20 分钟。
+> **前置**：[02-最小插件的结构与装配](02-最小插件的结构与装配.md)。约 20 分钟。
 >
 > **示例代码**：[dsh-patch-demo](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-patch-demo)
 
-[上一篇](02-最小插件的结构与装配.md)结尾留了个钩子：`patch.yaml` 到底在干什么，能不能用同一套写法改 DSH 自己装的东西。这篇就回答它。
+[02-最小插件的结构与装配](02-最小插件的结构与装配.md)结尾留了个钩子：`patch.yaml` 到底在干什么，能不能用同一套写法改 DSH 自己装的东西。这篇就回答它。
 
 先看清一件事：`test` profile 启动时，插件树里有一百多行，几乎全是 DSH 自己装的。两个 bundle 层层叠出来——`@deepseek-ai/dsh-base` 铺底座，`@deepseek-ai/dsh-web-app` 在上面盖 Web 界面。它们躺在 `node_modules` 里，不是你仓库的一部分，所以想动它们，只能从装配层下手。
 
@@ -174,15 +174,15 @@ dsh --profile test --dump-config
 
 被插进来的一行会真的执行：`my-note.ts` 里就一句 `console.log`，启动后日志出现 `[dsh-note] 我被 patch 插进了插件树，apply() 执行了`。
 
-注意 `name` 指到的那个文件不是 DSH 帮你装的——[02 篇](02-最小插件的结构与装配.md)里 `dsh plugin add` 装的是一个插件包，这里只是往树里引一行代码。两种加法看着都是“树上多一行”，实际不是一回事，下面单独比一比。
+注意 `name` 指到的那个文件不是 DSH 帮你装的——[02-最小插件的结构与装配](02-最小插件的结构与装配.md)里 `dsh plugin add` 装的是一个插件包，这里只是往树里引一行代码。两种加法看着都是“树上多一行”，实际不是一回事，下面单独比一比。
 
-#### 和 02 篇的 `bundle` 加法有什么不同
+#### 和 [02-最小插件的结构与装配](02-最小插件的结构与装配.md)的 `bundle` 加法有什么不同
 
-`my-note.ts` 就一个文件：直接给个绝对路径，DSH 加载它、跑 `apply()`。02 篇的 hello world 则是一个**包**——`package.json` 里声明 `dsh.bundle.patch`，`dsh plugin add` 把它装进 profile 的 `node_modules`，顺手把包名写进 profile `package.json` 的 `dsh.profile.bundles`。
+`my-note.ts` 就一个文件：直接给个绝对路径，DSH 加载它、跑 `apply()`。[02-最小插件的结构与装配](02-最小插件的结构与装配.md)的 hello world 则是一个**包**——`package.json` 里声明 `dsh.bundle.patch`，`dsh plugin add` 把它装进 profile 的 `node_modules`，顺手把包名写进 profile `package.json` 的 `dsh.profile.bundles`。
 
 两者都是“往插件树里加一行”，区别在那一行是谁写的、依附在什么上：
 
-| | bundle（02 篇） | insert（本文） |
+| | bundle（[02-最小插件的结构与装配](02-最小插件的结构与装配.md)） | insert（本文） |
 | --- | --- | --- |
 | 入口是谁写的 | 包自己的 `patch.yaml`，随包分发 | 你手写在这个 profile 的 `cordis.patch.yml` |
 | 要装东西吗 | 要，`dsh plugin add` 走 pnpm 装进 profile 的 `node_modules` | 不要，`name` 指向磁盘上已有的文件 |
@@ -322,7 +322,7 @@ dsh --profile test --no-open --port 3099
 ## 注意事项
 
 - **id 从 dump 里抄**，它不是包名，也不是插件自己的 `name`。
-- **改完 patch 不用重启。** 配置热重载默认开着（base 里 `hmr` 那行负责），保存 `cordis.patch.yml` 就重新组合装配。默认关着的是源码热重载，要在那行配 `root`，见[配置与源码的热重载](07-配置与源码的热重载.md)。
+- **改完 patch 不用重启。** 配置热重载默认开着（base 里 `hmr` 那行负责），保存 `cordis.patch.yml` 就重新组合装配。默认关着的是源码热重载，要在那行配 `root`，见[07-配置与源码的热重载](07-配置与源码的热重载.md)。
 - **禁用有依赖的东西，dump 里看不出来。** dump 只显示装配，不显示谁在用谁，被禁用的插件如果有消费者，会在启动时报错——记得看启动日志。
 - **`--dump-default-config` 去掉的是你自己写的那几层，不是 bundle 层。** 留下的正是 `dsh-base`、`dsh-web-app` 这些 bundle 自带的层，也就是“还没有你的时候，DSH 默认长什么样”。它和 `--dump-config` 的差别，一层一层看：
 
@@ -337,6 +337,6 @@ dsh --profile test --no-open --port 3099
 
 ---
 
-**下一篇**：[注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)。
+[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)。
 
-参考：[profile 与插件包结构](参考/profile与插件包结构.md)，[用 Config schema 声明插件配置](06-用 Config schema 声明插件配置.md)。
+参考：[profile 与插件包结构](参考/profile与插件包结构.md)，[06-用 Config schema 声明插件配置](06-用 Config schema 声明插件配置.md)。

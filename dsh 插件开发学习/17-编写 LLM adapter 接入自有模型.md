@@ -12,13 +12,13 @@ viewable: true
 ---
 > **读完这篇你能**：写一个自己的模型提供方——把 DSH 的消息与流协议翻译成某个 HTTP 接口能听懂的格式——并且知道错误、重试、空补全这些边界该由谁负责。
 >
-> **前置**：[把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)。约 35 分钟。
+> **前置**：[16-把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)。约 35 分钟。
 >
 > **示例代码**：[dsh-llm-ollama](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-llm-ollama)
 
-前面 16 篇里，模型一直是 DSH 自带的那个：provider 路由叫 `deepseek-official`，模型名是 `deepseek-flash` 这类。想换成跑在本机的 Ollama，或者公司内网的网关，改个名字是不够的——那些端点收发的 JSON 跟 DSH 内部说的话不一样，中间得有人翻译。
+前面 [16-把工具结果渲染成卡片](16-把工具结果渲染成卡片.md)里，模型一直是 DSH 自带的那个：provider 路由叫 `deepseek-official`，模型名是 `deepseek-flash` 这类。想换成跑在本机的 Ollama，或者公司内网的网关，改个名字是不够的——那些端点收发的 JSON 跟 DSH 内部说的话不一样，中间得有人翻译。
 
-翻译这层就是 **LLM adapter**。它是 08 篇那套三件套里的提供方角色：`ctx.llm` 是服务定义，agent loop 是消费者，adapter 夹在两者之间，一边是 DSH 的消息与流协议，一边是某家 provider 的 HTTP 接口。
+翻译这层就是 **LLM adapter**。它是 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)那套三件套里的提供方角色：`ctx.llm` 是服务定义，agent loop 是消费者，adapter 夹在两者之间，一边是 DSH 的消息与流协议，一边是某家 provider 的 HTTP 接口。
 
 这篇写一个接本地 Ollama 的 adapter。写完你会知道：一次模型请求在 DSH 里长什么样、一个 adapter 最少要实现什么、以及"错误该不该重试"这类决定为什么不在 adapter 手里。
 
@@ -78,7 +78,7 @@ flowchart LR
     E --> F["组装成助手消息<br/>落盘、进对话"]
 ```
 
-关键在 C 这一步：**内核不认识任何一家 provider 的 JSON**。内核只认识 `GenerateOptions`（请求）和 `StreamChunk`（响应）这两个类型，谁要把请求发出去、怎么发，是 adapter 的事。会话记录、token 计量、重试、卡片渲染这些消费者全都建立在统一协议上，所以换 provider 不用动它们——这就是 08 篇那个"面向接口编程"的好处，这一篇是它在 LLM 上的实例。
+关键在 C 这一步：**内核不认识任何一家 provider 的 JSON**。内核只认识 `GenerateOptions`（请求）和 `StreamChunk`（响应）这两个类型，谁要把请求发出去、怎么发，是 adapter 的事。会话记录、token 计量、重试、卡片渲染这些消费者全都建立在统一协议上，所以换 provider 不用动它们——这就是 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)那个"面向接口编程"的好处，这一篇是它在 LLM 上的实例。
 
 `LlmAdapter` 是个抽象类（`packages/llm/llm/src/index.ts`），只有 `stream()` 是抽象的：
 
@@ -95,7 +95,7 @@ declare abstract class LlmAdapter {
 
 其余几个都有默认实现：`providerInfo` 默认返回路由名本身，`listModels` 默认返回空数组，`resolveModel` 默认只回显 provider 和模型名。这些默认值都是"我没什么额外信息可提供"的意思，够用一个最小 adapter。**唯一的硬要求是实现 `stream()`**。
 
-注册也是同步一行（`ctx.llm.registerAdapter(providers, adapter)`）：传一组路由名和一个 adapter 实例。路由名是 DSH 内部的名字，跟真实端点无关——你完全可以注册 `ollama`、`lab-gateway`、`office-proxy` 三条路由指向同一个 adapter 实例——`stream(options)` 里的 `options.provider` 就是这次走的那条路由名，端点差异由 adapter 自己按它挑。重复注册同一个路由名会抛 `DUPLICATE_ADAPTER`（整批都不生效，不会注册一半）；注册随插件卸载一起消失，跟 05 篇的 effect 规矩一样。
+注册也是同步一行（`ctx.llm.registerAdapter(providers, adapter)`）：传一组路由名和一个 adapter 实例。路由名是 DSH 内部的名字，跟真实端点无关——你完全可以注册 `ollama`、`lab-gateway`、`office-proxy` 三条路由指向同一个 adapter 实例——`stream(options)` 里的 `options.provider` 就是这次走的那条路由名，端点差异由 adapter 自己按它挑。重复注册同一个路由名会抛 `DUPLICATE_ADAPTER`（整批都不生效，不会注册一半）；注册随插件卸载一起消失，跟 [05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)的 effect 规矩一样。
 
 ## 流协议 `StreamChunk`
 
@@ -279,7 +279,7 @@ function toWireMessages(options: GenerateOptions): WireMessage[] {
 }
 ```
 
-DSH 里一条助手消息能同时装文本和多个工具调用，这与 OpenAI 格式一致；工具结果在 DSH 里则是**独立的 `tool` 角色消息**（`role: 'tool'` + `toolCallId`），正好也用得上 OpenAI 的 `tool` 角色——所以一条结果一条 wire 消息，`tool_call_id` 用 `String(message.toolCallId)` 转回普通字符串。这个 id 是 11 篇里工具调用的那条身份线，两边必须对上，否则 provider 会拒绝结果。
+DSH 里一条助手消息能同时装文本和多个工具调用，这与 OpenAI 格式一致；工具结果在 DSH 里则是**独立的 `tool` 角色消息**（`role: 'tool'` + `toolCallId`），正好也用得上 OpenAI 的 `tool` 角色——所以一条结果一条 wire 消息，`tool_call_id` 用 `String(message.toolCallId)` 转回普通字符串。这个 id 是 [11-为模型注册自定义工具](11-为模型注册自定义工具.md)里工具调用的那条身份线，两边必须对上，否则 provider 会拒绝结果。
 
 流翻译是本篇最长的一段，核心是块编号与收尾顺序：
 
@@ -416,13 +416,13 @@ adapter 能做的贡献是**声明这条路由的重试策略**，覆盖 `provid
 
 ```ts
 export interface Config {
-  // 两个字段在 schema 里声明为 .volatile()：可现场改（14 篇那条线）
+  // 两个字段在 schema 里声明为 .volatile()：可现场改（14-把插件配置搬进设置页那条线）
   provider: Volatile<string>
   model: Volatile<string>
 }
 ```
 
-它同时把按 schema 自动生成的表单页面关掉（`ctx.settings.configure({ auto: false })`），网页版的 Models 页改的就是它；改完的值由 `configEditor` 写回当前 profile 的 `cordis.patch.yml` 里这一行的 `config`，热生效。命令行这边最直接的改法也是在同一个文件里按 id 覆盖（03 篇的写法）：
+它同时把按 schema 自动生成的表单页面关掉（`ctx.settings.configure({ auto: false })`），网页版的 Models 页改的就是它；改完的值由 `configEditor` 写回当前 profile 的 `cordis.patch.yml` 里这一行的 `config`，热生效。命令行这边最直接的改法也是在同一个文件里按 id 覆盖（[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)的写法）：
 
 ```yaml
 - id: agent-default-model
@@ -431,7 +431,7 @@ export interface Config {
     model: qwen3:8b
 ```
 
-保存即生效，不需要重启（配置热重载默认开着，07 篇）。**改这一行之前先确认路由已经挂上**：`provider` 写了一个没人注册的名字时，请求会在选 adapter 那一步以 `NO_ADAPTER` 失败——不是启动失败，是每次请求失败，日志里能看到。
+保存即生效，不需要重启（配置热重载默认开着，[07-配置与源码的热重载](07-配置与源码的热重载.md)）。**改这一行之前先确认路由已经挂上**：`provider` 写了一个没人注册的名字时，请求会在选 adapter 那一步以 `NO_ADAPTER` 失败——不是启动失败，是每次请求失败，日志里能看到。
 
 那 `agent-loop` 的 `agents[].provider` 又是什么？那是**在 profile 里预先声明好的会话**。两者是"新会话的默认值"与"这个会话就用这个"的关系：默认值可以随时被界面上的选择改掉，声明过的会话以声明为准。
 
@@ -457,7 +457,7 @@ dsh-llm-ollama/                   ← 插件包（bundle）
       name: '/绝对路径/dsh-llm-ollama/src/dsh-llm-ollama.ts'
 ```
 
-`install.sh` 跟 09 篇、12 篇一个套路：填绝对路径、装依赖、`dsh plugin add`。它不去动 `cordis.patch.yml`——因为那里已经可能有前面几篇留下的配置（08 篇的换源、12 篇的守卫），而"会话用哪个模型"这一行该由你自己决定：
+`install.sh` 跟 [09-订阅 DSH 事件与五种分发模式](09-订阅 DSH 事件与五种分发模式.md)、[12-在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md)一个套路：填绝对路径、装依赖、`dsh plugin add`。它不去动 `cordis.patch.yml`——因为那里已经可能有前面几篇留下的配置（[08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)的换源、[12-在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md)的守卫），而"会话用哪个模型"这一行该由你自己决定：
 
 ```bash
 cd dsh_plugin/dsh-llm-ollama && ./install.sh
@@ -496,7 +496,7 @@ dsh --profile headless "用一句话说明你是谁"
 
 工具往返要单独验一次，它是 adapter 最容易写错的地方：让模型去读一个文件（`read` 工具），看会话里工具调用与结果能不能对上。工具结果插回 wire 时 `tool_call_id` 错了的话，Ollama 会直接返回 400，比在会话里看半天卡片快得多。
 
-停用验证还是 03 篇的写法：
+停用验证还是 [03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)的写法：
 
 ```yaml
 - id: dsh-llm-ollama
@@ -511,9 +511,9 @@ dsh --profile headless "用一句话说明你是谁"
 - **本条路由的 `code` 要稳定。** `LlmFailure.code` 是给程序路由用的：重试策略按 `code` 判断该不该重试（默认那几条是超时、限流、`EMPTY_RESPONSE`……），所以别把 provider 的原始错误码直接塞进去，也别随版本改它的拼写。要传原始文本，放 `message` 里。
 - **本 adapter 不支持多模态。** `image` 与 `file` 内容块被 `textOf()` 跳过了。真要用视觉模型，得自己处理图片：文档里那块"请求图片计价"（`imageRequestPricing`）就是给这类 adapter 准备的，本篇不展开。
 - **`reasoning_content` 不是标准字段。** 它是 DeepSeek 系与部分 OpenAI 兼容实现的扩展，Ollama 某些模型会用。读不到就当没有——别为了它去猜 provider 的私有格式。
-- **别在 adapter 里读时钟、读环境变量做决定。** 同一次请求在实时流与会话回放两条路径上必须产出同样的结果。配置在注册时读一次、跟着实例走，运行期的动态决定（选哪个端点、用哪个 key）交给 07 篇那套配置热重载。
-- **要密钥的话走凭据服务，不要读 `process.env`。** Ollama 在本机不需要密钥，公司网关几乎一定需要。25 篇讲凭据的分层解析与"存引用不存明文"；本篇的 `Config` 里刻意没有 `apiKey` 字段。
+- **别在 adapter 里读时钟、读环境变量做决定。** 同一次请求在实时流与会话回放两条路径上必须产出同样的结果。配置在注册时读一次、跟着实例走，运行期的动态决定（选哪个端点、用哪个 key）交给 [07-配置与源码的热重载](07-配置与源码的热重载.md)那套配置热重载。
+- **要密钥的话走凭据服务，不要读 `process.env`。** Ollama 在本机不需要密钥，公司网关几乎一定需要。[25-插件的状态、密钥与配置存储](25-插件的状态、密钥与配置存储.md)讲凭据的分层解析与"存引用不存明文"；本篇的 `Config` 里刻意没有 `apiKey` 字段。
 
 ---
 
-**下一篇**：[把插件打包成装配包](18-把插件打包成装配包.md)——把插件包从自己机器上搬出去，让同事一条命令装上，并且知道 bundle 与 profile 各自负责哪一半。
+[18-把插件打包成装配包](18-把插件打包成装配包.md)——把插件包从自己机器上搬出去，让同事一条命令装上，并且知道 bundle 与 profile 各自负责哪一半。

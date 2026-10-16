@@ -12,7 +12,7 @@ dsh-version: 0.2.0-rc.2
 ---
 > **读完这篇你能**：知道升级 `dsh` 之后该从哪三个出口读证据，为什么 `package.json` 里的 `engines.dsh` 拦不住任何东西；分清哪些 API 是设计给插件挂的、哪些是内部面；以及降级为什么会让新会话直接打不开。
 >
-> **前置**：[运行期动态挂载插件](19-运行期动态挂载插件.md)。约 30 分钟。
+> **前置**：[19-运行期动态挂载插件](19-运行期动态挂载插件.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-upgrade-guard](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-upgrade-guard)
 
@@ -328,7 +328,7 @@ export function apply(ctx: Context): void {
       name: '__PLUGIN_DIR__/lib/invariant.js'
 ```
 
-顺序重要：**服务行必须在注册它的行之前**，否则注册方会因为缺服务而挂起（19 篇讲的 `PENDING`）。
+顺序重要：**服务行必须在注册它的行之前**，否则注册方会因为缺服务而挂起（[19-运行期动态挂载插件](19-运行期动态挂载插件.md)讲的 `PENDING`）。
 
 最后，`package.json` 里给了正例也留了反例。正例是仓库内的形状——`peerDependencies` 里放内核包，`devDependencies` 里放同 range 的一份：
 
@@ -391,4 +391,4 @@ invariant violated by "dsh-upgrade-guard": 内核 @deepseek-ai/dsh-tools@… 不
 
 ---
 
-**下一篇**：[文件访问的三层管控](21-文件访问的三层管控.md)——插件能挂上去了，接下来是边界：模型的每一次读写和命令，究竟经过哪几层，哪一层失败会让整个动作停下来。
+[21-文件访问的三层管控](21-文件访问的三层管控.md)——插件能挂上去了，接下来是边界：模型的每一次读写和命令，究竟经过哪几层，哪一层失败会让整个动作停下来。

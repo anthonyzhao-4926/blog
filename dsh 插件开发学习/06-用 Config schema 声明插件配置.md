@@ -15,11 +15,11 @@ flowix_icon: null
 ---
 > **读完这篇你能**：把插件里写死的图片路径、透明度改成交互配置，不改代码、不重装就能换图。
 >
-> **前置**：[插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)。约 20 分钟。
+> **前置**：[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)。约 20 分钟。
 >
 > **示例代码**：[dsh-chat-background-config](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-chat-background-config)
 
-[注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)里，图片路径是写死的常量：
+[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)里，图片路径是写死的常量：
 
 ```ts
 const IMAGE_PATH = new URL('../image.jpg', import.meta.url).pathname
@@ -33,7 +33,7 @@ const IMAGE_PATH = new URL('../image.jpg', import.meta.url).pathname
 - 想现场试几个透明度，而不是"改一次、装一次、重启一次"；
 - 插件要给别人用，别人不该碰你的源码。
 
-这篇把 04 的背景插件做成可配置版本，代码单独放在 `dsh_plugin/dsh-chat-background-config/`。
+这篇把 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md) 的背景插件做成可配置版本，代码单独放在 `dsh_plugin/dsh-chat-background-config/`。
 
 ## 目标
 
@@ -79,7 +79,7 @@ Cordis 认一个约定：插件导出同名的 `Config` 类型和 `Config` schem
 // src/dsh-chat-background.ts（新增部分）
 import Schema from '@deepseek-ai/schemastery'
 
-// 04 里写死的图片路径，现在降级成"默认值"
+// 04-注册 HTTP 路由与注入页面样式 里写死的图片路径，现在降级成"默认值"
 const DEFAULT_IMAGE = new URL('../image.jpg', import.meta.url).pathname
 
 export interface Config {
@@ -166,7 +166,7 @@ ctx.inject(['webServer'], (serverCtx) => {
 
 ### 样式改用 CSS 变量
 
-04 的 `style.css` 是静态文件，透明度一进来它就不再静态了。改法是把唯一的动态值提成 CSS 变量，样式表本身尽量不动：
+[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md) 的 `style.css` 是静态文件，透明度一进来它就不再静态了。改法是把唯一的动态值提成 CSS 变量，样式表本身尽量不动：
 
 ```ts
 /** 用配置值生成样式：静态选择器来自 style.css，只有遮罩浓度随配置变化。 */
@@ -229,7 +229,7 @@ dsh --profile test --no-open       # 启动，web 端口 3080
 
 `--dump-config` 打印的是各层 patch 合成后的结果。改完 `cordis.patch.yml` 里的 config，再跑一次 `--dump-config`，就能确认新值真的进了配置树——比"重启后盯着页面猜"快得多。
 
-自建 profile 默认就开着配置热重载：改完 `cordis.patch.yml` **保存就生效**，不用重启启动命令（条件与边界见[配置与源码的热重载](07-配置与源码的热重载.md)）。
+自建 profile 默认就开着配置热重载：改完 `cordis.patch.yml` **保存就生效**，不用重启启动命令（条件与边界见[07-配置与源码的热重载](07-配置与源码的热重载.md)）。
 
 ## 配置的层叠
 
@@ -274,13 +274,13 @@ ValidationError: invalid config:
 
 - **`id` 要对得上。** profile 的覆盖靠 entry 的 `id` 定位；`id` 写错，这条 patch 会警告"entry not found"然后跳过，插件照常按默认值启动——现象就是"配置没生效"。
 - **图片路径写绝对路径。** `readFile` 解析相对路径时基准是 DSH 进程的工作目录，不稳定；配置里直接给绝对路径。
-- **跟 04 的插件二选一。** 本文的插件是独立一份（名字带 `-config`）。两套都挂着时，两边会往同一个布局根注入背景样式，后注入的盖住前面的。先在 profile 里用[用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)里那招停用 04 的那份（`- id: <它的 entry id>` + `disabled: true`）。
-- **改 config 保存即生效。** 配置热重载默认开着，不用重启进程；源码热重载默认关着，怎么开、哪些改动必须重启，见[配置与源码的热重载](07-配置与源码的热重载.md)。
+- **跟 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md) 的插件二选一。** 本文的插件是独立一份（名字带 `-config`）。两套都挂着时，两边会往同一个布局根注入背景样式，后注入的盖住前面的。先在 profile 里用[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)里那招停用 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md) 的那份（`- id: <它的 entry id>` + `disabled: true`）。
+- **改 config 保存即生效。** 配置热重载默认开着，不用重启进程；源码热重载默认关着，怎么开、哪些改动必须重启，见[07-配置与源码的热重载](07-配置与源码的热重载.md)。
 
 ---
 
-**下一篇**：[配置与源码的热重载](07-配置与源码的热重载.md)——改 patch 或改源码之后，不用重启进程就让它生效。
+[07-配置与源码的热重载](07-配置与源码的热重载.md)——改 patch 或改源码之后，不用重启进程就让它生效。
 
-中间跳过的可以回头补：[用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)、[插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)。
+中间跳过的可以回头补：[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)、[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)。
 
 profile 目录里哪些文件能改、patch 怎么合成，见[profile 与插件包结构](参考/profile与插件包结构.md)；`ctx` 上还有哪些能力，见 [Cordis API 文档](../dsh/cordis_api.md)。

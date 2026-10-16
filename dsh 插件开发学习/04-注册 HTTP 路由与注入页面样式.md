@@ -12,11 +12,11 @@ viewable: true
 ---
 > **读完这篇你能**：写一个插件，让浏览器能拿到你的图片，并把 DSH 页面背景换掉。
 >
-> **前置**：[用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)。约 25 分钟。
+> **前置**：[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)。约 25 分钟。
 >
 > **示例代码**：[dsh-chat-background](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-chat-background)
 
-[上一篇](03-用 patch 覆盖 DSH 的默认装配.md)把 patch 讲完了，但它改的都是 DSH 自带的那几行。现在回到我们自己的插件——写一个真正能动 UI 的。实现如下效果：
+[03-用 patch 覆盖 DSH 的默认装配](03-用 patch 覆盖 DSH 的默认装配.md)把 patch 讲完了，但它改的都是 DSH 自带的那几行。现在回到我们自己的插件——写一个真正能动 UI 的。实现如下效果：
 ![](assets/Pasted%20image%2020260831223352.png)
 
 ## 目标
@@ -179,7 +179,7 @@ ctx.inject(['webServer'], (serverCtx) => {
 ctx.effect(() => webServer.register({ ... }))
 ```
 
-`ctx.effect` 接收一个函数，该函数会立即执行，函数的返回值也是一个函数，当卸载当前插件时执行清理动作（下一篇着重讲解）。
+`ctx.effect` 接收一个函数，该函数会立即执行，函数的返回值也是一个函数，当卸载当前插件时执行清理动作（[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md) 着重讲解）。
 
 等插件被卸载（禁用、移除、重载）时，Cordis 会逆序执行所有清理函数。
 
@@ -295,4 +295,4 @@ dsh --profile test --no-open       # 启动，web 端口 3080
 
 ---
 
-**下一篇**：[插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)——把这篇里 `ctx.effect` 那几行为什么非写不可讲透。
+[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)——把这篇里 `ctx.effect` 那几行为什么非写不可讲透。
