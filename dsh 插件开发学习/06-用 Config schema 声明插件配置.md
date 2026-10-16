@@ -49,6 +49,26 @@ const IMAGE_PATH = new URL('../image.jpg', import.meta.url).pathname
 
 保存配置，背景变成 cat.jpg、透明度 0.5（配置热重载默认开着，不用重启）。什么都不写，就用插件自带的那张图、透明度 0.35。
 
+## DSH 设计
+
+这套写法由两条设计决定：补丁层的叠加规则，和 fiber 的装载语义（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-api/fiber.zh.md`）。
+
+**配置是 entry 上的一块数据，天然能被各层补丁改写。** 组合包的定义就是「Cordis 配置项及其挂载代码的分发格式」，它插进树里的内容始终可被其上各层 patch；patch 的规则是按 id 定位某个条目、替换其整个 config。后面「配置的层叠」一节的两条现象——按 `id` 定位、整块替换——都是这条规则的直接推论，不是额外的语法。「整块替换」再往前推一步，就是「默认值只写在 schema 一处」：补丁里没写的字段没有任何一层替它保留，只能由 schema 的默认值补齐。
+
+**校验是装载的一道关，先于 apply。** Cordis 里一个已加载的插件实例叫 fiber，它的定义就包括「经过校验的配置」：装载时先拿插件导出的 `Config`（一个 standard-schema 验证器）校验 entry 的 config 块，通过才把补齐默认值的配置交给 fiber 持有、`apply` 才执行；通不过就抛 `ValidationError`，fiber 停在 FAILED。「非法配置当场失败」不是插件自觉，是这道关的顺序决定的——所以约束要尽量写进 schema（它在这道关上执行），`apply` 内部也永远不用防 `undefined`。
+
+**配置归 fiber 持有，改配置就等于改插件。** 配置变更走的是 fiber 的更新通道：新配置在任何重载发生之前先过同一道校验关，通过了才 dispose 重载；通不过则校验错误直接抛出，旧配置接着跑。「保存就生效」与「改坏了不会把插件搞挂」是同一条设计的两面（谁触发这次更新，是下一篇的事）。
+
+```mermaid
+flowchart TD
+    A["各层补丁按序合成<br/>组合包 → profile → home → --patch"] -->|"按 id 定位、整块替换"| E["entry 的 config 块"]
+    E --> F{"装载时校验<br/>standard-schema"}
+    F -->|"通过：按 schema 补默认值"| G["fiber 持有完整配置<br/>apply(config) 执行"]
+    F -->|"失败：ValidationError"| H["fiber 停在 FAILED<br/>apply 不执行"]
+```
+
+图里这道关口就是本篇三条规矩的共同来源：默认值写 schema、约束写 schema、非法值宁可当场炸掉。后面各节在这张图上的位置：「Config 的导出」是给关口提供验证器，「config 的位置」是把值写进某一个补丁层，「配置的层叠」是关口之前的合成规则，「非法配置当场失败」是关口拒绝的那一支。
+
 ## Config 的导出
 
 Cordis 认一个约定：插件导出同名的 `Config` 类型和 `Config` schema，它就会在调用 `apply` 之前，用 schema 校验 entry 的 `config` 块，并把缺失的字段用默认值补齐。

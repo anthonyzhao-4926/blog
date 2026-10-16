@@ -25,6 +25,38 @@ viewable: true
 - 一个插件包 `dsh_plugin/dsh-note-stats/`：Host 半订阅 `note_search` 的调用事件做统计（多少次、最近查过什么），数一遍笔记目录，把结果挂在 `/api/dsh-note-stats/stats`；浏览器半在设置页注册一节「笔记统计」，把这份 JSON 渲染出来。
 - 顺带把仓库内插件的正规路 `ctx.remote` 讲清楚：五步各做什么、失败怎么表达、为什么我们的外部 demo 走不了它。
 
+## DSH 设计
+
+三条路为什么这样分工、外部插件为什么落在 `/api`，由 API 层的分层与槽位体系的设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/api-gateway.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/client-modules.zh.md`）。
+
+**API 各层按职责叠放：remotes → gateway → connection → webserver。** Connection 拥有传输、请求关联、信任边界与 `/api` HTTP 桥；Gateway 拥有 Remote 数据协议与业务分发，只认领「存在严格描述符」的端点；remotes 装配包决定 Client 能看到哪些命名空间。设计文档给功能插件留的那一格写得很明白：「需要 RPC 信封之外响应的功能，注册精确的 Connection Fetch 路由」——`/api` 下的 exact 路由不是绕过正规路的野路子，而是分层里正式存在的一层，内置的会话日志下载、原始文件上传也走它。
+
+```mermaid
+flowchart TD
+    W["webserver<br/>HTTP 载体"] --> C["Connection<br/>Host/Origin 信任检查 + 会话认证<br/>/api 桥与分发"]
+    C -->|"两段式 Remote 端点"| G["Gateway<br/>只认领有严格描述符的端点"]
+    C -->|"RPC 信封之外的响应"| F["功能插件的 exact Fetch 路由"]
+    C -->|"未认领"| N["404"]
+    R["api-remotes 装配包<br/>显式选择、逐个 $mount"] -.->|"决定 Client 可见的命名空间"| G
+```
+
+**`ctx.remote` 的类型安全是「生成」出来的，这决定它只能在仓库内。** Remote 端点的 Client 类型、codec 与注册值全部出自一条严格生成流水线：生成器以整个 Host 聚合为 `ts.Program` 种子跑分析，把产物写进每个贡献包自己的 `lib/`；Client 侧再由 `dsh-api-remotes` 显式选择、逐个 `$mount()`。两个「显式」把外部插件挡在门外：不在仓库的构建里就没有产物，不在装配清单里就没有命名空间。从源码启动时的 SRC 回退只解决 Host 分发——Client 拒绝挂载缺少严格 codec 的描述符。这不是外部插件没争取到资格，是「严格」二字的代价：类型安全由生成换来，门槛就是必须进那两场显式。
+
+```mermaid
+flowchart LR
+    H["Host 源码里的 @Remote 方法"] -->|"typert-generator<br/>以 Host 聚合为 ts.Program 分析"| G["生成产物<br/>typert.host.* 与 typert.remote-client.*"]
+    G -->|"写进各贡献包自己的 lib/<br/>经 ./typert 与 ./remote 导出"| P["Host Loader 与 api-remotes"]
+    P -->|"显式选择、逐个 $mount"| C["浏览器里的<br/>ctx.remote.&lt;命名空间&gt;"]
+```
+
+**失败词汇表是「一个类、一张表」，因为 wire 上需要可判别的失败。** Remote 失败只有一个 `RemoteError` 类，code 形如 `<域>/<原因>`，声明在生产它的包里；与端点无关的异常不做预分类，网关原样把它折成 `gateway/internal`。集中一张表而不是造一族错误类，是因为 Client 拿到的是线上的 code——判别按 `code` 分支（分支会自动收窄 `details` 的类型），`instanceof` 在跨进程边界上没有意义。本地不过线的失败反而该用调用方自己的类型表达，不进这张表。
+
+**`/api` 路由的鉴权是 Connection 的信任边界，不是路由自己的事。** Host 半持有唯一 `/api` 路由、Fetch 桥、浏览器认证与 Host/Origin 校验：请求先过信任检查（防 DNS rebinding 与跨站浏览器请求，这些检查「绝不建立身份」，不过 403），再过浏览器会话认证（随机启动令牌换成签名 cookie，不过 401），之后才轮到分发——Gateway 认领 Remote 端点，功能包的 exact 路由处理信封之外的响应，未认领的返回 404（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/client/connection/README.zh.md`）。所以 curl 拿到 401 不是这条路由自己设了防，而是 `/api` 之下的任何流量都先过这两道闸；04 篇的 webServer 裸路由不在这道边界里，才有谁都能访问的待遇。
+
+**槽位与浏览器半的设计与 14 篇同源。** 槽位注册表的纪律是「声明即认领」：声明一个子槽等于渲染授权，往没声明的槽注册、声明别人已声明过的子槽，都会在加载时直接失败（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/client/ui-slots/README.zh.md`）。「一个 key 全局只有一个声明者」因此是注册表的硬约束，贡献者才需要 `ctx.slots.inject` 等声明出现再注册。浏览器半进页面走的是 14 篇那座桥——客户端模块系统是 Web GUI 栈的可选能力、不属于 agent loop 主干，所以统计攒数（Host 半）在没有界面的 profile 里照样工作，「展示」这一层随时可以整个剥掉。
+
+**组件的 props 由五份框架 share 拼出，各有各的声明者。** ui-slots 把每个已注册组件的 props 固定为五个 share：运行时 share（owner 值加作用域标准位）、child render share（`renderSlot`）、factory render share、store share（`useStore` / `actions`）、业务 share（`inject` 工厂推导）。「props 的推导」一节那张表就是按这五个 share 拆的；组件拿不到 `ctx` 是这套设计的默认状态——数据要么来自声明过的 share，要么来自 `inject` 工厂闭包，没有第三条暗道。
+
 ## 数据出 Host 的三条路
 
 | 路 | 注册方式 | 鉴权 | 谁能用 |

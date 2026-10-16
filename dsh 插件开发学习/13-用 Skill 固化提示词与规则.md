@@ -28,6 +28,37 @@ viewable: true
 - 讲清：两种形态各什么时候用；扫描根的优先级；frontmatter 有哪些字段；「目录与正文分离」怎么省上下文；`user-invocable` / `disable-model-invocation` 两个开关。
 - 全部文件在 `dsh_plugin/dsh-blog-skill/`，`install.sh` 把它们复制进博客仓库的项目级扫描根 `.dsh/skills/`。
 
+## DSH 设计
+
+skill 为什么不是插件、为什么文件放进扫描根就生效，由 DSH 的能力 seam 设计与 skill 族的包划分决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/skills.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/packages/skill/skill-filesystem/README.zh.md`）。
+
+**skill 族是一个标准的能力 seam。** DSH 里每项可替换能力都按三件套设计：声明接口的服务定义、实现它的提供方、使用它的消费者。skill 族照此拆成三个包：`dsh-skill` 是服务定义（`ctx.skills` 注册表），`dsh-skill-filesystem` 是本地提供方，`dsh-tool-skill` 是面向模型的消费者。注册表的设计理念把分工压得很干净：它负责合并、胜出解析与验证，从不检查 skill 内容——内容来自哪里完全是提供方的事。所以「写一份 skill」不是写代码：文件落在提供方的扫描根里就被发现、解析、登记，没有 `apply`，也没有装配指令。
+
+**「目录常驻、正文按需」是写进注册表契约的设计。** 上下文成本是 skill 存在的理由（开篇那句），而它在机制上由两条约定兑现。其一，注入会话的目录消息只包含排序后的 `name` 和规范化的 `description`——不含正文、路径、来源、提供方，常驻成本被压到一行一个 skill，`description` 也因此成了模型选择的唯一依据。其二，注册表不缓存完整定义：每次 `get()` 都向胜出提供方要当前正文，本地提供方每次都重读文件——「改正文保存即生效」由此不需要任何缓存失效协议。目录包里的附属文件再退一层：加载结果不枚举目录，`resourceBase` 只给相对引用的解析基准，材料等模型按指针自己读。三层各自的上下文成本是设计出来的，不是省出来的技巧。
+
+```mermaid
+flowchart TD
+    subgraph L1["第一层：目录（常驻上下文）"]
+        A["每个 skill 一行<br/>name + description"]
+    end
+    subgraph L2["第二层：正文（调 skill 工具才进）"]
+        B["SKILL.md 正文<br/>每次加载重读文件"]
+    end
+    subgraph L3["第三层：附属材料（正文引用才读）"]
+        C["reference/ templates/<br/>只给解析基准，不随加载走"]
+    end
+    A -->|"模型按描述判断相关"| B
+    B -->|"模型按指针自己读"| C
+```
+
+**优先级是「分层加 rank」的两层裁决。** 注册表采用宿主加按 scope 分层的结构——工具注册表确立的同一形态：跨层时最近层直接赢同名；单层之内才轮到 rank，rank 相同再看提供方注册顺序与本地顺序。本地提供方那张 rank 表（项目根 100 / 200、custom 300、用户根 400 / 500、bundled 600）就是「扫描根与优先级」一节的出处：项目根赢用户根是 rank 数值裁决的结果，不是路径深浅。
+
+**「谁能用」被规范化为两个独立布尔。** frontmatter 里 `disable-model-invocation` / `user-invocable` 两个反向开关，进注册表时被统一规范化成正向策略 `{ modelInvocable, userInvocable }`，四种组合全部保留：模型目录按 `modelInvocable` 过滤，用户命令按 `userInvocable` 过滤，互不混淆。所以「仅人能唤起的发布检查单」不需要专门机制，只是两个布尔的一种组合；两个都关掉时它还在注册表里，两个界面都看不到，`ctx.skills.get()` 仍取得到。
+
+**写坏的候选项随警告跳过，不拖累同根。** 缺 `name` / `description`、名字不合 kebab-case、调用开关不是布尔值，待遇都是「这个 skill 随一条警告被丢弃」——发现是逐文件解析的，一个坏文件不影响同根的其他 skill 进目录。
+
+**提供方失败时，目录宁可旧也不空。** 提供方的 `list()` 失败、或观测中途目录又变了，注册表把这次观测标为不完整：不完整的快照不缓存，消费方保留自己上一份可用目录继续用，下一次再重试。一次磁盘抖动不会让模型眼里的目录突然清空——「装了很多 skill、某次发现失败了」和「一个 skill 都没有」因此被区分开来。
+
 ## skill 的概念
 
 skill 是**一份写给模型看的指令文档**：一个 markdown 文件，开头一段 YAML frontmatter（名字加一句话描述），正文是规矩本身。它不是 Cordis 插件——没有 `apply`、不用 `dsh plugin add`，文件放进规定的位置就生效。

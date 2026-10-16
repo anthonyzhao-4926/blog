@@ -26,6 +26,34 @@ viewable: true
 - 知道什么时候一条命令行就够、什么时候要自己拿协议。
 - 理解 SDK 提供的到底是什么（以及它**不**提供什么）。
 
+## DSH 设计
+
+把 DSH 嵌进应用的做法之所以是「选 profile、起进程、说协议」，而不是「import 一个库」，由架构对「应用是什么」的两条规定决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「应用启动」与「Profile 与组合包」两节）。
+
+**应用组合只用配置表达，不用代码表达。** 架构规定受支持的 Node 应用一律通过具名 `dsh` profile 启动；自定义插件组合「继续由 profile 与有序 patch 文件表达，而不是另一个可执行文件或内联应用树」。仓库还有专门的校验脚本，把任何绕过 `dsh` 启动器的 Node 应用路径归入拒绝之列。所以「嵌入」没有第二个入口：TypeScript SDK 解析同版本的 `dsh` 依赖并替你选择 `sdk` profile，Python SDK 暴露的同样是「profile 选择 + 有序 patch 文件」而不是完整 Cordis 树——你交付的从来不是另一个可执行文件，而是对既有装配的一份选择与覆盖。
+
+**五个 profile 共享同一套运行时，差异只在叠了哪一层。** `dsh-base` 是 `web`、`headless`、`sdk`、`acp` 的共享第一层，各 profile 再叠一个应用层组合包；组合包插入的内容始终可被其上各层 patch，所以没有任何一个 profile 是封闭产品。`sdk-minimal` 是「刻意保留的例外」：一个组合包拥有完整的显式 SDK 配置树、不应用 `dsh-base`——它的存在本身就在说明 base 也只是一层可选装配，不是内核的一部分。
+
+```mermaid
+flowchart TD
+    subgraph entry["所有嵌入路径收敛到同一个启动器"]
+        direction TB
+        CLI["命令行<br/>dsh --profile headless"]
+        TS["TS SDK 客户端<br/>具名 profile + 有序 patch"]
+        PY["Python SDK<br/>同一份协议与 profile"]
+    end
+    CLI --> L["dsh 应用启动器"]
+    TS --> L
+    PY --> L
+    L --> TREE["按 profile 层叠出的插件树<br/>web / headless / sdk / acp 共享 dsh-base"]
+    M["sdk-minimal<br/>一个组合包给出完整配置树"] -.->|"刻意保留的例外：不应用 base"| TREE
+    TREE --> OUT["对外姿态由所叠应用层决定<br/>stdout / JSON-RPC stdio / ACP stdio"]
+```
+
+**SDK 与 ACP 各自的边界，也从这条总原则推出来。** SDK 家族只剩一个职责——让另一进程通过按换行分帧的 JSON-RPC 驱动完整运行时——所以包组 README 明说「这些包不会创建开发者项目，也不定义其他应用」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/sdk/README.zh.md`）：你的工程该长什么样，已经由 profile 与 patch 机制回答过了，SDK 不再越界。ACP 则是另一条刻意的边界：包组定位就是「仅面向自动化的协议」，权限提示与取消都必须有程序化答案（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/acp/README.zh.md`）。同一份 README 还记着配套客户端 `subagent-acp` 的位置——协议两端都是包组里的正式角色，正文那句「同一条协议，两个方向都在用」由此而来。
+
+本篇的做法都能挂回这两条规定：选 profile 是选一层现成装配；`headless` 与 `sdk` 跑同一套运行时，差别只在控制权在谁手里；树外组合包走 `dsh plugin add`，因为 profile 的语义本来就是「列出自己叠放哪些组合包」。
+
 ## 五个 profile
 
 它们的关系可以用一句话概括：**`web` / `headless` / `acp` / `sdk` 都以 `dsh-base` 为基础，只有 `sdk-minimal` 不是。**

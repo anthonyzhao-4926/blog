@@ -26,6 +26,32 @@ viewable: true
 - 一个演示插件和一个探针，把五种分发模式的差别用六次 curl 看全。
 - 全部代码在 `dsh_plugin/dsh-event-log/`，装法与 08 篇同一个 profile。
 
+## DSH 设计
+
+「订阅」能同时做成统计与拦截两件事，由 DSH 对事件的几条定位决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「事件」节、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md`）。
+
+**事件是扩展点，不是日志的副产品。** 架构文档把「选对事件域」列为大多数改动的第一个决定，并把事件分成三个域：会话事件是追加到日志、经 `session/event` 广播的持久事实；`agent/*` 事件携带活跃 Agent，用来观察或拦截进行中的工作；`fs/*`、`tools/*` 这类能力事件用来向某个 seam 附加策略和适配器，且不需要导入循环。本篇的三种用法各落在一个域上：`tools/execute`、`tools/result` 是 tools seam 的能力事件，一个拿来包住执行、一个拿来观察结果；`session/event` 是会话事件的广播口。
+
+**分发模式是事件公开约定的一部分。** Cordis 规定每个事件只属于一种分发模式、且只能用对应的方法派发；新的 harness 事件用 `@mode` 标签记录模式，好让生成的目录把声明与分发调用点交叉校验——「事件与它的契约」里提到的那份生产方/消费方矩阵，就是这么来的。所以声明事件时签名就得带对 `next` 与返回值，「一个名字一种模式」不是惯例，是被工具链看守的约定。
+
+**监听是可逆的副作用。** Cordis 的五个核心概念之一：提示词片段、工具 schema、适配器、提供方和监听器，都通过 `ctx.effect()` 或 `ctx.on()` 安装，reload 和 teardown 时按预期撤销。这是「监听器的归属」一节那句「注册监听器本身就是一次 effect」的出处，也是停用 lab 行后 `trace` 变空、恢复后又回来的原因：监听器的生死挂在 fiber 上，不在派发方手里。
+
+**会话事件先落盘、后广播。** `session/event` 通知的是已追加到日志的持久事实，所以统计插件数到的 `recorded` 能和磁盘文件逐行对上——它报道的是「已经发生过」，不是「将要发生」。
+
+```mermaid
+flowchart TD
+    subgraph domains["DSH 的三个事件域"]
+        A["会话事件<br/>追加到日志的持久事实"]
+        B["agent/*<br/>活跃 Agent 的进行时"]
+        C["能力事件 tools/*、fs/*<br/>seam 的策略挂点"]
+    end
+    A -->|"session/event 一个出口"| U1["回放、统计<br/>本篇的 recorded"]
+    B --> U2["观察或拦截进行中的工作"]
+    C --> U3["拦截、注入、观察<br/>本篇的 tools/execute、tools/result"]
+```
+
+挑监听哪个事件，先问自己的事属于哪个域：要「重启后还在的事实」找会话事件，要「趁还没发生改变它」找能力事件的管道，要「跟着某个 agent 走」找 `agent/*`。
+
 ## 事件与它的契约
 
 08 篇讲的是**服务调用**：消费者拿到 `ctx.web`，调它的 `search()`，一对一，要返回值。

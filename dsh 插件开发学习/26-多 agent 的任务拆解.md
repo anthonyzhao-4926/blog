@@ -24,6 +24,41 @@ viewable: true
 - 理解「能力」为什么要在请求之前校验，以及两类能力为什么用两种发现方式。
 - 会读一个提供方的能力矩阵，据此决定委派与否。
 
+## DSH 设计
+
+委派与团队协作为什么长这样，由 DSH 的三条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/subagent.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/agent-team.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「能力 seam」一节）。
+
+**委派是一项可替换的能力缝，不是 agent loop 的内建件。** 08 篇见过这种三件套：服务定义声明接口，提供方实现它，消费者使用它——DSH 管这叫能力缝。与 bash 一样，subagent 不属于 agent loop；不同的是委派目标的形态千差万别——进程内新建一个、带着父历史种子建一个、把一个轮次委派给另一个产品——所以同一上下文允许多个提供方按名共存，注册表遵循的是 LLM 适配器注册表，而不是 bash 那种单实现。这就是「提供方要交出六个成员」的由来：`name` 供按名选择，`capabilities` 供启动前校验，`start()` 与可选的 `prepareContinuable` 对应它参与的两种组合方式。
+
+**「失败要响、绝不静默降级」是跨缝的总规则，能力校验是它在委派之前的落点。** 服务在单次 run 存在之前就把请求对照提供方的 flag 检查一遍：依赖了不具备的能力，当场明确拒绝，绝不会先接受再悄悄忽略。本篇「先查矩阵再委派」的习惯就长在这条规则上——校验发生在委派之前，查一次比兜一次错便宜。
+
+**多 agent 协作不是另一条机制，而是垫在可继续子 agent 之上的一层。** 架构文档把 agent team 定位为「在可继续 subagent 之上提供持久 roster、任务板和 mailbox」的协作缝；三块共享状态全部落在 Lead 的 Root 会话日志里，运行时视图由 `agentTeam` 投影把日志回放折出——这正是「会话日志是唯一真相」在协作层的落点：真相只有一份，roster、任务板、邮箱全是折出来的。
+
+```mermaid
+flowchart LR
+    subgraph P["同一上下文共存的提供方（按名注册）"]
+        direction TB
+        S["spawn：进程内新建"]
+        F["fork：带父历史种子"]
+        X["acp / codex / dsh-sdk：进程外传输"]
+    end
+    S --> R["服务定义 ctx.subagents<br/>按名选择，启动前校验能力"]
+    F --> R
+    X --> R
+    R --> C["消费者<br/>委派工具、agent team"]
+```
+
+```mermaid
+flowchart TD
+    subgraph layers["协作一层垫在委派一层之上"]
+        direction TB
+        A["可继续子 agent<br/>一份持久会话，可被反复唤醒"] --> B["Root Team<br/>Lead 会话日志承载 roster、mailbox、任务 DAG"]
+    end
+    B --> C["agentTeam 投影<br/>把 Root 会话折回三块共享状态"]
+```
+
+一张说的是这条缝的形状，一张说的是协作层与它的叠放关系；本篇后面注册、校验、读矩阵、看任务板的每一步，都挂在这两处设计上。
+
 ## 子 agent 与多 agent
 
 这两件事经常被混着说，但它们的组成完全不同。

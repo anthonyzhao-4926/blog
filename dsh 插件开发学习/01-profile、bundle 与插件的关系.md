@@ -14,6 +14,36 @@ viewable: true
 > 
 > **前置**：无。约 10 分钟。
 
+## DSH 设计
+
+为什么「建 profile = 写一个 package.json」，由 DSH 的三条装配设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「Profile 与组合包」一节）。
+
+**没有特权内核，「装什么」只能外置成清单。** 运行中的 dsh 是一棵插件树，由启动时按序叠加的各层组合而成；内核不做任何插件做不到的事，连 agent loop 本身都是插件。既然装哪些插件不可能写死在程序里，就必须有一个地方把清单列出来——profile 就是这个具名容器：列出自己叠放的组合包，存放自己安装的树外插件，保存自己的 `cordis.patch.yml`。本篇说的「插件集合隔离」，落到实处就是这份清单按名字各存一份。
+
+**一份安装，多个界面。** profile 是同一套 dsh 安装提供不同应用界面的方式：`web`、`headless`、`sdk`、`sdk-minimal`、`acp` 从同一个 launcher 启动出不同组合（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/boot/app-boot/README.zh.md`）。所以这几个模板同时是 CLI 子命令——`dsh web` 就是 `dsh --profile web`；也所以启动必须点名：不存在「默认界面」，选一个 profile 就是选一个界面。
+
+**组合包是可安装的分发格式，不是「内核的一部分」。** bundle 的定义是「Cordis 配置项及其挂载代码的分发格式」，它插进树里的内容始终可被其上各层 patch。profile 与 bundle 都在各自的 `package.json` 里用 `dsh` 字段声明身份：`dsh.profile` 列出组合包，`dsh.bundle` 指向 patch 文件。所以建一个 profile 的全部工作就是写一个带 `dsh.profile.bundles` 的 `package.json`——本篇的 test profile 只有一个文件，不是精简，是 profile 的定义本来就这么大。至于预置的两个包：`dsh-base` 是 web、headless、sdk、acp 共享的第一层（模型适配器、工具、持久化、审批这些底座），`dsh-web-app` 在上面加浏览器应用；test 照抄的就是 web 模板的最小骨架。
+
+```mermaid
+flowchart TD
+    subgraph install["同一份 dsh 安装（同一个 launcher，无默认装配）"]
+        L["dsh 可执行文件"]
+    end
+    subgraph home["Harness home：~/.dsh/profiles/"]
+        W["profile: web<br/>（随发行版交付的模板）"]
+        H["profile: headless<br/>（模板）"]
+        T["profile: test<br/>（本篇新建）"]
+    end
+    L -->|"dsh web"| W
+    L -->|"dsh headless"| H
+    L -->|"dsh --profile test"| T
+    W --> WT["插件树：dsh-base + dsh-web-app"]
+    H --> HT["插件树：dsh-base + dsh-headless"]
+    T --> TT["插件树：dsh-base + dsh-web-app<br/>+ 以后要叠的插件"]
+```
+
+后面装插件、写 patch，全都是往这棵树上叠层——profile 是叠加的出发点。
+
 ## profile 的含义
 如下是dsh 插件安装命令，我们来理解一下 profile 的含义。
 

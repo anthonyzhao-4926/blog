@@ -20,6 +20,34 @@ viewable: true
 
 `ctx.effect` 是 Cordis 生命周期的地基。路由、事件监听、子插件……所有"需要随插件卸载而消失"的东西，底层都是它。
 
+## DSH 设计
+
+`ctx.effect` 为什么非写不可，由 Cordis 的三条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-api/fiber.zh.md`）。
+
+**卸载是常态，所以注册必须可逆。** DSH 的配置热重载默认开着（见 [03 篇](03-用 patch 覆盖 DSH 的默认装配.md)），禁用、启用、重载一行随时发生；架构层面就写明「各项注册都是副作用，会在其插件卸载时撤销」。Cordis 把这条落成机制：提示词片段、工具 schema、适配器、提供方、监听器，全都通过 `ctx.effect()` 或 `ctx.on()` 安装，reload 和 teardown 时按预期撤销。所以「装上去的东西、卸下来时必须拆掉」不是经验之谈，而是框架的默认语义——插件要做的只是登记「拆的时候做什么」。
+
+**fiber 是撤销的归属单位。** fiber 是一个已加载的插件实例，装着它的生命周期状态、校验过的配置和已注册的作用；`ctx.effect()` 就是委托给当前 fiber。每次挂载各建一个 fiber，所以同一个插件挂两次，配置、等待的服务、收集的清理函数互不串扰。卸载就是 dispose 这个 fiber：它收集的清理函数按注册的相反顺序跑完，异步清理也会等到完成。逆序是刻意的——后注册的往往建立在前面的注册之上，拆要倒着拆；实践规则因此建议「teardown 顺序有要求时，把相关工作放进同一个 effect」。而 `ctx.on` 这类辅助方法内部已经把监听器包进了 effect，所以只有拿到「框架不管的资源」（路由注册、定时器、连接）时，才需要像上一篇那样亲手写 `ctx.effect`。
+
+**四个阶段对应 fiber 的状态机。** 源码里 fiber 有六个生命周期状态：`PENDING`（等待必需服务）、`LOADING`（插件回调运行中）、`ACTIVE`（已加载并提供）、`FAILED`（回调或配置抛出）、`UNLOADING`（清理函数运行中）、`DISPOSED`（已移除）（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/vendor/cordis/src/fiber.ts`）。本篇的①发生在 import 时，fiber 还没创建；②③发生在 `LOADING`；④就是 `UNLOADING` 干的事。apply 之所以不紧跟 import，是因为 `PENDING` 在等 `inject` 声明的服务——挂载时机由服务依赖决定，不由 import 顺序决定。
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: ctx.plugin() 创建 fiber
+    PENDING --> LOADING: inject 的服务就绪
+    LOADING --> ACTIVE: apply 执行完
+    LOADING --> FAILED: 配置校验或 apply 抛出
+    ACTIVE --> UNLOADING: 禁用 / 移除 / 重载
+    UNLOADING --> DISPOSED: 清理函数逆序跑完
+    DISPOSED --> [*]
+    note right of LOADING
+        ② apply 执行
+        ③ effect 回调立即执行、清理函数被收集
+    end note
+    note right of UNLOADING
+        ④ 收集的清理函数逆序执行
+    end note
+```
+
 ## 插件生命周期
 
 先看演示插件的完整代码：

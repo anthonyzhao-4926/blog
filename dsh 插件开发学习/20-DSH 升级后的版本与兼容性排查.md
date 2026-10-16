@@ -27,6 +27,39 @@ dsh-version: 0.2.0-rc.2
 - 会从启动审计、配置 dump、会话格式三条路径读升级证据。
 - 分清 API 的稳定面与内部面，知道降级为什么不支持。
 
+## DSH 设计
+
+「升级后读证据」这套打法，由 DSH 对版本与检查的五条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/boot/app-boot/README.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/invariants.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/defensive-patterns.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md`）。
+
+**版本门只到 peerDependencies 为止，是写明的边界。** app-boot 的 README 给那道检查划了边界：它「使用 peer 声明，而不是 `engines.dsh`，也不是防范恶意包代码的沙箱」。装载前的版本比对只管你显式声明过的范围；运行起来之后 API 形状对不对，框架不作任何承诺。本篇的三个事实——`engines.dsh` 没有 reader、没写 peer 就什么都不查、没有 doctor——是同一个设计决定的三个面。
+
+**破坏性变更按版本落地，迁移手册也按版本组织。** 预发布期的节奏不是「悄悄改」：每个破坏性变更配一份逐条的升级指南，按「变更 → 迁移 → 确认」组织（快照里的实例如 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/upgrade-guide/v0.1.7-rc.2/schedule-optional-bundle/guide.zh.md`）。所以「这一版改了什么」要去版本级的记录里翻；指南里反复出现的 `patch: entry ... not found`，正是「patch 打空只 warn」这条设计行为在升级现场的样子。
+
+**运行时自检是一种按包归因的注册表，不默认出场。** invariants 子系统给自己的定位是 support 组的包——不属于能力缝，也不属于 agent loop 主干；每个包以自己确切的 npm 名注册检查，`fail` 的消息自动带上包名归因。它还约定了检查能断言什么：权威事件流或可变数据，**绝不是服务或方法是否存在**。这解释了 demo 的三件事：为什么要自己把 `dsh-invariants` 插进装配（出厂组合刻意不带运行时诊断）；为什么注册名必须写全包名；为什么自检读的是「解析到的包清单」这种可变数据，而不是去探测某个方法在不在。
+
+**仓库的答案是缺陷类别规则，不是体检命令。** defensive-patterns 的开篇把自己定义为「实际发布或差点发布的一类缺陷，以防止其复发的规则形式陈述」——仓库面对「这类错还会再犯」的办法是把规则写下来并配套机械门禁，而不是在运行时加一层兜底检查。升级排查因此是「读证据」：启动结算审计、`--dump-config` 的 stderr、契约快照门禁，再加上你自己装的那条 invariant。
+
+**会话格式只向一个方向走。** architecture.zh.md 的会话日志一节：打开时选数值最高的规范 generation、拒绝未来版本，迁移链只由静态确定的相邻边（vN→vN+1）组成，且已提交的 generation 路径绝不重命名、替换或删除。方向性是设计出来的——所以降级 dsh 会让新版会话彻底打不开；这不是缺陷，是「绝不向后兼容」那条规则的兑现。
+
+```mermaid
+flowchart LR
+    subgraph gate["装载前（唯一一道自动门）"]
+        P["peerDependencies 比对<br/>不满足 ⇒ 行置 disabled<br/>模块不会被 import"]
+    end
+    subgraph runtime["运行时（刻意不设检查）"]
+        R["engines.dsh 无 reader<br/>API 形状变了无人判<br/>没有 doctor"]
+    end
+    subgraph evidence["证据出口（要你自己读）"]
+        E1["启动结算审计<br/>缺哪个服务"]
+        E2["dump-config 的 stderr<br/>patch 打空只 warn"]
+        E3["自检 invariant<br/>按包名归因的 fail"]
+    end
+    P --> R
+    R --> E1
+    R --> E2
+    R --> E3
+```
+
 ## 预览期的版本节奏
 
 仓库根 `README.md` 的第 13 行是全篇的前提，原文加粗：

@@ -23,6 +23,49 @@ viewable: true
 
 写一个插件，把一张本地图片设为 DSH 的聊天背景。
 
+## DSH 设计
+
+这篇的两条链路为什么长这样，由 webServer 这个包的三条设计决定（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/packages/host/webserver/README.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/web-server.zh.md`）。
+
+**webServer 是一个不认识 DSH 的空载体。** 它就是一个 `node:http` 服务器加一张路由注册表：不了解任何 harness 概念，也不提供任何文件服务——`/api` 桥接、插件 bundle、HMR 事件流、SPA dist 全都属于注册它们的插件。所以「让浏览器拿到图片」不是去配置服务器，而是往这张表里注册一行，和内置插件走同一条路。这张表按组合优先设计：具名路由在组合上互不相交，匹配顺序固定（先 exact、再最长前缀、最后回退——回退席位是应答所有未命中请求的唯一 handler）；同一张表里重复注册同一条 `(kind, path)` 直接抛错，因为路由模式是组合层约定，撞了就是配置错误。我们的图片路由和 DSH 自己的页面能共存，靠的就是这几条约定。
+
+**插件之间不约启动顺序，只声明服务依赖。** webServer 是一个 Cordis Service，激活即开始监听；而我们的插件跑 `apply()` 时，它可能还没就绪。Cordis 的解法是：插件声明所需的服务后，会等待服务就绪才启动——「加载顺序通过服务依赖表达，而非手动编排启动序列」（依据 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/cordis-primer.zh.md`）。`ctx.inject(['webServer'], ...)` 就是这条设计在代码里的样子：不是可选的等待工具，而是「我要用某个服务」的正规写法。
+
+**页面注入不是静态注册表，而是每次渲染现问一遍。** 每次渲染 index 响应，webServer 都发出一次 `webserver/index-inject`，收集一张全新的注入表，每个订阅方推入自己的当前行；行里的数据（模块图、主题偏好）在 emit 那一刻现读，下一次渲染自然跟上运行期的变化。我们 push 一段固定的 `<style>` 是这个机制的最简形态——表是活的，只是我们那一行恰好不变。
+
+```mermaid
+flowchart LR
+    subgraph W["dsh-host-webserver<br/>（不带 harness 词汇的路由注册表）"]
+        direction TB
+        R["具名路由表<br/>exact → 最长前缀"]
+        F["回退席位（仅一席）"]
+        I["webserver/index-inject<br/>每次渲染重新收集"]
+    end
+    A["内置功能插件<br/>/api 桥接、HMR 事件流"] -->|"register"| R
+    S["SPA dist 服务器"] -->|"registerFallback"| F
+    O["我们的插件"] -->|"register 图片路由"| R
+    O -->|"push style 行"| I
+    M["客户端模块插件"] -->|"push script 行"| I
+    B["浏览器"] -->|"HTTP 请求"| W
+```
+
+```mermaid
+sequenceDiagram
+    participant B as 浏览器
+    participant W as webServer
+    participant F as 回退席位（SPA dist 服务器）
+    participant P as 各订阅插件（含我们）
+    B->>W: GET /（请求页面）
+    W->>F: 无具名路由命中，落到回退席位
+    F->>W: renderIndex(html)
+    W->>P: emit webserver/index-inject（全新空表）
+    P-->>W: 各自 push 当前行
+    W-->>F: 注入行渲染进正文
+    F-->>B: 页面响应
+```
+
+回退席位在随附的 Web 组合里归 SPA dist 服务器所有，它对渲染的每个 index 响应调用 `renderIndex`——我们的样式行就是在这一刻进页面的。
+
 ## 两条链路
 
 hello world 只是打印一句话，而这个插件要"动 UI"。页面是 DSH 自己渲染的，插件想影响它，需要打通两条路：
