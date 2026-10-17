@@ -25,8 +25,6 @@ viewable: true
 
 ## DSH 设计
 
-这一节不依赖本文后面的任何内容，单独讲清 DSH 在「把活交给另一个 agent 去做」这件事上的设计（依据源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/subagent.zh.md`、`local/deepseek-harness-dsh-v0.2.0-rc.2/docs/subsystems/agent-team.zh.md` 与 `local/deepseek-harness-dsh-v0.2.0-rc.2/docs/architecture.zh.md` 的「能力 seam」一节）。
-
 先对齐两个词。DSH 里一个 **agent**（智能体）就是一个正在独立干活的 AI 实例：有自己的会话、自己的工具，一轮一轮地调模型。**子 agent**（subagent）是由一个 agent 派生出来的另一个 agent——把一件事交出去，拿回结果。
 
 **委派被设计成一条可替换的能力缝，而不是对话主循环的内建功能。** DSH 管一类可替换能力叫能力缝（seam），一条缝有三种角色：一份接口声明（服务定义）、实现它的提供方、使用它的消费方（通常是暴露给模型的工具）。执行 bash 命令是一条缝，委派子 agent 也是一条缝——对话主循环本身不认识它们，换掉提供方就换掉了能力。与 bash 不同的是委派目标的形态千差万别：在进程内新建一个、带着父对话的历史建一个、把一个轮次委派给另一个产品，所以这条缝允许同一时刻有多个提供方按名字共存，要用哪个点哪个。提供方的契约也很小：一个名字、一份能力声明、一个启动方法，外加一个可选的「可继续创建」方法。
