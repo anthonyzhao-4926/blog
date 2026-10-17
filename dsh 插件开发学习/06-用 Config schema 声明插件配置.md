@@ -64,7 +64,7 @@ flowchart TD
 
 ## Config 的导出
 
-Cordis 认一个约定：插件导出同名的 `Config` 类型和 `Config` schema，它就会在调用 `apply` 之前，用 schema 校验 entry 的 `config` 块，并把缺失的字段用默认值补齐。
+Cordis 认一个约定：**插件导出一个名叫 `Config` 的值**，它就会在调用 `apply` 之前拿这个值校验 entry 上的 `config` 块，并把缺的字段补上默认值。
 
 ```ts
 // src/dsh-chat-background.ts（新增部分）
@@ -90,12 +90,8 @@ export function apply(ctx: Context, config: Config): void {
 }
 ```
 
-三个要点：
-
-- **名字必须叫 `Config`。** 类型给编辑器，`Schema` 值给 Cordis 运行时。只写 `interface Config` 不够——Cordis 要的是一个运行时的 [Standard Schema](https://standardschema.dev/) 验证器，普通对象没有 `~standard` 接口。
 - **默认值写在 schema 里**（`.default(...)`），不要写成 `apply` 里的 `config.image ?? ...`。`apply` 拿到的永远是补齐后的完整配置，代码里不用再防 `undefined`。
 - **约束也写在 schema 里。** `.min(0).max(1)` 表示透明度只能是 0~1，`Schema.string()` 表示图片路径必须是字符串。约束在这里声明，Cordis 就在加载时替你执行。
-
 
 别忘了在本插件`package.json`中添加依赖——`Schema` 来自 `@deepseek-ai/schemastery`，不在 `cordis` 里。
 

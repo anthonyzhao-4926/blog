@@ -16,7 +16,7 @@ viewable: true
 **Cordis** 是一套面向「时空可组合性」的**元框架**。
 
 - **元框架**：本身不规定「怎么写 HTTP、怎么连数据库」，而是提供一套把功能拼起来的运行时。应用、机器人、工具链都可以建在它上面。
-- **时空可组合性**：插件既能按依赖关系在「空间」上组合（谁依赖谁、谁和谁隔离），也能按生命周期在「时间」上组合（何时加载、何时卸载、使生效的逻辑如何回收）。
+- **时空可组合性**：插件既能按依赖关系在「空间」上组合（谁依赖谁、谁和谁隔离），也能按生命周期在「时间」上组合（何时加载、何时卸载、注册的 effect 如何回收）。
 
 Cordis 的核心不是 HTTP 路由（按 URL 分发请求），而是下面五个概念。首次出现时的含义：
 
@@ -54,7 +54,7 @@ flowchart TB
   Body -->|"on / once"| L["Event 监听"]
   C2 -->|"emit / parallel / serial / bail / waterfall"| E["Event<br/>对白：按模式驱动监听"]
   E --> L
-  L -.->|"登记为使生效，dispose 时摘掉"| F
+  L -.->|"登记为 effect，dispose 时摘掉"| F
 
   F -->|"dispose"| Clean["收回服务、监听、定时器、端口"]
   Clean --> OtherF
@@ -89,8 +89,8 @@ flowchart TB
 
 | 词汇 | 是什么 | 使用之后 |
 | --- | --- | --- |
-| **Effect（使生效）** | 动词：使一段逻辑在 Fiber 生命期内生效，例如监听事件、开端口、设定时器。Fiber 卸载时按相反顺序 **dispose（释放）**。不是纯函数语境里的「副作用」。 | 资源被纳入当前 Fiber。插件一卸，端口、监听、定时器按相反顺序关掉，避免泄漏。 |
-| **dispose / disposer** | 释放函数。调用后撤销已使生效的逻辑（取消监听、关定时器等）。 | 只收回这一段，插件其余部分继续跑。整条 Fiber dispose 时也会自动调到它。 |
+| **Effect** | 动词：让一段逻辑在 Fiber 生命期内生效，例如监听事件、开端口、设定时器。Fiber 卸载时按相反顺序 **dispose（释放）**。注意它不是纯函数语境里的 side effect。 | 资源被纳入当前 Fiber。插件一卸，端口、监听、定时器按相反顺序关掉，避免泄漏。 |
+| **dispose / disposer** | 释放函数。调用后撤销已登记的 effect（取消监听、关定时器等）。 | 只收回这一段，插件其余部分继续跑。整条 Fiber dispose 时也会自动调到它。 |
 | **Inject（注入）** | 声明「我依赖哪些服务」。依赖还没就绪时，这条 Fiber 停在 `PENDING`（等待），不会执行插件体。 | 启动顺序不用手排。依赖晚到就晚启动；依赖被撤就先卸再等，恢复后又自动再装。 |
 | **Isolate（隔离）** | 把某个服务名切到独立命名空间。两个隔离域里可以各有一个叫 `db` 的服务，互不可见。 | 同名服务可以并存（例如两个插件各用各的数据库）。事件默认也按隔离域过滤，不会串台。 |
 | **Intercept（拦截配置）** | 向下游 Context 叠一层服务配置，不改插件代码也能改行为（例如换日志名、调日志级别）。 | 下游读到的是合并后的配置。例如只对某个子树打开 DEBUG，其它地方仍是 INFO。 |
@@ -173,7 +173,7 @@ const ctx = new Context()
 | 成员 | 说明 |
 | --- | --- |
 | `Context.is(value)` | 判断值是不是 Context。 |
-| `Context.effect` | 给 disposer 挂「使生效」元数据（标签、子节点）用的 symbol。 |
+| `Context.effect` | 给 disposer 挂 effect 元数据（标签、子节点）用的 symbol。 |
 | `Context.filter` | 事件过滤 symbol。带这个方法的 `thisArg` 可以决定哪些监听能收到事件。 |
 | `Context.isolate` | 隔离表 symbol，存「服务名 → 隔离域」。 |
 | `Context.intercept` | 拦截配置表 symbol，存「服务名 → 叠加配置」。 |
@@ -316,7 +316,7 @@ await ctx.plugin(Foo, { n: 1 }) // 用 new Foo(ctx, { n: 1 }) 构造
 ```ts
 const fiber = ctx.plugin(Foo, config) // 立刻返回 thenable Fiber，插件可能仍在 LOADING
 await fiber          // 等到 ACTIVE；插件体抛错则这里也会抛
-await fiber.dispose() // 卸载：逆序回收使生效的逻辑，uid 置为 null
+await fiber.dispose() // 卸载：逆序回收登记的 effect，uid 置为 null
 ```
 
 无效插件（不是函数，也没有 `apply` 方法）会抛：
@@ -432,7 +432,7 @@ class Bar extends Service {
     super(ctx, 'bar')
   }
 
-  // 标在方法上：foo 就绪后才调用；返回值当作使生效的 disposer
+  // 标在方法上：foo 就绪后才调用；返回值当作这次 effect 的 disposer
   @Inject('foo')
   onFooReady() {
     return () => {} // foo 消失或本 Fiber 卸载时执行
@@ -589,7 +589,7 @@ ctx.waterfall('transform', 1, () => 2)  // 1 + (1 + 2) = 4；最后的 () => 2 �
 
 `Fiber` 是一次插件运行。root Context 自带 `uid === 0` 且状态为 `ACTIVE` 的 Fiber。
 
-**Effect** 在本文译为动词**使生效**：调用 `ctx.effect()` 即使一段逻辑随 Fiber 生效，并在卸载时回收。这和「副作用 / side effect」（函数是否改了外部状态）不是一回事。`ctx.effect()`、插件返回值、`Service.init` 的返回值，都会被收进当前 Fiber 的使生效表。
+**Effect** 在本文不翻译，直接用 `effect`：调用 `ctx.effect()` 让一段逻辑随 Fiber 生效，并在卸载时回收。它和「side effect」（函数是否改了外部状态）不是一回事。`ctx.effect()`、插件返回值、`Service.init` 的返回值，都会作为 effect 收进当前 Fiber，卸载时一并回收。
 
 **使用 Fiber 之后**：你拿到的是「这一次插件运行」的把手。`await` 它 = 等到就绪或失败；`dispose` = 整段收回，依赖它服务的下游跟着停；`restart` = 先清再建（配置不变）；`update` = 换配置再走一遍，Loader 默认还会把新配置写回文件。状态进入 `ACTIVE` 时，它 `provide` 的服务才对外可见；进入 `FAILED` 时错误打进 logger，依赖方当服务不存在。
 
@@ -616,7 +616,7 @@ enum FiberState {
 | `state` | 当前 `FiberState`。 |
 | `runtime` | 所属 `Plugin.Runtime`。 |
 | `inject` | 解析后的依赖表（服务名 → intercept 配置或 `null`）。 |
-| `dispose()` | 卸载。插件 Fiber 返回 `Promise<void>`。效果：逆序回收使生效的逻辑，`uid` 变 `null`，发 `internal/plugin` / `internal/status`。 |
+| `dispose()` | 卸载。插件 Fiber 返回 `Promise<void>`。效果：逆序回收登记的 effect，`uid` 变 `null`，发 `internal/plugin` / `internal/status`。 |
 | `await()` | 等到 **`inertia`（惯性异步）** 结束。inertia 是加载 / 卸载尚未收尾时挂着的那条 Promise；若失败则抛出。效果：调用方不用自己轮询 `state`。 |
 | `restart()` | 先卸再装。效果：监听和资源重建一遍，配置不变；中间下游会短暂看不到服务。 |
 | `update(config, noSave?)` | 校验配置后走 `internal/update` waterfall，再 restart。`noSave` 为 true 时，Loader 不会把配置写回文件。效果：插件按新配置再跑；默认还会改磁盘上的配置。 |
@@ -628,7 +628,7 @@ enum FiberState {
 ##### Effect
 
 ```ts
-type Disposable<T = any> = () => T // 释放函数；调用后撤销已使生效的逻辑
+type Disposable<T = any> = () => T // 释放函数；调用后撤销已登记的 effect
 
 type Effect =
   | Disposable                    // 同步 disposer
@@ -1130,7 +1130,7 @@ await ctx.plugin(ConsoleExporter, {
 import { List } from '@cordisjs/utils'
 
 const list = new List<Handler>(ctx, 'handlers') // 第二个参数是 effect 的 trace 标签
-list.push(handler)     // 登记为使生效；当前 Fiber 卸载时这条会自动删掉
+list.push(handler)     // 登记为 effect；当前 Fiber 卸载时这条会自动删掉
 list.length            // 当前条数
 for (const item of list) {}
 for (const item of list.filter(x => x.enabled)) {} // 惰性过滤，不生成中间数组
