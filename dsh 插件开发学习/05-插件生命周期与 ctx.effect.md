@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 5
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：说清插件从加载到卸载的四个阶段，知道什么该交给 `ctx.effect` 管理。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)。约 15 分钟。
 >
 > **示例代码**：[dsh-effect-func](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-effect-func)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)里，我们用了 `ctx.effect(() => webServer.register(...))`，当时留了一句话："`ctx.effect` 的清理时机留到后面着重讲解"。这篇就把它彻底讲透。
 

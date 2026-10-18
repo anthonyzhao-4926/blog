@@ -6,9 +6,10 @@ tags:
   - dsh
 column: dsh-plugin
 viewable: true
-dsh-version: 0.2.0-rc.2
 ---
 > 本文是知识卡，不用顺序读。装插件报错、想知道某个文件能不能手改、或者要弄清配置顺序时来查。
+>
+> **DSH 版本**：0.2.0-rc.2
 
 `~/.dsh/profiles/web` 是 web profile 的全部配置所在。本文按文件逐个说明：它是什么、由谁维护、什么情况下需要改、以及它们如何组合成一棵 Cordis 插件树。
 

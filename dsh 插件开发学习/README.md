@@ -6,12 +6,13 @@ tags:
   - dsh
 column: dsh-plugin
 order: 0
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 ## dsh 插件开发学习
 
 > 官方文档：https://deepseek-harness.github.io/deepseek-harness/
+>
+> **DSH 版本**：0.2.0-rc.2
 
 学写 DSH 插件：从最小的 `apply` 函数开始，做到能注册 HTTP 路由、能改页面外观、能调参数、能改掉 DSH 的默认配置，并且卸载时收拾干净。
 
@@ -19,7 +20,7 @@ viewable: true
 
 全栏（笔记、参考卡片、示例代码）都以 **dsh `0.2.0-rc.2`** 为准，依据是本仓库里的源码快照 `local/deepseek-harness-dsh-v0.2.0-rc.2/`。写新篇、改旧篇、核对某个 API 到底存不存在时，读这份快照的 `packages/` 与 `docs/`——**不要拿本机安装的 `dsh`、别的版本、或记忆里的旧 API 当依据**。预发布期里两代之间会整段更名或删除（例如设置这条线：`ctx.settingsScope` + `installSection` + `settings.plugin.item` 在 0.2.0 里被 `ctx.configForms` + volatile 字段 + `plugins.row.config` 取代）。
 
-每篇 frontmatter 的 `dsh-version` 记的是这篇写作/校对时依据的版本。对不上的篇目，先按它标的版本读快照，再决定是改这篇还是标注差异。
+每篇开头块引用里标的 **DSH 版本** 记的是这篇写作/校对时依据的版本。对不上的篇目，先按它标的版本读快照，再决定是改这篇还是标注差异。
 
 ### 读完能做到什么
 

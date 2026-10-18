@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 37
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：知道 DSH 里"hook"其实是两条不同的路，以及各自适合什么；知道那两个兼容桥能承接 Claude Code 与 Codex 的哪些 hook、哪些逐字迁不过来；知道"native hook"的准确定义；以及为什么官方文档会劝你别用桥。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[36-给DSH提PR](36-给DSH提PR.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-native-hook](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-native-hook)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 从 Claude Code 或 Codex 迁过来的第一件事，通常是看一眼自己那份 `hooks.json`：这些东西在 DSH 里还要不要重写？
 

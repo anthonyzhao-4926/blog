@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 26
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：分清「子 agent」和「多 agent 协作」是两件事；知道一个子 agent 提供方要满足什么契约、能力又是怎么被发现和校验的；会先看清手上这台机器到底能接什么活，再决定委派。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[25-插件的状态、密钥与配置存储](25-插件的状态、密钥与配置存储.md)。约 35 分钟。
 >
 > **示例代码**：[dsh-subagent-survey](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-subagent-survey)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 任务太大，一个上下文装不下；或者有些活纯属跑腿（翻文件、查日志），不该占着主对话的注意力。这两种需求指向的是同一套机制的两个面。
 

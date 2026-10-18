@@ -6,7 +6,6 @@ tags:
   - "dsh"
 column: dsh-plugin
 order: 6
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：把插件里写死的图片路径、透明度改成交互配置，不改代码、不重装就能换图。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[05-插件生命周期与 ctx.effect](05-插件生命周期与 ctx.effect.md)。约 20 分钟。
 >
 > **示例代码**：[dsh-chat-background-config](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-chat-background-config)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 [04-注册 HTTP 路由与注入页面样式](04-注册 HTTP 路由与注入页面样式.md)里，图片路径是写死的常量：
 

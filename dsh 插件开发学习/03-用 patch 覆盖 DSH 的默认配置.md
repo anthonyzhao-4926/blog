@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 3
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：用一份 patch 文件关掉不需要的内置插件、改掉内置插件的参数，不动 `node_modules` 里的一行源码。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[[02-最小插件的结构与配置]]。约 20 分钟。
 >
 > **示例代码**：[dsh-patch-demo](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-patch-demo)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 [[02-最小插件的结构与配置]]里写了 `patch.yaml`，这篇讲它到底是什么、能不能用同一套写法改 DSH 自己装的东西。
 

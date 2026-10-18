@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 1
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **配置对照图**：[由行组成的树](参考/由行组成的树.html)——四层补丁逐条叠成插件树，左行右树悬停对照。
@@ -14,6 +13,8 @@ viewable: true
 > **读完这篇你能**：说清 profile、bundle、插件三者的关系，并建好一个干净的 test profile。
 > 
 > **前置**：无。约 10 分钟。
+> 
+> **DSH 版本**：0.2.0-rc.2
 
 ## DSH 设计
 

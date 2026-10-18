@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 13
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：给仓库写一份 skill，让模型每次会话都知道「文章文件名怎么起、配图放哪」，不用你再讲一遍；并且分清 skill 的两种形态、扫描根的优先级和两个调用开关。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[12-在工具执行管线拦截危险调用](12-在工具执行管线拦截危险调用.md)。约 25 分钟。
 >
 > **示例代码**：[dsh-blog-skill](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-blog-skill)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 这个博客仓库有规矩：文章文件名是 `NN-描述.md`，frontmatter 六个字段一个不能少，配图放专栏目录的 `assets/` 下。每次新开一个会话让模型帮忙写点东西，这些规矩都得重新讲一遍——写在 README 里也没用，README 不在模型的上下文里，它不会主动去读。
 

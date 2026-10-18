@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 29
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：知道接一台 MCP 服务器其实不用写代码；搞清工具名是怎么拼出来的、为什么它一改就会让会话历史与权限规则失效；以及连不上、断线、工具列表冲突这几种情况各自会怎样呈现。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[28-定时任务与目标推进](28-定时任务与目标推进.md)。约 25 分钟。
 >
 > **示例代码**：[dsh-mcp-lab](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-mcp-lab)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 从这一篇开始走出本机。第一个要接的东西是 MCP——模型上下文协议，它做的事情很朴素：**让模型把别的程序提供的工具当成自己的工具来调**。
 

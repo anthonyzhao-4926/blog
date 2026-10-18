@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 36
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：知道改一处 DSH 内核代码要过哪些门禁、这些门禁的权威写在哪；知道测试不是"三种"而是七层，以及每一层各管什么；知道哪些文档是机械生成的、改它等于白改；知道能力缝与不变式这两套自检机制在管什么。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[35-给团队加一条命令](35-给团队加一条命令.md)。约 40 分钟。
 >
 > **示例代码**：[dsh-kernel-map](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-kernel-map)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 前面三十多篇都在写**仓库外面**的插件。这一篇换到里面：你想改 DSH 自己。
 

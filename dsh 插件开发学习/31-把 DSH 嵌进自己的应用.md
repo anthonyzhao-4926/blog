@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 31
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：知道五个 profile 各自适合什么、`sdk-minimal` 和另外四个差在哪；会在「跑一件事」「自己控制多轮」「对面已经会说 ACP」这三种需求之间选对路。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[30-外部事件触发会话](30-外部事件触发会话.md)。约 25 分钟。
 >
 > **示例代码**：[dsh-embed-lab](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-embed-lab)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 前三十篇都在往 DSH 里面加东西。这一篇把方向反过来：**DSH 当一个组件，塞进你的流水线或应用里**。
 

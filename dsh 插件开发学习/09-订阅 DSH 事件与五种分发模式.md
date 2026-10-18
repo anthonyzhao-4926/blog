@@ -6,7 +6,6 @@ tags:
   - dsh
 column: dsh-plugin
 order: 9
-dsh-version: 0.2.0-rc.2
 viewable: true
 ---
 > **读完这篇你能**：订阅 DSH 内部的事件（工具调用、审批结果、会话记录），把计数挂到一条 HTTP 路由上；并且知道五种分发模式各自该用在什么地方。
@@ -14,6 +13,8 @@ viewable: true
 > **前置**：[08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-event-log](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-event-log)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 [08-替换内置能力的提供方与消费者](08-替换内置能力的提供方与消费者.md)那个探针是"我发起一次搜索，看结果"。这篇反过来：模型自己跑起来之后，我看不见它做了什么。
 

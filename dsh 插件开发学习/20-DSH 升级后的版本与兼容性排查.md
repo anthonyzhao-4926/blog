@@ -7,13 +7,14 @@ tags:
 column: dsh-plugin
 order: 20
 viewable: true
-dsh-version: 0.2.0-rc.2
 ---
 > **读完这篇你能**：知道升级 `dsh` 之后该从哪三个出口读证据，为什么 `package.json` 里的 `engines.dsh` 拦不住任何东西；分清哪些 API 是设计给插件挂的、哪些是内部面；以及降级为什么会让新会话直接打不开。
 >
 > **前置**：[19-运行期动态挂载插件](19-运行期动态挂载插件.md)。约 30 分钟。
 >
 > **示例代码**：[dsh-upgrade-guard](https://github.com/anthonyzhao-4926/blog/tree/main/code/dsh_plugin/dsh-upgrade-guard)
+>
+> **DSH 版本**：0.2.0-rc.2
 
 一句话总纲：**DSH 的版本检查只到你声明过的 `peerDependencies` 为止。** 写进 `peerDependencies` 的 dsh 范围会在装载前被比对，不满足的那一行直接不让进；没写就什么都不查。至于"我的 API 用法在新内核上还对不对"，运行时一个字都不会说——那部分只能靠可观测证据自己发现。
 
