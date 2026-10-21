@@ -275,17 +275,17 @@ ctx.inject(['connection'], (connCtx) => {
 
 数据到了浏览器，往哪儿摆？DSH 的页面不是一整个 React 树由一个人写，而是**槽位（slot）体系**：每个可扩展的位置有一个名字，谁想往那儿放东西就注册一条贡献。
 
-一个槽位有**两层声明**，归属不同：
+本篇要挂的位置叫 `settings.section`，`settings.section 是DSH 内置的槽位名，不可自定义。`
 
-- **类型层**：`SlotMap` 接口。包用声明合并把这个 key 的基数（`single` / `list` / `keyed` / `chain`）、作用域（`root` / `session` / `session-maybe`）、owner props 写进去。这是编译期注册表。
-- **运行时层**：拥有那个渲染位置的组件，在自己注册时的 `children` 条目里声明这个子槽。声明即授权——只有声明了的父条目才能 `renderSlot` 渲染它。
+- **类型声明。** `@deepseek-ai/dsh-client-ui-settings` 的 `SlotMap` 里有一行 `'settings.section'`。有这行，写成这个名字才不报类型错。它不往页面上画任何东西。
+- **运行时声明。** 设置窗口在 `ui-settings-general`，打开设置看到的左边按钮和右边内容就是它画的。它在 `children` 里再写一遍 `'settings.section'`，右边才有这个位置，然后用 `renderSlot('settings.section', ...)` 把点中的那一节画进去。示意图见[设置页槽位](参考/设置页槽位.html)。
 
-一个 key 全局只有一个声明者。往没声明的槽注册、或者声明一个别人已声明的子槽，都在插件激活期直接失败。
+插件自己定的是 `id` 和 `label`。`id` 区分点中的是哪一节，`label` 是左边按钮上的字。`name` 必须是 `'settings.section'`。写一个 DSH 没声明过的名字，加载时直接失败。
 
 ```mermaid
 flowchart TD
-    A["类型层：SlotMap 接口<br/>基数、作用域、owner props"] --> S["一个槽位 key"]
-    B["运行时层：owner 注册的 children 条目<br/>声明即授权"] --> S
+    A["类型声明：DSH 在 SlotMap 里写好的一行<br/>名字就是 settings.section"] --> S["槽位名 settings.section<br/>插件不能改"]
+    B["运行时声明：DSH 的设置窗口<br/>children 里写下同一个名字"] --> S
     S --> C["slots.inject 回调<br/>register 一条贡献"]
     C -->|"owner 卸载、声明塌了"| D["贡献跟着撤销"]
     D -->|"声明再出现"| C
@@ -293,19 +293,14 @@ flowchart TD
 
 
 
-以本篇要用的 `settings.section` 为例，两层分别在两个包里：
-
-- 类型在 `@deepseek-ai/dsh-client-ui-settings` 的契约里：`'settings.section': { kind: 'list'; scope: 'root'; owner: SettingsSectionOwnerProps }`——设置面板里一页一个条目，`id` 是导航 key，`order` 决定位置，`label` 是导航上的显示文本。
-- 运行时声明在 `ui-settings-general` 注册的 `sidebar.settings` 条目里（它的 `children` 含 `'settings.section': { kind: 'list', scope: 'root' }`）。设置面板的壳渲染导航和内容列，内容本身全部来自注册者。
-
-贡献者不用关心声明者什么时候跑：`ctx.slots.inject(key, callback)` 会等声明出现——声明活着的每一段 lifetime 都跑一遍回调，声明塌了（owner 插件卸载），回调里的贡献跟着撤，声明再出现就再跑一遍：
+插件不用关心设置窗口什么时候跑。`ctx.slots.inject` 会等它把 `settings.section` 声明出来再注册；声明没了（设置窗口卸载），这次注册跟着撤；声明再出现就再跑一遍：
 
 ```ts
 ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section',
-    id: 'note-stats',
+    name: 'settings.section', // DSH 定好的槽位名，必须照抄
+    id: 'note-stats',         // 这一节自己的 id
     order: 90,
-    label: '笔记统计',
+    label: '笔记统计',         // 左边按钮上的字
 }, NoteStatsSection))
 ```
 

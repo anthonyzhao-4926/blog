@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<!--
+title: 设置页槽位
+column: dsh-plugin
+viewable: true
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设置页槽位</title>
+<style>
+  :root {
+    --paper: #FFF9F0;
+    --ink: #1E293B;
+    --line: #475569;
+    --sky: #D9EAF7;
+    --mint: #E2F0D9;
+    --sun: #FFF2CC;
+    --title: #B8D4E8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 15px/1.65 "PingFang SC", "Hiragino Sans GB", "Yuanti SC", sans-serif;
+  }
+  .sheet {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 32px 56px;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-family: "Yuanti SC", "PingFang SC", sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .lead {
+    margin: 0 0 28px;
+    max-width: 640px;
+    font-size: 15px;
+  }
+  .stage { display: flex; flex-direction: column; gap: 0; }
+  .sources { display: flex; flex-direction: column; gap: 24px; }
+  .card {
+    border: 2px solid var(--ink);
+    border-radius: 18px 14px 16px 20px;
+    padding: 16px 16px 14px;
+    background: var(--sky);
+  }
+  .card.plugins { background: var(--sun); }
+  .kicker {
+    display: inline-block;
+    margin: 0 0 10px;
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--paper);
+    font-family: "Yuanti SC", "PingFang SC", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  pre {
+    margin: 0;
+    padding: 12px 12px 10px;
+    border: 2px dashed var(--ink);
+    border-radius: 12px;
+    background: var(--paper);
+    font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+  }
+  pre .hit {
+    display: inline-block;
+    margin: 0 -4px;
+    padding: 0 4px;
+    border-radius: 6px;
+    background: var(--mint);
+  }
+  .plug {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--paper);
+    font-size: 14px;
+  }
+  .plug b { font-weight: 700; }
+  .plug span {
+    font: 12px/1.4 ui-monospace, Menlo, monospace;
+  }
+  .plug.on { background: var(--mint); }
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 16px 0 12px;
+    color: var(--ink);
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .arrow i {
+    width: 2px;
+    height: 28px;
+    background: var(--line);
+  }
+  .arrow b {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 9px solid var(--line);
+  }
+  .window {
+    border: 2px solid var(--ink);
+    border-radius: 20px 16px 18px 22px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--title);
+    border-bottom: 2px solid var(--ink);
+    font-family: "Yuanti SC", "PingFang SC", sans-serif;
+    font-weight: 700;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots s {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--paper);
+    text-decoration: none;
+  }
+  .body {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    min-height: 240px;
+  }
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border-right: 2px solid var(--ink);
+    background: var(--paper);
+  }
+  nav button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    padding: 10px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  nav button[aria-current="true"] { background: var(--mint); }
+  .pane {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tag {
+    align-self: flex-start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #FFF9F0;
+    font: 12px/1.6 ui-monospace, Menlo, monospace;
+  }
+  .drawn {
+    padding: 16px;
+    border: 2px dashed var(--ink);
+    border-radius: 14px;
+    background: var(--mint);
+  }
+  .drawn h2 {
+    margin: 0 0 8px;
+    font-family: "Yuanti SC", "PingFang SC", sans-serif;
+    font-size: 20px;
+  }
+  .drawn p { margin: 0 0 6px; }
+  .foot {
+    margin: 22px 0 0;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <h1>设置页上这个位置从哪来</h1>
+    <p class="lead">DSH 的设置窗口先在 children 里写下 <b>settings.section</b>，这个名字是它定好的。插件 register 时自己定 label。点左边的按钮换一节。</p>
+    <div class="stage">
+      <div class="sources">
+        <div class="card">
+          <div class="kicker">DSH 的设置窗口写下名字</div>
+          <pre>children: {
+  'settings.launcher',
+  <span class="hit">'settings.section'</span>,
+  'settings.close',
+}</pre>
+        </div>
+        <div class="card plugins">
+          <div class="kicker">插件交出组件</div>
+          <div class="plug" data-id="general"><b>通用</b><span>label</span></div>
+          <div class="plug on" data-id="note-stats"><b>笔记统计</b><span>label</span></div>
+        </div>
+      </div>
+      <div class="arrow" aria-hidden="true"><span>renderSlot 画进右边</span><i></i><b></b></div>
+      <div class="window">
+        <div class="bar"><span class="dots"><s></s><s></s><s></s></span>设置</div>
+        <div class="body">
+          <nav>
+            <button type="button" data-id="general">通用</button>
+            <button type="button" data-id="note-stats" aria-current="true">笔记统计</button>
+          </nav>
+          <div class="pane">
+            <div class="tag">renderSlot('settings.section')</div>
+            <div class="drawn" id="drawn">
+              <h2>笔记统计</h2>
+              <p>笔记目录下共 42 篇笔记</p>
+              <p>note_search 被调了 0 次</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="foot">左边按钮上的字，就是插件 register 时自己定的 label。设置窗口每次只把点中的那一节画进右边。</p>
+  </div>
+  <script>
+    const pages = {
+      general: '<h2>通用</h2><p>语言、外观在这一节里。</p><p>它也是 register 进来的一节。</p>',
+      'note-stats': '<h2>笔记统计</h2><p>笔记目录下共 42 篇笔记</p><p>note_search 被调了 0 次</p>'
+    }
+    const drawn = document.getElementById('drawn')
+    const buttons = document.querySelectorAll('nav button')
+    const plugs = document.querySelectorAll('.plug')
+    function show(id) {
+      drawn.innerHTML = pages[id]
+      buttons.forEach(btn => {
+        if (btn.dataset.id === id) btn.setAttribute('aria-current', 'true')
+        else btn.removeAttribute('aria-current')
+      })
+      plugs.forEach(row => row.classList.toggle('on', row.dataset.id === id))
+    }
+    buttons.forEach(btn => btn.addEventListener('click', () => show(btn.dataset.id)))
+    plugs.forEach(row => row.addEventListener('click', () => show(row.dataset.id)))
+  </script>
+</body>
+</html>
